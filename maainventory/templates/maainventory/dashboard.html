@@ -6,12 +6,12 @@
     <h2>Stock Overview</h2>
   </div>
 
-  <div class="stats-grid">
+    <div class="stats-grid">
     {% for s in stats %}
-      <div class="stat-card">
+      <div class="stat-card {{ s.key }}">
         <div class="stat-value">{{ s.value }}</div>
-        <div class="stat-label">{{ s.label }}</div>
         <div class="stat-note">{{ s.note }}</div>
+        <div class="stat-label">{{ s.label }}</div>
       </div>
     {% endfor %}
   </div>
@@ -22,10 +22,13 @@
       <div class="list">
         {% for item in most_requested %}
           <div class="list-row">
-            <div class="item-name">{{ item.name }}</div>
-            <div class="item-stats">
-              <div class="amount">{{ item.amount }}</div>
-              <div class="pct">{{ item.pct }}</div>
+            <div class="row-bar {{ item.bar_class }}"></div>
+            <div class="row-content">
+              <div class="item-name">{{ item.name }}</div>
+              <div class="item-stats">
+                <div class="amount">{{ item.amount }}</div>
+                <div class="pct">{{ item.pct }}</div>
+              </div>
             </div>
           </div>
         {% endfor %}
@@ -34,15 +37,22 @@
 
     <div class="panel panel-right">
       <h3>Stock Consumption by Branch</h3>
-      <div class="chart-placeholder">
-        <!-- simple static pie-like representation -->
-        <img src="{% static 'images/11-1.jpg' %}" alt="chart" style="max-width:100%;border-radius:6px" />
+      <div class="panel-right-top">
+        <div class="branch-list-container">
+          <ul class="branch-list">
+            {% for b in branch_consumption %}
+              <li>
+                <span class="branch-name">{{ b.name }}</span> <span class="amount">{{ b.amount }}</span> <span class="pct">({{ b.pct }})</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="chart-container">
+          <div class="chart-placeholder">
+            <img src="{% static 'images/pie-chart.png' %}" alt="pie chart" />
+          </div>
+        </div>
       </div>
-      <ul class="branch-list">
-        {% for b in branch_consumption %}
-          <li><strong>{{ b.name }}</strong> — {{ b.amount }} ({{ b.pct }})</li>
-        {% endfor %}
-      </ul>
     </div>
   </div>
 
