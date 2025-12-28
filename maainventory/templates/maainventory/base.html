@@ -10,6 +10,9 @@
 <body>
   <div class="app">
     <aside class="sidebar">
+      <div class="sidebar-toggle" role="button" tabindex="0" aria-pressed="false">
+        <img src="{% static 'icons/chevron-left.svg' %}" data-alt-src="{% static 'icons/chevron-right.svg' %}" alt="Collapse sidebar" />
+      </div>
       <div class="brand">
       </div>
 
@@ -74,6 +77,27 @@
       </section>
     </main>
   </div>
+  <script>
+    (function () {
+      var toggle = document.querySelector('.sidebar-toggle');
+      if (!toggle) return;
+      var sidebar = document.querySelector('.sidebar');
+      var img = toggle.querySelector('img');
+      var altSrc = img && img.getAttribute('data-alt-src');
+      toggle.addEventListener('click', function () {
+        var collapsed = sidebar.classList.toggle('collapsed');
+        document.body.classList.toggle('sidebar-collapsed', collapsed);
+        if (img && altSrc) {
+          var current = img.getAttribute('src');
+          img.setAttribute('src', altSrc);
+          img.setAttribute('data-alt-src', current);
+        } else if (img) {
+          img.style.transform = collapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+        toggle.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+      });
+    })();
+  </script>
 </body>
 </html>
 
