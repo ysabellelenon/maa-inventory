@@ -1,0 +1,51 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block content %}
+  <div class="page-header">
+    <h2>Stock Overview</h2>
+  </div>
+
+  <div class="stats-grid">
+    {% for s in stats %}
+      <div class="stat-card">
+        <div class="stat-value">{{ s.value }}</div>
+        <div class="stat-label">{{ s.label }}</div>
+        <div class="stat-note">{{ s.note }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="panels">
+    <div class="panel panel-left">
+      <h3>Most Requested Items</h3>
+      <div class="list">
+        {% for item in most_requested %}
+          <div class="list-row">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-stats">
+              <div class="amount">{{ item.amount }}</div>
+              <div class="pct">{{ item.pct }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel panel-right">
+      <h3>Stock Consumption by Branch</h3>
+      <div class="chart-placeholder">
+        <!-- simple static pie-like representation -->
+        <img src="{% static 'images/11-1.jpg' %}" alt="chart" style="max-width:100%;border-radius:6px" />
+      </div>
+      <ul class="branch-list">
+        {% for b in branch_consumption %}
+          <li><strong>{{ b.name }}</strong> — {{ b.amount }} ({{ b.pct }})</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+{% endblock %}
+
+

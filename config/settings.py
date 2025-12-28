@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'maainventory',
 ]
 
 MIDDLEWARE = [
@@ -114,4 +115,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+# Serve the project-level `static/` directory in development so files in
+# /static/** (created in the repo root) are discoverable by runserver.
+from pathlib import Path as _Path  # local alias to avoid reusing BASE_DIR name
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+# In production you would run `collectstatic` into STATIC_ROOT and serve that
+# directory from your web server. For local dev this is sufficient.
