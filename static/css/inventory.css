@@ -1,0 +1,58 @@
+/* Inventory page styles (moved from dashboard.css) */
+.inventory-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.header-actions .btn-filter{background:#f3f4f6;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;cursor:pointer;}
+.inventory-container{margin-top:8px;}
+.inventory-card{background:var(--card-bg);padding:8px;border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,0.03);overflow:hidden;}
+.inventory-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed;}
+.inventory-table thead th{text-align:left;padding:10px 8px;color:var(--text);font-weight:600;border-bottom:1px solid #f3f3f3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.inventory-table .col-code{width:120px;}
+.inventory-table .col-name{width:260px;}
+.inventory-table .col-desc{max-width:160px;}
+.inventory-table .col-init,.inventory-table .col-remain,.inventory-table .col-min{width:110px;}
+.inventory-table .col-status{width:120px;}
+
+/* Align numeric/quantity header text to the right so headers line up with right-aligned data cells */
+.inventory-table thead th.col-init,
+.inventory-table thead th.col-remain,
+.inventory-table thead th.col-min,
+.inventory-table thead th.col-status {
+  text-align: left;
+  padding-left: 8px;
+}
+.inventory-table tbody td{padding:10px 8px;border-bottom:1px solid #fafafa;vertical-align:middle;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.inventory-table .col-check{width:48px;}
+.inventory-table tbody .col-code{width:120px;color:#6b7280;vertical-align:middle;padding-right:8px;}
+.inventory-table tbody .col-code .expand{margin-right:6px;}
+.inventory-table tbody .col-name{width:340px;vertical-align:middle;}
+.inventory-table tbody .item-thumb{width:36px;height:36px;border-radius:6px;background:#fff;border:1px solid #f2f2f2;object-fit:cover;flex:0 0 36px;margin-right:12px;vertical-align:middle;}
+.inventory-table tbody .item-meta{display:inline-block;vertical-align:middle;max-width:calc(100% - 52px);}
+.inventory-table tbody .item-meta .item-title{font-weight:500;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle;}
+.inventory-table tbody .col-desc{
+  color:var(--muted);
+  max-width:160px;
+  /* allow long descriptions to wrap instead of truncating */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  text-overflow: clip;
+}
+.inventory-table tbody .col-init,.inventory-table tbody .col-remain,.inventory-table tbody .col-min{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.inventory-table tbody .col-init,.inventory-table tbody .col-remain,.inventory-table tbody .col-min{
+  text-align:left;
+  padding-left:8px;
+  color:#374151;
+  font-weight:500;
+  width:110px;
+}
+.inventory-table tbody .col-status{
+  text-align:left;
+  padding-left:8px;
+  width:120px;
+}
+.inventory-table tbody .expand{background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:6px;}
+.inventory-row.row-low{background:rgba(245,120,120,0.12);} /* subtle pink band for low rows */
+.status-pill{display:inline-block;padding:6px 10px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid transparent;}
+.status-good{background:#e6ffef;color:#087f3b;border-color:#d1f6de;}
+.status-low{background:#ffecec;color:#b91c1c;border-color:#f7d0d0;}
+
+

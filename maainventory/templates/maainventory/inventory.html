@@ -1,0 +1,61 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <h2>Inventory</h2>
+    <div class="header-actions">
+      <button class="btn-filter">Filter ▾</button>
+    </div>
+  </div>
+
+  <div class="inventory-container">
+    <div class="inventory-card">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th class="col-check"></th>
+            <th class="col-code">Item Code</th>
+            <th class="col-name">Item Name</th>
+            <th class="col-desc">Description</th>
+            <th class="col-init">Qty</th>
+            <th class="col-remain">Remaining</th>
+            <th class="col-min">MIN</th>
+            <th class="col-status">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}">
+              <td class="col-check"><input type="checkbox" aria-label="select {{ item.code }}" /></td>
+              <td class="col-code">
+                <button class="expand" aria-hidden="true">▸</button>
+                {{ item.code }}
+              </td>
+              <td class="col-name">
+                <img class="item-thumb" src="{% static 'images/sample-item.jpg' %}" alt="" />
+                <div class="item-meta">
+                  <div class="item-title">{{ item.name }}</div>
+                </div>
+              </td>
+              <td class="col-desc">{{ item.desc }}</td>
+              <td class="col-init">{{ item.initial_qty }}</td>
+              <td class="col-remain">{{ item.remaining_qty }}</td>
+              <td class="col-min">{{ item.min_qty }}</td>
+              <td class="col-status">
+                <span class="status-pill {% if item.status == 'LOW' %}status-low{% else %}status-good{% endif %}">{{ item.status }}</span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}
+
+ 

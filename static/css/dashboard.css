@@ -159,5 +159,5 @@ body.sidebar-collapsed .sidebar-toggle{left:calc(96px - 18px);}
   .stats-grid{grid-template-columns:repeat(3,1fr);}
   .panels{grid-template-columns:1fr;}
 }
-
+ 
 

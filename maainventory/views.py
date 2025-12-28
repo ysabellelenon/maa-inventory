@@ -50,3 +50,20 @@ def dashboard(request):
 
     # Use the app-relative template name so Django's app_directories loader can find it
     return render(request, "maainventory/dashboard.html", context)
+
+def inventory(request):
+    """Render a prototype inventory list page with sample data for the UI prototype."""
+    items = [
+        {"code": "001", "name": "Burger Box Large", "desc": "For big burgers / meal sets", "initial_qty": "15,000", "remaining_qty": "9,200", "min_qty": "5,000", "status": "GOOD"},
+        {"code": "002", "name": "Barbeque Bag", "desc": "Large heavy-duty barbeque bags with reinforced handles — ideal for schools and bulk orders; grease-resistant lining for hot items.", "initial_qty": "2,550", "remaining_qty": "1,800", "min_qty": "500", "status": "GOOD"},
+        {"code": "003", "name": "Bucket", "desc": "Big buckets for 2-3 burgers", "initial_qty": "29,400", "remaining_qty": "18,000", "min_qty": "10,000", "status": "LOW"},
+        {"code": "004", "name": "Curve Fries Cup", "desc": "Fries cup", "initial_qty": "79,442", "remaining_qty": "62,700", "min_qty": "20,000", "status": "GOOD"},
+        {"code": "005", "name": "Sauce Bag", "desc": "Paper bags without handles", "initial_qty": "8,857", "remaining_qty": "6,000", "min_qty": "3,000", "status": "LOW"},
+        {"code": "006", "name": "Straws", "desc": "Straws with Logo", "initial_qty": "610,000", "remaining_qty": "450,000", "min_qty": "200,000", "status": "GOOD"},
+    ]
+
+    context = {
+        "items": items,
+    }
+
+    return render(request, "maainventory/inventory.html", context)
