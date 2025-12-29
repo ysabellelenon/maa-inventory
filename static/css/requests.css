@@ -62,6 +62,14 @@
 }
 .inventory-card .btn-filter img{width:16px;height:16px;display:inline-block;}
 
+.table-search-input{transition: border-color .15s;}
+.table-search-input:hover,
+.table-search-input:focus {
+  border-color: #D9BD7D;
+  outline: none;
+  box-shadow: none;
+}
+
 /* Tabs above table */
 .tabs-container{margin-bottom:12px;}
 .tabs{display:flex;gap:12px;align-items:center;padding:8px 12px;background:transparent;}
