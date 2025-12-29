@@ -19,6 +19,7 @@
         <thead>
           <tr>
             <th class="col-check"></th>
+            <th class="col-expand"></th>
             <th class="col-code">Item Code</th>
             <th class="col-name">Item Name</th>
             <th class="col-desc">Description</th>
@@ -32,10 +33,12 @@
           {% for item in items %}
             <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}">
               <td class="col-check"><input type="checkbox" aria-label="select {{ item.code }}" /></td>
-              <td class="col-code">
-                <button class="expand" aria-hidden="true">▸</button>
-                {{ item.code }}
+              <td class="col-expand">
+                <button class="expand" aria-hidden="true">
+                  <img class="expand-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
+                </button>
               </td>
+              <td class="col-code">{{ item.code }}</td>
               <td class="col-name">
                 <img class="item-thumb" src="{% static 'images/sample-item.jpg' %}" alt="" />
                 <div class="item-meta">
@@ -50,11 +53,62 @@
                 <span class="status-pill {% if item.status == 'LOW' %}status-low{% else %}status-good{% endif %}">{{ item.status }}</span>
               </td>
             </tr>
+            <tr class="inventory-details" hidden>
+              <td colspan="9">
+                <div class="details-inner">
+                  <div class="details-header">Details</div>
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <div class="detail-label">Foodics</div>
+                      <div class="detail-value">{{ item.foodics|default:"123" }}</div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-label">Talabat</div>
+                      <div class="detail-value">{{ item.talabat|default:"45" }}</div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+
+<script>
+  (function () {
+    var rightIcon = "{% static 'icons/chevron-right.svg' %}";
+    var downIcon = "{% static 'icons/chevron-down.svg' %}";
+    function toggleRow(button) {
+      var row = button.closest('tr');
+      if (!row) return;
+      var details = row.nextElementSibling;
+      var img = button.querySelector('img.expand-icon');
+      var expanded = row.classList.toggle('expanded');
+      if (details && details.classList.contains('inventory-details')) {
+        if (expanded) {
+          details.removeAttribute('hidden');
+        } else {
+          details.setAttribute('hidden', '');
+        }
+      }
+      if (img) {
+        img.setAttribute('src', expanded ? downIcon : rightIcon);
+      }
+      // update aria-expanded
+      button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.expand');
+      if (btn) {
+        e.preventDefault();
+        toggleRow(btn);
+      }
+    });
+  })();
+</script>
 
 {% endblock %}
 

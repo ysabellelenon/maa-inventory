@@ -56,3 +56,83 @@
 .status-low{background:#ffecec;color:#b91c1c;border-color:#f7d0d0;}
 
 
+/* Allow Item Code to wrap instead of truncating with ellipsis */
+.inventory-table tbody .col-code {
+  white-space: normal;
+  text-overflow: clip;
+  overflow: visible;
+}
+
+/* Expand column styling moved from inline styles */
+.inventory-table .col-expand {
+  width: 36px;
+  text-align: center;
+  padding: 0;
+}
+.inventory-table .col-expand .expand {
+  margin: 0;
+  padding: 4px 6px;
+}
+
+/* Expand icon sizing */
+.inventory-table .col-expand .expand .expand-icon,
+.inventory-table .col-expand .expand img.expand-icon {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Details row */
+.inventory-details td {
+  background: var(--card-bg);
+  /* match table row cell padding for perfect horizontal alignment */
+  padding: 12px 20px;
+  color: #374151;
+  vertical-align: middle;
+}
+.inventory-details .details-grid {
+  display: grid;
+  /* use content-sized columns so items don't stretch to the container width */
+  grid-template-columns: repeat(2, max-content);
+  /* small vertical gap, larger horizontal gap between the two items */
+  gap: 4px 40px;
+  /* no padding here — padding moved to .details-inner so header sits inside padding */
+  /* padding removed */
+  align-items: start;
+  max-width: 560px; /* constrain width so columns don't stretch too far */
+}
+.inventory-details .details-inner {
+  /* ensure header and grid align with internal padding; header sits inside this padding */
+  padding: 8px 20px;
+}
+.details-header {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #374151;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eef2f7;
+  margin-bottom: 8px;
+}
+.inventory-row.expanded {
+  background: rgba(16,24,40,0.02);
+}
+
+/* Detail item label/value stack */
+.details-grid .detail-item { display: block; }
+.details-grid .detail-label {
+  font-weight: 600;
+  color: #374151;
+  display: block;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.details-grid .detail-value {
+  display: block;
+  font-size: 14px;
+  color: #111827;
+}
+
+
