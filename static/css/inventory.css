@@ -2,8 +2,38 @@
 .inventory-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .header-actions .btn-filter{background:#f3f4f6;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;cursor:pointer;}
 
-/* Filter button inside table container */
-.inventory-card .table-actions{display:flex;justify-content:flex-end;padding:12px 12px 12px 12px;margin-bottom:12px;}
+.inventory-card .table-actions{display:flex;justify-content:flex-start;padding:12px 12px 12px 12px;margin-bottom:12px;}
+.inventory-card .table-actions-left{display:flex;align-items:center;gap:12px;}
+.table-search{position:relative;display:inline-block;}
+.table-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:0.7;}
+.table-search-input{
+  width:260px;
+  box-sizing:border-box;
+  padding:0 12px 0 34px;
+  height:36px;
+  border-radius:8px;
+  border:1px solid #e6e6e6;
+  background:#fff;
+  font-size:14px;
+}
+.table-search-input::placeholder{font-size:13px;color:#9ca3af;}
+.inventory-card .table-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  border-top:1px solid #f3f3f3;
+  gap:12px;
+}
+.table-footer-left{display:flex;align-items:center;gap:12px;}
+.table-footer-left .show-label{font-size:13px;color:#374151;display:flex;align-items:center;gap:8px;}
+.table-footer-left .page-size{padding:6px 8px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;}
+.table-footer-left .entries-info{color:#6b7280;font-size:13px;}
+.table-footer-right .pagination{display:flex;align-items:center;gap:8px;}
+.pagination button{background:#fff;border:1px solid #eef2f6;padding:6px 10px;border-radius:8px;cursor:pointer;color:#374151;}
+.pagination button img{width:12px;height:12px;display:block;}
+.pagination .page-num.active{border:1.5px solid #D9BD7D;color:#D9BD7D;font-weight:600;}
+.pagination .page-dots{padding:0 6px;color:#9ca3af;}
 .inventory-card .btn-filter{
   background:#ffffff;
   border:1px solid #e6e6e6;

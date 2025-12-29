@@ -8,13 +8,22 @@
 {% block content %}
   <div class="page-header inventory-header">
     <h2>Inventory</h2>
-    <div class="header-actions">
-      <button class="btn-filter">Filter ▾</button>
-    </div>
   </div>
 
   <div class="inventory-container">
     <div class="inventory-card">
+      <div class="table-actions">
+        <div class="table-actions-left">
+          <div class="table-search">
+            <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
+            <input class="table-search-input" placeholder="Search by item or code" aria-label="Search inventory" />
+          </div>
+          <button class="btn-filter">
+            <img src="{% static 'icons/filter.svg' %}" alt="" />
+            <span>Filter</span>
+          </button>
+        </div>
+      </div>
       <table class="inventory-table">
         <thead>
           <tr>
@@ -73,6 +82,33 @@
           {% endfor %}
         </tbody>
       </table>
+      <div class="table-footer">
+        <div class="table-footer-left">
+          <label class="show-label">Show
+            <select class="page-size" aria-label="Results per page">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <span class="entries-info">Showing 1 to 10 of 50 entries</span>
+        </div>
+        <div class="table-footer-right">
+          <nav class="pagination" aria-label="Pagination">
+            <button class="page-prev" aria-label="Previous page">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </button>
+            <button class="page-num active" aria-current="page">1</button>
+            <button class="page-num">2</button>
+            <button class="page-num">3</button>
+            <span class="page-dots">…</span>
+            <button class="page-num">10</button>
+            <button class="page-next" aria-label="Next"">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </button>
+          </nav>
+        </div>
+      </div>
     </div>
   </div>
 
