@@ -71,12 +71,13 @@
                   <div class="details-header">Details</div>
 
                   <!-- Top cards row (summary metrics) -->
+                  <div class="details-content">
                   <div class="details-cards" role="region" aria-label="Supplier summary">
                     <div class="details-card">
                       <div class="card-label">Total Spend</div>
                       <div class="card-value">{{ item.total_spend|default:"—" }}</div>
                     </div>
-                    <div class="details-card">
+                    <div class="details-card card-wide">
                       <div class="card-label">Pending Invoices</div>
                       <div class="card-value">
                         <span class="card-main">{{ item.pending_invoices|default:"—" }}</span>
@@ -111,55 +112,72 @@
                   <!-- Two-column details grid -->
                   <div class="details-grid details-grid-two-col" aria-hidden="false">
                     <div class="detail-item">
-                      <div class="detail-label">Location</div>
-                      <div class="detail-value">{{ item.location|default:"—" }}</div>
+                      <div class="detail-pair">
+                        <div class="detail-label">Location</div>
+                        <div class="detail-value">{{ item.location|default:"—" }}</div>
+                      </div>
                     </div>
 
                     <div class="detail-item">
-                      <div class="detail-label">Delivery Lead Time</div>
-                      <div class="detail-value">{{ item.delivery_lead_time|default:"—" }}</div>
+                      <div class="detail-pair">
+                        <div class="detail-label">Delivery Lead Time</div>
+                        <div class="detail-value">{{ item.delivery_lead_time|default:"—" }}</div>
+                      </div>
                     </div>
 
                     <div class="detail-item">
-                      <div class="detail-label">Bank Name</div>
-                      <div class="detail-value">{{ item.bank_name|default:"—" }}</div>
+                      <div class="detail-pair">
+                        <div class="detail-label">Bank Name</div>
+                        <div class="detail-value">{{ item.bank_name|default:"—" }}</div>
+                      </div>
                     </div>
 
                     <div class="detail-item">
-                      <div class="detail-label">Bank Account Details</div>
-                      <div class="detail-value">{{ item.bank_account_details|default:"—" }}</div>
+                      <div class="detail-pair">
+                        <div class="detail-label">Bank Account Details</div>
+                        <div class="detail-value">{{ item.bank_account_details|default:"—" }}</div>
+                      </div>
                     </div>
 
                     <div class="detail-item">
-                      <div class="detail-label">IBAN Number</div>
-                      <div class="detail-value">{{ item.iban_number|default:"—" }}</div>
+                      <div class="detail-pair">
+                        <div class="detail-label">IBAN Number</div>
+                        <div class="detail-value">{{ item.iban_number|default:"—" }}</div>
+                      </div>
                     </div>
 
                     <div class="detail-item">
-                      <div class="detail-label">Last Ordered Date</div>
-                      <div class="detail-value">{{ item.last_ordered_date|default:"—" }}</div>
-                    </div>
-
-                    <div class="detail-item detail-full">
-                      <div class="detail-label">Products Supplied (Item — Price)</div>
-                      <div class="detail-value">
-                        {% if item.products_supplied %}
-                          <ul class="products-supplied-list">
-                            {% for p in item.products_supplied %}
-                              <li>{{ p.item_name }} — {{ p.price_per_unit }}</li>
-                            {% endfor %}
-                          </ul>
-                        {% else %}
-                          — 
-                        {% endif %}
+                      <div class="detail-pair">
+                        <div class="detail-label">Last Ordered Date</div>
+                        <div class="detail-value">{{ item.last_ordered_date|default:"—" }}</div>
                       </div>
                     </div>
 
                     <div class="detail-item detail-full">
-                      <div class="detail-label">Notes / Internal Comments</div>
-                      <div class="detail-value">{{ item.notes|default:"—" }}</div>
+                      <div class="detail-pair">
+                        <div class="detail-label">Products Supplied (Item — Price)</div>
+                        <div class="detail-value">
+                          {% if item.products_supplied %}
+                            <ul class="products-supplied-list">
+                              {% for p in item.products_supplied %}
+                                <li>{{ p.item_name }} — {{ p.price_per_unit }}</li>
+                              {% endfor %}
+                            </ul>
+                          {% else %}
+                            — 
+                          {% endif %}
+                        </div>
+                      </div>
                     </div>
 
+                    <div class="detail-item detail-full">
+                      <div class="detail-pair">
+                        <div class="detail-label">Notes / Internal Comments</div>
+                        <div class="detail-value">{{ item.notes|default:"—" }}</div>
+                      </div>
+                    </div>
+
+                  </div>
                   </div>
 
                 </div>

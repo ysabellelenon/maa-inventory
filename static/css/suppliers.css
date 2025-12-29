@@ -135,6 +135,7 @@
   flex:1 1 140px;
   box-shadow:0 1px 2px rgba(16,24,40,0.03);
 }
+.details-card.card-wide{ flex:1.2 1 220px; min-width:160px; max-width:320px; }
 .details-card .card-label{font-size:12px;color:#6b7280;margin-bottom:6px;font-weight:600;}
 .details-card .card-value{font-size:18px;color:#111827;font-weight:700;}
 
@@ -146,17 +147,34 @@
 /* Two-column details grid */
 .details-grid-two-col{
   display:grid;
-  grid-template-columns:repeat(2, minmax(0,1fr));
-  gap:14px 40px;
+  grid-template-columns:repeat(3, minmax(0,1fr));
+  gap:14px 28px;
   align-items:start;
+  /* horizontal padding on the parent .details-content; remove left padding here */
+  padding: 0 20px 32px 0;
+}
+
+/* Border on the container wrapping the summary cards and details grid */
+.details-content{
+  border-left:3px solid #9ca3af;
+  padding-left:20px;
+  margin-left: -20px; /* visually align the left edge with surrounding content */
+  /* right border removed (kept left border) */
 }
 .details-grid-two-col .detail-item{display:block;}
-.details-grid-two-col .detail-label{font-weight:600;color:#374151;font-size:12px;text-transform:uppercase;margin-bottom:6px;}
-.details-grid-two-col .detail-value{color:#111827;font-size:14px;}
+.details-grid-two-col .detail-pair{display:flex;flex-direction:column;gap:4px;padding:8px 0;}
+.details-grid-two-col .detail-label{font-weight:600;color:#374151;font-size:12px;text-transform:uppercase;margin:0;}
+.details-grid-two-col .detail-value{color:#111827;font-size:14px;margin:0;}
 .details-grid-two-col .detail-full{grid-column:1 / -1;}
 
 .products-supplied-list{margin:0;padding-left:18px;}
 .products-supplied-list li{margin-bottom:4px;}
+
+/* Increase padding inside the expanded details row for suppliers page only */
+.inventory-card .inventory-details td {
+  padding: 16px 32px 32px 32px; /* reduced top padding only */
+  box-sizing: border-box;
+}
 
 
 
