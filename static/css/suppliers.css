@@ -1,0 +1,162 @@
+/* Suppliers page styles
+   This file imports the shared inventory styles and provides a place
+   for suppliers-page-specific overrides.
+*/
+@import url('inventory.css');
+
+/* Example override: slightly increase spacing above the table for suppliers page */
+.inventory-card.suppliers-page .table-actions {
+  padding-top: 14px;
+}
+
+/* Keep this file intentionally small for now; we can add suppliers-specific
+   styles here later without touching the shared inventory.css file. */
+
+/* Pagination footer */
+.inventory-card .table-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  border-top:1px solid #f3f3f3;
+  gap:12px;
+}
+.table-footer-left{display:flex;align-items:center;gap:12px;}
+.table-footer-left .show-label{font-size:13px;color:#374151;display:flex;align-items:center;gap:8px;}
+.table-footer-left .page-size{padding:6px 8px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;}
+.table-footer-left .entries-info{color:#6b7280;font-size:13px;}
+.table-footer-right .pagination{display:flex;align-items:center;gap:8px;}
+.pagination button{background:#fff;border:1px solid #eef2f6;padding:6px 10px;border-radius:8px;cursor:pointer;color:#374151;}
+.pagination button img{width:12px;height:12px;display:block;}
+.pagination .page-num.active{border:1.5px solid #D9BD7D;color:#D9BD7D;font-weight:600;}
+.pagination .page-dots{padding:0 6px;color:#9ca3af;}
+
+/* Table actions: search + filter on the left */
+.inventory-card .table-actions{display:flex;justify-content:flex-start;padding:12px 12px 12px 12px;margin-bottom:12px;}
+.inventory-card .table-actions-left{display:flex;align-items:center;gap:12px;}
+.table-search{position:relative;display:inline-block;}
+.table-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:0.7;}
+.table-search-input{
+  width:260px;
+  box-sizing:border-box;
+  padding:0 12px 0 34px;
+  height:36px;
+  border-radius:8px;
+  border:1px solid #e6e6e6;
+  background:#fff;
+  font-size:14px;
+}
+.table-search-input::placeholder{font-size:13px;color:#9ca3af;}
+.inventory-card .btn-filter{
+  background:#ffffff;
+  border:1px solid #e6e6e6;
+  height:36px;
+  padding:0 12px;
+  border-radius:8px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-weight:600;
+  color:var(--text);
+}
+.inventory-card .btn-filter img{width:16px;height:16px;display:inline-block;}
+
+.table-search-input{transition: border-color .15s;}
+.table-search-input:hover,
+.table-search-input:focus {
+  border-color: #D9BD7D;
+  outline: none;
+  box-shadow: none;
+}
+
+/* Tabs above table */
+.tabs-container{margin-bottom:12px;}
+.tabs{display:flex;gap:12px;align-items:center;padding:8px 12px;background:transparent;}
+.tab-btn{background:transparent;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:8px;color:#6b7280;}
+.tab-btn .tab-badge{display:inline-block;padding:3px 8px;border-radius:999px;font-weight:700;font-size:12px;margin-left:6px;}
+.tab-btn.active{padding-bottom:6px;border-bottom:3px solid transparent;}
+.tab-btn.active .tab-badge{color:#fff;}
+
+/* Tab colors in order: All, New, Pending, In Process, Delivered, Completed, Rejected */
+.tab-btn[data-key="all"]{color:#6b7280;}
+.tab-btn[data-key="all"] .tab-badge{background:#D9BD7D;color:#fff;}
+.tab-btn[data-key="new"]{color:#6b7280;}
+.tab-btn[data-key="new"] .tab-badge{background:#10B981;color:#fff;} /* green */
+.tab-btn[data-key="pending"]{color:#6b7280;}
+.tab-btn[data-key="pending"] .tab-badge{background:#3B82F6;color:#fff;} /* lighter blue */
+.tab-btn[data-key="in-process"]{color:#6b7280;}
+.tab-btn[data-key="in-process"] .tab-badge{background:#7C3AED;color:#fff;} /* purple */
+.tab-btn[data-key="delivered"]{color:#6b7280;}
+.tab-btn[data-key="delivered"] .tab-badge{background:#7C3AED;color:#fff;} /* purple */
+.tab-btn[data-key="completed"]{color:#6b7280;}
+.tab-btn[data-key="completed"] .tab-badge{background:#10B981;color:#fff;} /* green */
+.tab-btn[data-key="rejected"]{color:#6b7280;}
+.tab-btn[data-key="rejected"] .tab-badge{background:#EF4444;color:#fff;} /* red */
+
+/* Active tab underline uses the badge color */
+.tab-btn.active[data-key="all"]{border-bottom-color:#D9BD7D;color:#111827;}
+.tab-btn.active[data-key="new"]{border-bottom-color:#10B981;color:#111827;}
+.tab-btn.active[data-key="pending"]{border-bottom-color:#3B82F6;color:#111827;}
+.tab-btn.active[data-key="in-process"]{border-bottom-color:#7C3AED;color:#111827;}
+.tab-btn.active[data-key="delivered"]{border-bottom-color:#7C3AED;color:#111827;}
+.tab-btn.active[data-key="completed"]{border-bottom-color:#10B981;color:#111827;}
+.tab-btn.active[data-key="rejected"]{border-bottom-color:#EF4444;color:#111827;}
+
+/* Allow long text in suppliers table to wrap instead of truncating */
+.inventory-table thead th,
+.inventory-table tbody td,
+.inventory-table tbody .item-meta .item-title {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-overflow: clip;
+}
+
+/* Ensure item-meta uses full cell width to wrap text */
+.inventory-table tbody .item-meta {
+  display:block;
+  max-width:100%;
+}
+
+/* Details cards (summary) */
+.details-inner { padding: 12px 20px; }
+.details-cards {
+  display:flex;
+  gap:12px;
+  margin:8px 0 16px 0;
+  flex-wrap:wrap;
+}
+.details-card{
+  background:var(--card-bg);
+  border-radius:8px;
+  padding:12px;
+  min-width:120px;
+  flex:1 1 140px;
+  box-shadow:0 1px 2px rgba(16,24,40,0.03);
+}
+.details-card .card-label{font-size:12px;color:#6b7280;margin-bottom:6px;font-weight:600;}
+.details-card .card-value{font-size:18px;color:#111827;font-weight:700;}
+
+/* small muted note shown to the right of some card values */
+.details-card .card-value{display:flex;align-items:center;gap:8px;}
+.details-card .card-note{color:#9ca3af;font-size:13px;font-weight:400;}
+.details-card .card-main{font-weight:700;}
+
+/* Two-column details grid */
+.details-grid-two-col{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:14px 40px;
+  align-items:start;
+}
+.details-grid-two-col .detail-item{display:block;}
+.details-grid-two-col .detail-label{font-weight:600;color:#374151;font-size:12px;text-transform:uppercase;margin-bottom:6px;}
+.details-grid-two-col .detail-value{color:#111827;font-size:14px;}
+.details-grid-two-col .detail-full{grid-column:1 / -1;}
+
+.products-supplied-list{margin:0;padding-left:18px;}
+.products-supplied-list li{margin-bottom:4px;}
+
+
+

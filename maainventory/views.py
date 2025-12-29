@@ -86,3 +86,105 @@ def requests(request):
     }
 
     return render(request, "maainventory/requests.html", context)
+
+
+def suppliers(request):
+    """Render a prototype suppliers page (duplicate of requests for now)."""
+    items = [
+        {"code": "SUP-001", "name": "Oman Printer", "category": "Packaging", "contact_person": "John Paul Bartolome", "phone": "+968 1234 5678", "email": "john@acme.example",
+         "location": "Muscat, Oman",
+         "products_supplied": [
+             {"item_name": "Printed Labels", "price_per_unit": "0.05 OMR"},
+             {"item_name": "Corrugated Boxes", "price_per_unit": "0.50 OMR"}
+         ],
+         "delivery_lead_time": "3–5 days",
+         "bank_name": "Bank Muscat",
+         "bank_account_details": "Account Name: Oman Printer Co. — Acc # 12345678",
+         "iban_number": "OM23BMUS123456789012345678",
+         "last_ordered_date": "2025-12-10",
+         "notes": "Prefers email orders; offers volume discount.",
+         "total_spend": "OMR 15,845.42",
+        "pending_invoices": "OMR 3,023.23",
+        "pending_invoice_count": 3,
+         "active_orders": 4,
+         "supplier_hold": "1,000"
+        },
+        {"code": "SUP-002", "name": "Al-Madenah", "category": "Bags", "contact_person": "Nada Al-Daghari", "phone": "+968 2345 6789", "email": "nada@example.com",
+         "location": "Sohar, Oman",
+         "products_supplied": [
+             {"item_name": "Plastic Bags", "price_per_unit": "0.02 OMR"},
+             {"item_name": "Paper Bags", "price_per_unit": "0.03 OMR"}
+         ],
+         "delivery_lead_time": "2–4 days",
+         "bank_name": "National Bank of Oman",
+         "bank_account_details": "Account Name: Al-Madenah Supplies — Acc # 87654321",
+         "iban_number": "OM45NBON876543210987654321",
+         "last_ordered_date": "2025-11-28",
+         "notes": "Fast turnaround for small orders.",
+        "total_spend": "OMR 3,331.10",
+        "pending_invoices": "OMR 1,200.00",
+        "pending_invoice_count": 1,
+        "active_orders": 2,
+        "supplier_hold": "No"
+        },
+        {"code": "SUP-003", "name": "Excellent Packing", "category": "Cups", "contact_person": "Gloria Ysabelle Lenon", "phone": "+968 3456 7890", "email": "gloria@example.com",
+         "location": "Muscat, Oman",
+         "products_supplied": [
+             {"item_name": "12 oz Cup", "price_per_unit": "0.06 OMR"},
+             {"item_name": "16 oz Cup", "price_per_unit": "0.08 OMR"}
+         ],
+         "delivery_lead_time": "5–7 days",
+         "bank_name": "HSBC Oman",
+         "bank_account_details": "Account Name: Excellent Packing — Acc # 11223344",
+         "iban_number": "OM67HSBC112233445566778899",
+         "last_ordered_date": "2025-10-05",
+         "notes": "Requires 50% advance for new customers.",
+        "total_spend": "OMR 71,237.00",
+        "pending_invoices": "OMR 5,000.00",
+        "pending_invoice_count": 5,
+        "active_orders": 7,
+        "supplier_hold": "No"
+        },
+        {"code": "SUP-004", "name": "Al Andalus", "category": "Containers", "contact_person": "Ali Al-Ismaili", "phone": "+968 4567 8901", "email": "ali@example.com",
+         "location": "Salalah, Oman",
+         "products_supplied": [
+             {"item_name": "Food Container Small", "price_per_unit": "0.30 OMR"},
+             {"item_name": "Food Container Large", "price_per_unit": "0.55 OMR"}
+         ],
+         "delivery_lead_time": "7–10 days",
+         "bank_name": "Muscat Securities",
+         "bank_account_details": "Account Name: Al Andalus Trading — Acc # 33445566",
+         "iban_number": "OM89MSCL334455667788990011",
+         "last_ordered_date": "2025-12-01",
+         "notes": "Seasonal delays possible during peak months.",
+        "total_spend": "OMR 252,000.00",
+        "pending_invoices": "OMR 12,000.00",
+        "pending_invoice_count": 2,
+        "active_orders": 3,
+        "supplier_hold": "No"
+        },
+        {"code": "SUP-005", "name": "AL Khalijia Company for Converting Industries", "category": "Straws", "contact_person": "Omran Al-Ismaili", "phone": "+968 5678 9012", "email": "omran@example.com",
+         "location": "Muscat, Oman",
+         "products_supplied": [
+             {"item_name": "Straw (with Logo)", "price_per_unit": "0.004 OMR"},
+             {"item_name": "Plain Straw", "price_per_unit": "0.002 OMR"}
+         ],
+         "delivery_lead_time": "4–6 days",
+         "bank_name": "Gulf Bank",
+         "bank_account_details": "Account Name: Khalijia Co. — Acc # 55667788",
+         "iban_number": "OM01GULF556677889900112233",
+         "last_ordered_date": "2025-12-15",
+         "notes": "Can print custom logos with 2-week lead time.",
+        "total_spend": "OMR 90,000.00",
+        "pending_invoices": "OMR 2,500.00",
+        "pending_invoice_count": 4,
+        "active_orders": 1,
+        "supplier_hold": "Yes - Quality review"
+        },
+    ]
+
+    context = {
+        "items": items,
+    }
+
+    return render(request, "maainventory/suppliers.html", context)

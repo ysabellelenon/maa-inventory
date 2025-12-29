@@ -1,0 +1,350 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/suppliers.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <h2>Suppliers</h2>
+  </div>
+
+  <div class="inventory-container">
+    <div class="inventory-card">
+      <div class="table-actions">
+        <div class="table-actions-left">
+          <div class="table-search">
+            <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
+            <input class="table-search-input" placeholder="Search by requestor or item" aria-label="Search requests" />
+          </div>
+          <button class="btn-filter">
+            <img src="{% static 'icons/filter.svg' %}" alt="" />
+            <span>Filter</span>
+          </button>
+        </div>
+      </div>
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" class="select-all" aria-label="Select all suppliers" /></th>
+            <th class="col-expand"></th>
+            <th class="col-code">Supplier Code</th>
+            <th class="col-name">Supplier Name</th>
+            <th class="col-category">Category</th>
+            <th class="col-contact">Contact Person</th>
+            <th class="col-phone">Phone</th>
+            <th class="col-email">Email</th>
+            <th class="col-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr class="inventory-row">
+              <td class="col-check"><input type="checkbox" class="row-select" aria-label="select supplier #{{ forloop.counter }}" /></td>
+              <td class="col-expand">
+                <button class="expand" aria-hidden="true">
+                  <img class="expand-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
+                </button>
+              </td>
+              <td class="col-code">{{ item.code }}</td>
+              <td class="col-name">
+                <div class="item-meta">
+                  <div class="item-title">{{ item.name }}</div>
+                </div>
+              </td>
+              <td class="col-category">{{ item.category|default:"—" }}</td>
+              <td class="col-contact">{{ item.contact_person|default:"—" }}</td>
+              <td class="col-phone">{{ item.phone|default:"—" }}</td>
+              <td class="col-email">{{ item.email|default:"—" }}</td>
+              <td class="col-action">
+                <div class="action-btn-container">
+                  <button class="action-btn" aria-label="Manage supplier">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="manage-icon"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr class="inventory-details" hidden>
+              <td colspan="9">
+                <div class="details-inner">
+                  <div class="details-header">Details</div>
+
+                  <!-- Top cards row (summary metrics) -->
+                  <div class="details-cards" role="region" aria-label="Supplier summary">
+                    <div class="details-card">
+                      <div class="card-label">Total Spend</div>
+                      <div class="card-value">{{ item.total_spend|default:"—" }}</div>
+                    </div>
+                    <div class="details-card">
+                      <div class="card-label">Pending Invoices</div>
+                      <div class="card-value">
+                        <span class="card-main">{{ item.pending_invoices|default:"—" }}</span>
+                        {% if item.pending_invoice_count is not none %}
+                          <span class="card-note">({{ item.pending_invoice_count }} invoices)</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="details-card">
+                      <div class="card-label">Items Supplied</div>
+                      <div class="card-value">
+                        {% if item.products_supplied %}
+                          {{ item.products_supplied|length }}
+                        {% else %}
+                          —
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="details-card">
+                      <div class="card-label">Supplier Hold</div>
+                      <div class="card-value">
+                        <span class="card-main">{{ item.supplier_hold|default:"—" }}</span>
+                        <span class="card-note">Items</span>
+                      </div>
+                    </div>
+                    <div class="details-card">
+                      <div class="card-label">Active Orders</div>
+                      <div class="card-value">{{ item.active_orders|default:"—" }}</div>
+                    </div>
+                  </div>
+
+                  <!-- Two-column details grid -->
+                  <div class="details-grid details-grid-two-col" aria-hidden="false">
+                    <div class="detail-item">
+                      <div class="detail-label">Location</div>
+                      <div class="detail-value">{{ item.location|default:"—" }}</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">Delivery Lead Time</div>
+                      <div class="detail-value">{{ item.delivery_lead_time|default:"—" }}</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">Bank Name</div>
+                      <div class="detail-value">{{ item.bank_name|default:"—" }}</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">Bank Account Details</div>
+                      <div class="detail-value">{{ item.bank_account_details|default:"—" }}</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">IBAN Number</div>
+                      <div class="detail-value">{{ item.iban_number|default:"—" }}</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">Last Ordered Date</div>
+                      <div class="detail-value">{{ item.last_ordered_date|default:"—" }}</div>
+                    </div>
+
+                    <div class="detail-item detail-full">
+                      <div class="detail-label">Products Supplied (Item — Price)</div>
+                      <div class="detail-value">
+                        {% if item.products_supplied %}
+                          <ul class="products-supplied-list">
+                            {% for p in item.products_supplied %}
+                              <li>{{ p.item_name }} — {{ p.price_per_unit }}</li>
+                            {% endfor %}
+                          </ul>
+                        {% else %}
+                          — 
+                        {% endif %}
+                      </div>
+                    </div>
+
+                    <div class="detail-item detail-full">
+                      <div class="detail-label">Notes / Internal Comments</div>
+                      <div class="detail-value">{{ item.notes|default:"—" }}</div>
+                    </div>
+
+                  </div>
+
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="table-footer">
+        <div class="table-footer-left">
+          <label class="show-label">Show
+            <select class="page-size" aria-label="Results per page">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <span class="entries-info">Showing 1 to 10 of 50 entries</span>
+        </div>
+        <div class="table-footer-right">
+          <nav class="pagination" aria-label="Pagination">
+            <button class="page-prev" aria-label="Previous page">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </button>
+            <button class="page-num active" aria-current="page">1</button>
+            <button class="page-num">2</button>
+            <button class="page-num">3</button>
+            <span class="page-dots">…</span>
+            <button class="page-num">10</button>
+            <button class="page-next" aria-label="Next page">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  (function () {
+    var rightIcon = "{% static 'icons/chevron-right.svg' %}";
+    var downIcon = "{% static 'icons/chevron-down.svg' %}";
+    function toggleRow(button) {
+      var row = button.closest('tr');
+      if (!row) return;
+      var details = row.nextElementSibling;
+      var img = button.querySelector('img.expand-icon');
+      var expanded = row.classList.toggle('expanded');
+      if (details && details.classList.contains('inventory-details')) {
+        if (expanded) {
+          details.removeAttribute('hidden');
+        } else {
+          details.setAttribute('hidden', '');
+        }
+      }
+      if (img) {
+        img.setAttribute('src', expanded ? downIcon : rightIcon);
+      }
+      // update aria-expanded
+      button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.expand');
+      if (btn) {
+        e.preventDefault();
+        toggleRow(btn);
+      }
+    });
+  })();
+</script>
+
+<script>
+  (function () {
+    var selectAll = document.querySelector('.select-all');
+    var table = document.querySelector('.inventory-table');
+    if (!selectAll || !table) return;
+
+    function updateSelectAllState() {
+      var rowCheckboxes = table.querySelectorAll('tbody input.row-select');
+      var total = rowCheckboxes.length;
+      var checked = 0;
+      rowCheckboxes.forEach(function (cb) { if (cb.checked) checked++; });
+      if (checked === 0) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+      } else if (checked === total) {
+        selectAll.checked = true;
+        selectAll.indeterminate = false;
+      } else {
+        selectAll.checked = false;
+        selectAll.indeterminate = true;
+      }
+    }
+
+    selectAll.addEventListener('change', function () {
+      var checked = selectAll.checked;
+      var rowCheckboxes = table.querySelectorAll('tbody input.row-select');
+      rowCheckboxes.forEach(function (cb) { cb.checked = checked; });
+    });
+
+    table.addEventListener('change', function (e) {
+      if (e.target && e.target.matches('input.row-select')) {
+        updateSelectAllState();
+      }
+    });
+
+    // initialize state
+    updateSelectAllState();
+  })();
+</script>
+
+<script>
+  (function () {
+    var tabButtons = document.querySelectorAll('.tab-btn');
+    var table = document.querySelector('.inventory-table');
+    if (!tabButtons.length || !table) return;
+
+    var tabMap = {
+      all: ['*'],
+      new: ['Under Review', 'Pending'],
+      pending: ['Pending'],
+      'in-process': ['In Process', 'Approved', 'Out for Delivery'],
+      delivered: ['Delivered'],
+      completed: ['Completed'],
+      rejected: ['Rejected']
+    };
+
+    function statusForRow(row) {
+      var pill = row.querySelector('.col-status .status-pill');
+      return pill ? pill.textContent.trim() : '';
+    }
+
+    function applyFilter(key) {
+      var allowed = tabMap[key];
+      var rows = table.querySelectorAll('tbody tr.inventory-row');
+      rows.forEach(function (row) {
+        var status = statusForRow(row);
+        var show = false;
+        if (allowed && allowed[0] === '*') {
+          show = true;
+        } else if (allowed) {
+          show = allowed.indexOf(status) !== -1;
+        }
+        row.style.display = show ? '' : 'none';
+      });
+    }
+
+    function updateBadges() {
+      var counts = {};
+      Object.keys(tabMap).forEach(function (k) { counts[k] = 0; });
+      var rows = table.querySelectorAll('tbody tr.inventory-row');
+      rows.forEach(function (row) {
+        var status = statusForRow(row);
+        // increment counts for matching tabs
+        Object.keys(tabMap).forEach(function (k) {
+          var allowed = tabMap[k];
+          if (allowed[0] === '*' || allowed.indexOf(status) !== -1) {
+            counts[k]++;
+          }
+        });
+      });
+      tabButtons.forEach(function (btn) {
+        var key = btn.getAttribute('data-key');
+        var badge = btn.querySelector('.tab-badge');
+        if (badge) badge.textContent = counts[key] || 0;
+      });
+    }
+
+    tabButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        tabButtons.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var key = btn.getAttribute('data-key');
+        applyFilter(key);
+      });
+    });
+
+    // initialize UI
+    updateBadges();
+    // show only 'all' by default
+    applyFilter('all');
+  })();
+</script>
+
+{% endblock %}
+
+

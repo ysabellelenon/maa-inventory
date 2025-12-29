@@ -22,5 +22,6 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("inventory/", views.inventory, name="inventory"),
     path("requests/", views.requests, name="requests"),
+    path("suppliers/", views.suppliers, name="suppliers"),
     path('admin/', admin.site.urls),
 ]
