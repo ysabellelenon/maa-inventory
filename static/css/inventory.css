@@ -1,15 +1,32 @@
 /* Inventory page styles (moved from dashboard.css) */
 .inventory-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .header-actions .btn-filter{background:#f3f4f6;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;cursor:pointer;}
+
+/* Filter button inside table container */
+.inventory-card .table-actions{display:flex;justify-content:flex-end;padding:12px 12px 12px 12px;margin-bottom:12px;}
+.inventory-card .btn-filter{
+  background:#ffffff;
+  border:1px solid #e6e6e6;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-weight:600;
+  color:var(--text);
+}
+.inventory-card .btn-filter img{width:16px;height:16px;display:inline-block;}
 .inventory-container{margin-top:8px;}
 .inventory-card{background:var(--card-bg);padding:8px;border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,0.03);overflow:hidden;}
 .inventory-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed;}
 .inventory-table thead th{text-align:left;padding:10px 8px;color:var(--text);font-weight:600;border-bottom:1px solid #f3f3f3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .inventory-table .col-code{width:120px;}
-.inventory-table .col-name{width:260px;}
+.inventory-table .col-name{width:220px;}
+.inventory-table .col-requested{width:140px;}
 .inventory-table .col-desc{max-width:160px;}
 .inventory-table .col-init,.inventory-table .col-remain,.inventory-table .col-min{width:110px;}
-.inventory-table .col-status{width:120px;}
+.inventory-table .col-status{width:160px;}
 
 /* Align numeric/quantity header text to the right so headers line up with right-aligned data cells */
 .inventory-table thead th.col-init,
@@ -23,7 +40,7 @@
 .inventory-table .col-check{width:48px;}
 .inventory-table tbody .col-code{width:120px;color:#6b7280;vertical-align:middle;padding-right:8px;}
 .inventory-table tbody .col-code .expand{margin-right:6px;}
-.inventory-table tbody .col-name{width:340px;vertical-align:middle;}
+.inventory-table tbody .col-name{width:300px;vertical-align:middle;}
 .inventory-table tbody .item-thumb{width:36px;height:36px;border-radius:6px;background:#fff;border:1px solid #f2f2f2;object-fit:cover;flex:0 0 36px;margin-right:12px;vertical-align:middle;}
 .inventory-table tbody .item-meta{display:inline-block;vertical-align:middle;max-width:calc(100% - 52px);}
 .inventory-table tbody .item-meta .item-title{font-weight:500;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle;}
@@ -47,13 +64,24 @@
 .inventory-table tbody .col-status{
   text-align:left;
   padding-left:8px;
-  width:120px;
+  width:160px;
 }
 .inventory-table tbody .expand{background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:6px;}
 .inventory-row.row-low{background:rgba(245,120,120,0.12);} /* subtle pink band for low rows */
 .status-pill{display:inline-block;padding:6px 10px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid transparent;}
 .status-good{background:#e6ffef;color:#087f3b;border-color:#d1f6de;}
 .status-low{background:#ffecec;color:#b91c1c;border-color:#f7d0d0;}
+
+
+/* Request status variants */
+.status-pending{background:#f3f4f6;color:#6b7280;border-color:#e5e7eb;} /* gray */
+.status-under-review{background:#fff7cc;color:#92400e;border-color:#fde68a;} /* yellow */
+.status-approved{background:#e6f0ff;color:#1e40af;border-color:#c7e0ff;} /* blue */
+.status-rejected{background:#fff0f0;color:#ef4444;border-color:#fca5a5;} /* red */
+.status-in-process{background:#f5f3ff;color:#7c3aed;border-color:#e9d5ff;} /* purple */
+.status-out-for-delivery{background:#f5f3ff;color:#7c3aed;border-color:#e9d5ff;} /* purple */
+.status-delivered{background:#fffbe6;color:#92400e;border-color:#fde68a;} /* yellow */
+.status-completed{background:#e6ffef;color:#10b981;border-color:#c8f6df;} /* green */
 
 
 /* Allow Item Code to wrap instead of truncating with ellipsis */
@@ -135,4 +163,30 @@
   color: #111827;
 }
 
+/* Action button (manage) */
+.inventory-table .col-action {
+  width: 72px;
+  text-align: center;
+}
+.action-btn-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.action-btn {
+  background: #ffffff;
+  border: 1px solid #D9BD7D;
+  border-radius: 4px;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+  color: #D9BD7D;
+  stroke: #D9BD7D;
+}
 

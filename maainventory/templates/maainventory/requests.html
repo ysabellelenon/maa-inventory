@@ -1,0 +1,299 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/requests.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <h2>Stock Requests</h2>
+  </div>
+
+  <div class="inventory-container">
+    <div class="tabs-container">
+      <div class="tabs">
+        <button class="tab-btn active" data-key="all">All <span class="tab-badge">0</span></button>
+        <button class="tab-btn" data-key="new">New <span class="tab-badge">0</span></button>
+        <button class="tab-btn" data-key="pending">Pending <span class="tab-badge">0</span></button>
+        <button class="tab-btn" data-key="in-process">In Process <span class="tab-badge">0</span></button>
+        <button class="tab-btn" data-key="delivered">Delivered <span class="tab-badge">0</span></button>
+        <button class="tab-btn" data-key="completed">Completed <span class="tab-badge">0</span></button>
+        <button class="tab-btn" data-key="rejected">Rejected <span class="tab-badge">0</span></button>
+      </div>
+    </div>
+    <div class="inventory-card">
+      <div class="table-actions">
+        <div class="table-actions-left">
+          <div class="table-search">
+            <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
+            <input class="table-search-input" placeholder="Search by requestor or item" aria-label="Search requests" />
+          </div>
+          <button class="btn-filter">
+            <img src="{% static 'icons/filter.svg' %}" alt="" />
+            <span>Filter</span>
+          </button>
+        </div>
+      </div>
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" class="select-all" aria-label="Select all requests" /></th>
+            <th class="col-expand"></th>
+            <th class="col-code">Request ID</th>
+            <th class="col-requestor">Requestor</th>
+            <th class="col-branch">Branch</th>
+            <th class="col-name">Item Name</th>
+            <th class="col-requested">Requested</th>
+            <th class="col-status">Status</th>
+            <th class="col-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}">
+              <td class="col-check"><input type="checkbox" class="row-select" aria-label="select request #{{ forloop.counter }}" /></td>
+              <td class="col-expand">
+                <button class="expand" aria-hidden="true">
+                  <img class="expand-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
+                </button>
+              </td>
+              <td class="col-code">#{{ forloop.counter }}</td>
+              <td class="col-requestor">{{ item.requestor|default:"—" }}</td>
+              <td class="col-branch">{{ item.branch|default:"—" }}</td>
+              <td class="col-name">
+                <img class="item-thumb" src="{% static 'images/sample-item.jpg' %}" alt="" />
+                <div class="item-meta">
+                  <div class="item-title">{{ item.name }}</div>
+                </div>
+              </td>
+              <td class="col-requested">{{ item.requested_date|default:"—" }}</td>
+              <td class="col-status">
+                {% if item.status == 'Pending' %}
+                  <span class="status-pill status-pending">{{ item.status }}</span>
+                {% elif item.status == 'Under Review' %}
+                  <span class="status-pill status-under-review">{{ item.status }}</span>
+                {% elif item.status == 'Approved' %}
+                  <span class="status-pill status-approved">{{ item.status }}</span>
+                {% elif item.status == 'Rejected' %}
+                  <span class="status-pill status-rejected">{{ item.status }}</span>
+                {% elif item.status == 'In Process' %}
+                  <span class="status-pill status-in-process">{{ item.status }}</span>
+                {% elif item.status == 'Out for Delivery' %}
+                  <span class="status-pill status-out-for-delivery">{{ item.status }}</span>
+                {% elif item.status == 'Delivered' %}
+                  <span class="status-pill status-delivered">{{ item.status }}</span>
+                {% elif item.status == 'Completed' %}
+                  <span class="status-pill status-completed">{{ item.status }}</span>
+                {% else %}
+                  <span class="status-pill">{{ item.status }}</span>
+                {% endif %}
+              </td>
+              <td class="col-action">
+                <div class="action-btn-container">
+                  <button class="action-btn" aria-label="Manage request">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="manage-icon"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr class="inventory-details" hidden>
+              <td colspan="9">
+                <div class="details-inner">
+                  <div class="details-header">Details</div>
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <div class="detail-label">Foodics</div>
+                      <div class="detail-value">{{ item.foodics|default:"123" }}</div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-label">Talabat</div>
+                      <div class="detail-value">{{ item.talabat|default:"45" }}</div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="table-footer">
+        <div class="table-footer-left">
+          <label class="show-label">Show
+            <select class="page-size" aria-label="Results per page">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <span class="entries-info">Showing 1 to 10 of 50 entries</span>
+        </div>
+        <div class="table-footer-right">
+          <nav class="pagination" aria-label="Pagination">
+            <button class="page-prev" aria-label="Previous page">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </button>
+            <button class="page-num active" aria-current="page">1</button>
+            <button class="page-num">2</button>
+            <button class="page-num">3</button>
+            <span class="page-dots">…</span>
+            <button class="page-num">10</button>
+            <button class="page-next" aria-label="Next page">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  (function () {
+    var rightIcon = "{% static 'icons/chevron-right.svg' %}";
+    var downIcon = "{% static 'icons/chevron-down.svg' %}";
+    function toggleRow(button) {
+      var row = button.closest('tr');
+      if (!row) return;
+      var details = row.nextElementSibling;
+      var img = button.querySelector('img.expand-icon');
+      var expanded = row.classList.toggle('expanded');
+      if (details && details.classList.contains('inventory-details')) {
+        if (expanded) {
+          details.removeAttribute('hidden');
+        } else {
+          details.setAttribute('hidden', '');
+        }
+      }
+      if (img) {
+        img.setAttribute('src', expanded ? downIcon : rightIcon);
+      }
+      // update aria-expanded
+      button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.expand');
+      if (btn) {
+        e.preventDefault();
+        toggleRow(btn);
+      }
+    });
+  })();
+</script>
+
+<script>
+  (function () {
+    var selectAll = document.querySelector('.select-all');
+    var table = document.querySelector('.inventory-table');
+    if (!selectAll || !table) return;
+
+    function updateSelectAllState() {
+      var rowCheckboxes = table.querySelectorAll('tbody input.row-select');
+      var total = rowCheckboxes.length;
+      var checked = 0;
+      rowCheckboxes.forEach(function (cb) { if (cb.checked) checked++; });
+      if (checked === 0) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+      } else if (checked === total) {
+        selectAll.checked = true;
+        selectAll.indeterminate = false;
+      } else {
+        selectAll.checked = false;
+        selectAll.indeterminate = true;
+      }
+    }
+
+    selectAll.addEventListener('change', function () {
+      var checked = selectAll.checked;
+      var rowCheckboxes = table.querySelectorAll('tbody input.row-select');
+      rowCheckboxes.forEach(function (cb) { cb.checked = checked; });
+    });
+
+    table.addEventListener('change', function (e) {
+      if (e.target && e.target.matches('input.row-select')) {
+        updateSelectAllState();
+      }
+    });
+
+    // initialize state
+    updateSelectAllState();
+  })();
+</script>
+
+<script>
+  (function () {
+    var tabButtons = document.querySelectorAll('.tab-btn');
+    var table = document.querySelector('.inventory-table');
+    if (!tabButtons.length || !table) return;
+
+    var tabMap = {
+      all: ['*'],
+      new: ['Under Review', 'Pending'],
+      pending: ['Pending'],
+      'in-process': ['In Process', 'Approved', 'Out for Delivery'],
+      delivered: ['Delivered'],
+      completed: ['Completed'],
+      rejected: ['Rejected']
+    };
+
+    function statusForRow(row) {
+      var pill = row.querySelector('.col-status .status-pill');
+      return pill ? pill.textContent.trim() : '';
+    }
+
+    function applyFilter(key) {
+      var allowed = tabMap[key];
+      var rows = table.querySelectorAll('tbody tr.inventory-row');
+      rows.forEach(function (row) {
+        var status = statusForRow(row);
+        var show = false;
+        if (allowed && allowed[0] === '*') {
+          show = true;
+        } else if (allowed) {
+          show = allowed.indexOf(status) !== -1;
+        }
+        row.style.display = show ? '' : 'none';
+      });
+    }
+
+    function updateBadges() {
+      var counts = {};
+      Object.keys(tabMap).forEach(function (k) { counts[k] = 0; });
+      var rows = table.querySelectorAll('tbody tr.inventory-row');
+      rows.forEach(function (row) {
+        var status = statusForRow(row);
+        // increment counts for matching tabs
+        Object.keys(tabMap).forEach(function (k) {
+          var allowed = tabMap[k];
+          if (allowed[0] === '*' || allowed.indexOf(status) !== -1) {
+            counts[k]++;
+          }
+        });
+      });
+      tabButtons.forEach(function (btn) {
+        var key = btn.getAttribute('data-key');
+        var badge = btn.querySelector('.tab-badge');
+        if (badge) badge.textContent = counts[key] || 0;
+      });
+    }
+
+    tabButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        tabButtons.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var key = btn.getAttribute('data-key');
+        applyFilter(key);
+      });
+    });
+
+    // initialize UI
+    updateBadges();
+    // show only 'all' by default
+    applyFilter('all');
+  })();
+</script>
+
+{% endblock %}
+
+

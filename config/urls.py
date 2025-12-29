@@ -21,5 +21,6 @@ from maainventory import views
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("inventory/", views.inventory, name="inventory"),
+    path("requests/", views.requests, name="requests"),
     path('admin/', admin.site.urls),
 ]

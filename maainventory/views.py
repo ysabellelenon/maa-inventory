@@ -67,3 +67,22 @@ def inventory(request):
     }
 
     return render(request, "maainventory/inventory.html", context)
+
+def requests(request):
+    """Render a prototype requests page that mirrors the inventory UI for now."""
+    items = [
+        {"code": "001", "requestor": "John Paul Bartolome", "branch": "Kucu Al Maabela", "name": "Bucket", "requested_date": "12/25/2025", "status": "Pending"},
+        {"code": "002", "requestor": "Nada Al-Daghari", "branch": "Boom Al Khoud", "name": "Barbecue Bag", "requested_date": "12/23/2025", "status": "Under Review"},
+        {"code": "003", "requestor": "Gloria Ysabelle Lenon", "branch": "Thoum Sohar Gate", "name": "Burger Box Large", "requested_date": "12/18/2025", "status": "Approved"},
+        {"code": "004", "requestor": "Ali Al-Ismaili", "branch": "Boom Sohar Gate", "name": "Barbecue Bag", "requested_date": "12/18/2025", "status": "Rejected"},
+        {"code": "005", "requestor": "Omran Al-Ismaili", "branch": "Kucu Al Khuwair", "name": "Straws", "requested_date": "12/17/2025", "status": "In Process"},
+        {"code": "006", "requestor": "Aliya Al-Haimli", "branch": "Kucu Avenues Mall", "name": "Curve Fries Cup", "requested_date": "12/12/2025", "status": "Out for Delivery"},
+        {"code": "007", "requestor": "Aliya Al-Haimli", "branch": "Kucu Avenues Mall", "name": "Curve Fries Cup", "requested_date": "12/12/2025", "status": "Delivered"},
+        {"code": "008", "requestor": "Aliya Al-Haimli", "branch": "Kucu Avenues Mall", "name": "Curve Fries Cup", "requested_date": "12/12/2025", "status": "Completed"},
+    ]
+
+    context = {
+        "items": items,
+    }
+
+    return render(request, "maainventory/requests.html", context)

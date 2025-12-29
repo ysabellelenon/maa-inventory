@@ -1,0 +1,98 @@
+/* Requests page styles
+   This file imports the shared inventory styles and provides a place
+   for request-page-specific overrides.
+*/
+@import url('inventory.css');
+
+/* Example override: slightly increase spacing above the table for requests page */
+.inventory-card.requests-page .table-actions {
+  padding-top: 14px;
+}
+
+/* Keep this file intentionally small for now; we can add request-specific
+   styles here later without touching the shared inventory.css file. */
+
+/* Pagination footer */
+.inventory-card .table-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  border-top:1px solid #f3f3f3;
+  gap:12px;
+}
+.table-footer-left{display:flex;align-items:center;gap:12px;}
+.table-footer-left .show-label{font-size:13px;color:#374151;display:flex;align-items:center;gap:8px;}
+.table-footer-left .page-size{padding:6px 8px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;}
+.table-footer-left .entries-info{color:#6b7280;font-size:13px;}
+.table-footer-right .pagination{display:flex;align-items:center;gap:8px;}
+.pagination button{background:#fff;border:1px solid #eef2f6;padding:6px 10px;border-radius:8px;cursor:pointer;color:#374151;}
+.pagination button img{width:12px;height:12px;display:block;}
+.pagination .page-num.active{border:1.5px solid #D9BD7D;color:#D9BD7D;font-weight:600;}
+.pagination .page-dots{padding:0 6px;color:#9ca3af;}
+
+/* Table actions: search + filter on the left */
+.inventory-card .table-actions{display:flex;justify-content:flex-start;padding:12px 12px 12px 12px;margin-bottom:12px;}
+.inventory-card .table-actions-left{display:flex;align-items:center;gap:12px;}
+.table-search{position:relative;display:inline-block;}
+.table-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:0.7;}
+.table-search-input{
+  width:260px;
+  box-sizing:border-box;
+  padding:0 12px 0 34px;
+  height:36px;
+  border-radius:8px;
+  border:1px solid #e6e6e6;
+  background:#fff;
+  font-size:14px;
+}
+.table-search-input::placeholder{font-size:13px;color:#9ca3af;}
+.inventory-card .btn-filter{
+  background:#ffffff;
+  border:1px solid #e6e6e6;
+  height:36px;
+  padding:0 12px;
+  border-radius:8px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-weight:600;
+  color:var(--text);
+}
+.inventory-card .btn-filter img{width:16px;height:16px;display:inline-block;}
+
+/* Tabs above table */
+.tabs-container{margin-bottom:12px;}
+.tabs{display:flex;gap:12px;align-items:center;padding:8px 12px;background:transparent;}
+.tab-btn{background:transparent;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:8px;color:#6b7280;}
+.tab-btn .tab-badge{display:inline-block;padding:3px 8px;border-radius:999px;font-weight:700;font-size:12px;margin-left:6px;}
+.tab-btn.active{padding-bottom:6px;border-bottom:3px solid transparent;}
+.tab-btn.active .tab-badge{color:#fff;}
+
+/* Tab colors in order: All, New, Pending, In Process, Delivered, Completed, Rejected */
+.tab-btn[data-key="all"]{color:#6b7280;}
+.tab-btn[data-key="all"] .tab-badge{background:#D9BD7D;color:#fff;}
+.tab-btn[data-key="new"]{color:#6b7280;}
+.tab-btn[data-key="new"] .tab-badge{background:#10B981;color:#fff;} /* green */
+.tab-btn[data-key="pending"]{color:#6b7280;}
+.tab-btn[data-key="pending"] .tab-badge{background:#3B82F6;color:#fff;} /* lighter blue */
+.tab-btn[data-key="in-process"]{color:#6b7280;}
+.tab-btn[data-key="in-process"] .tab-badge{background:#7C3AED;color:#fff;} /* purple */
+.tab-btn[data-key="delivered"]{color:#6b7280;}
+.tab-btn[data-key="delivered"] .tab-badge{background:#7C3AED;color:#fff;} /* purple */
+.tab-btn[data-key="completed"]{color:#6b7280;}
+.tab-btn[data-key="completed"] .tab-badge{background:#10B981;color:#fff;} /* green */
+.tab-btn[data-key="rejected"]{color:#6b7280;}
+.tab-btn[data-key="rejected"] .tab-badge{background:#EF4444;color:#fff;} /* red */
+
+/* Active tab underline uses the badge color */
+.tab-btn.active[data-key="all"]{border-bottom-color:#D9BD7D;color:#111827;}
+.tab-btn.active[data-key="new"]{border-bottom-color:#10B981;color:#111827;}
+.tab-btn.active[data-key="pending"]{border-bottom-color:#3B82F6;color:#111827;}
+.tab-btn.active[data-key="in-process"]{border-bottom-color:#7C3AED;color:#111827;}
+.tab-btn.active[data-key="delivered"]{border-bottom-color:#7C3AED;color:#111827;}
+.tab-btn.active[data-key="completed"]{border-bottom-color:#10B981;color:#111827;}
+.tab-btn.active[data-key="rejected"]{border-bottom-color:#EF4444;color:#111827;}
+
+
