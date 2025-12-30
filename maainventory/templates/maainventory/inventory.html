@@ -64,8 +64,12 @@
               </td>
               <td class="col-action">
                 <div class="action-btn-container">
-                  <button class="action-btn" aria-label="Manage item">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="manage-icon"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+                  <button class="action-btn" aria-label="More actions"
+                          data-code="{{ item.code }}"
+                          data-name="{{ item.name }}"
+                          data-supplier="{{ item.supplier|default:'—' }}"
+                          data-image="{% static 'images/sample-item.jpg' %}">
+                    <img src="{% static 'icons/more.svg' %}" alt="More" class="action-icon" />
                   </button>
                 </div>
               </td>
@@ -154,6 +158,260 @@
   })();
 </script>
 
+<!-- Side panel: Audit / Manage item -->
+<div class="overlay" hidden></div>
+<div class="action-menu" hidden role="menu" aria-hidden="true">
+  <button class="action-menu-item" data-action="edit">Edit Item Info</button>
+  <button class="action-menu-item" data-action="adjust">Adjust Stock</button>
+</div>
+<aside class="side-panel" aria-hidden="true" hidden>
+  <div class="side-panel-inner">
+    
+
+    <div class="panel-body">
+      <section class="panel-left">
+        <div class="panel-title-wrap">
+          <h3 class="panel-title">
+            <img src="{% static 'icons/inventory.svg' %}" class="title-icon" alt="" />
+            Manage Item Stock
+          </h3>
+        </div>
+        <!-- product summary removed from left panel (now shown on the right) -->
+
+        <div class="panel-section">
+          <label class="field-label">Adjustment Type</label>
+          <div class="radio-row">
+            <label><input type="radio" name="adj-type" value="quantity" checked> Quantity Adjustment</label>
+            <label><input type="radio" name="adj-type" value="value"> Value Adjustment</label>
+          </div>
+        </div>
+
+        <div class="panel-section grid-3">
+          <div>
+            <label class="field-label">Physical Count</label>
+            <input class="panel-input" type="number" value="0" />
+          </div>
+          <div>
+            <label class="field-label">Available</label>
+            <input class="panel-input" type="number" value="0" />
+          </div>
+          <div>
+            <label class="field-label">Discrepancy</label>
+            <input class="panel-input" type="number" value="0" />
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <label class="field-label">Adjustment Reason</label>
+          <div class="reason-grid">
+            <button class="reason-btn">Damage</button>
+            <button class="reason-btn">Expire</button>
+            <button class="reason-btn">Misplacement</button>
+            <button class="reason-btn">Thief</button>
+            <button class="reason-btn">Stocktake Variance</button>
+            <button class="reason-btn">Custom</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <label class="field-label">Note</label>
+          <textarea class="panel-textarea" rows="4"></textarea>
+        </div>
+      </section>
+
+      <aside class="panel-right">
+        <button class="panel-close" aria-label="Close panel">×</button>
+        <div class="product-detail">
+          <div class="detail-header history-header">Product Detail</div>
+          <div class="product-summary product-summary--right">
+            <img class="product-thumb" src="{% static 'images/sample-item.jpg' %}" alt="" />
+            <div class="product-meta">
+              <div class="product-name" data-panel-field="name">Manage Item Stock</div>
+            </div>
+          </div>
+          <div class="product-meta-bottom">
+            <div class="product-sku" data-panel-field="code">Item Code: —</div>
+            <div class="product-supplier" data-panel-field="supplier">Supplier: —</div>
+          </div>
+        </div>
+
+        <div class="history">
+          <div class="history-header">Stock History</div>
+
+          <div class="timeline-card" aria-hidden="false">
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-dot" aria-hidden="true"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">
+                    10 Jun 2024
+                    <span class="timeline-badge">10 Unit</span>
+                  </div>
+                  <div class="timeline-meta">Adjust Stock — <strong>Bagus Fikri</strong></div>
+                </div>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-dot" aria-hidden="true"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">
+                    09 Jun 2024
+                    <span class="timeline-badge">17 Unit</span>
+                  </div>
+                  <div class="timeline-meta">Adjust Stock — <strong>Bagus Fikri</strong></div>
+                </div>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-dot" aria-hidden="true"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">
+                    08 Jun 2024
+                    <span class="timeline-badge">28 Unit</span>
+                  </div>
+                  <div class="timeline-meta">Adjust Stock — <strong>Bagus Fikri</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="panel-footer" role="region" aria-label="Panel actions">
+      <div class="panel-footer-inner">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-save primary">Save</button>
+      </div>
+    </div>
+
+  </div>
+</aside>
+
+<script>
+  (function () {
+    var overlay = document.querySelector('.overlay');
+    var panel = document.querySelector('.side-panel');
+
+    function openPanel(data) {
+      // populate image if provided (set for all thumbnails in the panel)
+      var productImgs = panel.querySelectorAll('.product-thumb');
+      if (data.image && productImgs && productImgs.length) {
+        productImgs.forEach(function (img) {
+          img.setAttribute('src', data.image);
+        });
+      }
+
+      // populate text fields
+      panel.querySelectorAll('[data-panel-field]').forEach(function (el) {
+        var key = el.getAttribute('data-panel-field');
+        if (data[key]) {
+          if (el.classList.contains('product-supplier')) {
+            el.textContent = 'Supplier: ' + data[key];
+          } else if (el.classList.contains('product-name') || el.classList.contains('detail-name')) {
+            el.textContent = data[key];
+          } else if (el.classList.contains('product-sku') || el.classList.contains('detail-sku')) {
+            el.textContent = 'Item Code: ' + data[key];
+          } else {
+            el.textContent = data[key];
+          }
+        }
+      });
+
+      overlay.removeAttribute('hidden');
+      panel.removeAttribute('hidden');
+      panel.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('panel-open');
+    }
+
+    function closePanel() {
+      overlay.setAttribute('hidden', '');
+      panel.setAttribute('hidden', '');
+      panel.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('panel-open');
+    }
+
+    var actionMenu = document.querySelector('.action-menu');
+    var currentActionButton = null;
+
+    function showActionMenu(button) {
+      if (!actionMenu) return;
+      currentActionButton = button;
+      var rect = button.getBoundingClientRect();
+      // temporarily show menu to measure its width
+      actionMenu.removeAttribute('hidden');
+      actionMenu.setAttribute('aria-hidden', 'false');
+      // ensure it's not visible while measuring (keeps flow)
+      actionMenu.style.left = '-9999px';
+      actionMenu.style.top = '-9999px';
+      var menuWidth = actionMenu.offsetWidth || 160;
+      var left = rect.right + window.scrollX - menuWidth; // align right edges
+      var top = rect.bottom + window.scrollY + 6;
+      // clamp to viewport
+      var minLeft = 8 + window.scrollX;
+      if (left < minLeft) left = minLeft;
+      actionMenu.style.left = left + 'px';
+      actionMenu.style.top = top + 'px';
+    }
+
+    function hideActionMenu() {
+      if (!actionMenu) return;
+      actionMenu.setAttribute('hidden', '');
+      actionMenu.setAttribute('aria-hidden', 'true');
+      currentActionButton = null;
+    }
+
+    document.addEventListener('click', function (e) {
+      var manageBtn = e.target.closest && e.target.closest('.action-btn');
+      // Click on the More action button -> toggle menu
+      if (manageBtn) {
+        e.preventDefault();
+        // if menu is open and the same button was clicked, hide it
+        if (actionMenu && actionMenu.getAttribute('aria-hidden') === 'false' && currentActionButton === manageBtn) {
+          hideActionMenu();
+        } else {
+          showActionMenu(manageBtn);
+        }
+        return;
+      }
+
+      // Menu action clicked
+      var menuItem = e.target.closest && e.target.closest('.action-menu-item');
+      if (menuItem && currentActionButton) {
+        e.preventDefault();
+        var action = menuItem.getAttribute('data-action');
+        var btn = currentActionButton;
+        var data = {
+          code: btn.getAttribute('data-code') || '—',
+          name: btn.getAttribute('data-name') || '—',
+          supplier: btn.getAttribute('data-supplier') || '—',
+          image: btn.getAttribute('data-image') || ''
+        };
+        hideActionMenu();
+        if (action === 'adjust') {
+          openPanel(data);
+        } else if (action === 'edit') {
+          // reuse same panel for now; content will be changed later
+          openPanel(data);
+        }
+        return;
+      }
+
+      // close panel or menu when clicking close/cancel or overlay
+      if (e.target.closest && (e.target.closest('.panel-close') || e.target.closest('.btn-cancel') || e.target === overlay)) {
+        e.preventDefault();
+        hideActionMenu();
+        closePanel();
+        return;
+      }
+
+      // click outside menu hides it
+      if (actionMenu && !e.target.closest('.action-menu')) {
+        hideActionMenu();
+      }
+    });
+  })();
+</script>
 {% endblock %}
 
  
