@@ -31,11 +31,12 @@
             <th class="col-expand"></th>
             <th class="col-code">Item Code</th>
             <th class="col-name">Item Name</th>
-            <th class="col-desc">Description</th>
+            <th class="col-desc">Current Supplier</th>
             <th class="col-init">Qty</th>
             <th class="col-remain">Remaining</th>
             <th class="col-min">MIN</th>
             <th class="col-status">Status</th>
+            <th class="col-action">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -54,16 +55,23 @@
                   <div class="item-title">{{ item.name }}</div>
                 </div>
               </td>
-              <td class="col-desc">{{ item.desc }}</td>
+              <td class="col-desc">{{ item.supplier|default:"—" }}</td>
               <td class="col-init">{{ item.initial_qty }}</td>
               <td class="col-remain">{{ item.remaining_qty }}</td>
               <td class="col-min">{{ item.min_qty }}</td>
               <td class="col-status">
                 <span class="status-pill {% if item.status == 'LOW' %}status-low{% else %}status-good{% endif %}">{{ item.status }}</span>
               </td>
+              <td class="col-action">
+                <div class="action-btn-container">
+                  <button class="action-btn" aria-label="Manage item">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="manage-icon"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+                  </button>
+                </div>
+              </td>
             </tr>
             <tr class="inventory-details" hidden>
-              <td colspan="9">
+              <td colspan="10">
                 <div class="details-inner">
                   <div class="details-header">Details</div>
                   <div class="details-grid">

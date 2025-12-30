@@ -56,7 +56,7 @@
 .inventory-table .col-requested{width:140px;}
 .inventory-table .col-desc{max-width:160px;}
 .inventory-table .col-init,.inventory-table .col-remain,.inventory-table .col-min{width:110px;}
-.inventory-table .col-status{width:160px;}
+.inventory-table .col-status{width:140px;}
 
 /* Align numeric/quantity header text to the right so headers line up with right-aligned data cells */
 .inventory-table thead th.col-init,
@@ -75,7 +75,7 @@
 .inventory-table tbody .item-meta{display:inline-block;vertical-align:middle;max-width:calc(100% - 52px);}
 .inventory-table tbody .item-meta .item-title{font-weight:500;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle;}
 .inventory-table tbody .col-desc{
-  color:var(--muted);
+  color:#111827;
   max-width:160px;
   /* allow long descriptions to wrap instead of truncating */
   white-space: normal;
@@ -94,7 +94,7 @@
 .inventory-table tbody .col-status{
   text-align:left;
   padding-left:8px;
-  width:160px;
+  width:140px;
 }
 .inventory-table tbody .expand{background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:6px;}
 .inventory-row.row-low{background:rgba(245,120,120,0.12);} /* subtle pink band for low rows */
