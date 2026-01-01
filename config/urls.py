@@ -21,6 +21,7 @@ from maainventory import views
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("inventory/", views.inventory, name="inventory"),
+    path("inventory/edit/<str:code>/", views.edit_item, name="edit_item"),
     path("requests/", views.requests, name="requests"),
     path("suppliers/", views.suppliers, name="suppliers"),
     path('admin/', admin.site.urls),

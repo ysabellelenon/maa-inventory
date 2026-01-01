@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import Http404
 #
 # Views for the MAA Inventory prototype UI.
 #
@@ -148,12 +149,12 @@ def dashboard(request):
 def inventory(request):
     """Render a prototype inventory list page with sample data for the UI prototype."""
     items = [
-        {"code": "001", "name": "Burger Box Large", "desc": "For big burgers / meal sets", "initial_qty": "15,000", "remaining_qty": "9,200", "min_qty": "5,000", "status": "GOOD"},
-        {"code": "002", "name": "Barbeque Bag", "desc": "Large heavy-duty barbeque bags with reinforced handles — ideal for schools and bulk orders; grease-resistant lining for hot items.", "initial_qty": "2,550", "remaining_qty": "1,800", "min_qty": "500", "status": "GOOD"},
-        {"code": "003", "name": "Bucket", "desc": "Big buckets for 2-3 burgers", "initial_qty": "29,400", "remaining_qty": "18,000", "min_qty": "10,000", "status": "LOW"},
-        {"code": "004", "name": "Curve Fries Cup", "desc": "Fries cup", "initial_qty": "79,442", "remaining_qty": "62,700", "min_qty": "20,000", "status": "GOOD"},
-        {"code": "005", "name": "Sauce Bag", "desc": "Paper bags without handles", "initial_qty": "8,857", "remaining_qty": "6,000", "min_qty": "3,000", "status": "LOW"},
-        {"code": "006", "name": "Straws", "desc": "Straws with Logo", "initial_qty": "610,000", "remaining_qty": "450,000", "min_qty": "200,000", "status": "GOOD"},
+        {"code": "001", "name": "Burger Box Large", "desc": "For big burgers / meal sets", "initial_qty": "15,000", "remaining_qty": "9,200", "min_qty": "5,000", "status": "GOOD", "category": "Cups", "base_unit": "pcs"},
+        {"code": "002", "name": "Barbeque Bag", "desc": "Large heavy-duty barbeque bags with reinforced handles — ideal for schools and bulk orders; grease-resistant lining for hot items.", "initial_qty": "2,550", "remaining_qty": "1,800", "min_qty": "500", "status": "GOOD", "category": "Bags", "base_unit": "pcs"},
+        {"code": "003", "name": "Bucket", "desc": "Big buckets for 2-3 burgers", "initial_qty": "29,400", "remaining_qty": "18,000", "min_qty": "10,000", "status": "LOW", "category": "Containers", "base_unit": "pcs"},
+        {"code": "004", "name": "Curve Fries Cup", "desc": "Fries cup", "initial_qty": "79,442", "remaining_qty": "62,700", "min_qty": "20,000", "status": "GOOD", "category": "Cups", "base_unit": "pcs"},
+        {"code": "005", "name": "Sauce Bag", "desc": "Paper bags without handles", "initial_qty": "8,857", "remaining_qty": "6,000", "min_qty": "3,000", "status": "LOW", "category": "Packaging", "base_unit": "pcs"},
+        {"code": "006", "name": "Straws", "desc": "Straws with Logo", "initial_qty": "610,000", "remaining_qty": "450,000", "min_qty": "200,000", "status": "GOOD", "category": "Straws", "base_unit": "pcs"},
     ]
     # Map inventory items to supplier codes (sample mapping for prototype)
     item_to_supplier_code = {
@@ -176,6 +177,101 @@ def inventory(request):
     }
 
     return render(request, "maainventory/inventory.html", context)
+
+
+def edit_item(request, code):
+    """Render a simple edit page for a single inventory item (prototype).
+
+    This mirrors the sample data used by `inventory()` and renders
+    `maainventory/edit_item.html` with the selected item's fields.
+    """
+    # Recreate the same prototype items so we can look up by code.
+    items = [
+        {"code": "001", "name": "Burger Box Large", "desc": "For big burgers / meal sets", "initial_qty": "15,000", "remaining_qty": "9,200", "min_qty": "5,000", "status": "GOOD", "category": "Cups", "base_unit": "pcs"},
+        {"code": "002", "name": "Barbeque Bag", "desc": "Large heavy-duty barbeque bags with reinforced handles — ideal for schools and bulk orders; grease-resistant lining for hot items.", "initial_qty": "2,550", "remaining_qty": "1,800", "min_qty": "500", "status": "GOOD", "category": "Bags", "base_unit": "pcs"},
+        {"code": "003", "name": "Bucket", "desc": "Big buckets for 2-3 burgers", "initial_qty": "29,400", "remaining_qty": "18,000", "min_qty": "10,000", "status": "LOW", "category": "Containers", "base_unit": "pcs"},
+        {"code": "004", "name": "Curve Fries Cup", "desc": "Fries cup", "initial_qty": "79,442", "remaining_qty": "62,700", "min_qty": "20,000", "status": "GOOD", "category": "Cups", "base_unit": "pcs"},
+        {"code": "005", "name": "Sauce Bag", "desc": "Paper bags without handles", "initial_qty": "8,857", "remaining_qty": "6,000", "min_qty": "3,000", "status": "LOW", "category": "Packaging", "base_unit": "pcs"},
+        {"code": "006", "name": "Straws", "desc": "Straws with Logo", "initial_qty": "610,000", "remaining_qty": "450,000", "min_qty": "200,000", "status": "GOOD", "category": "Straws", "base_unit": "pcs"},
+    ]
+
+    item_to_supplier_code = {
+        "001": "SUP-003",
+        "002": "SUP-002",
+        "003": "SUP-004",
+        "004": "SUP-003",
+        "005": "SUP-002",
+        "006": "SUP-005",
+    }
+
+    suppliers_by_code = {s["code"]: s["name"] for s in SUPPLIERS}
+
+    # find the item by code
+    selected_item = None
+    for it in items:
+        if it.get("code") == code:
+            selected_item = dict(it)  # shallow copy to avoid mutating source
+            supplier_code = item_to_supplier_code.get(code)
+            selected_item["supplier"] = suppliers_by_code.get(supplier_code, "—") if supplier_code else "—"
+            break
+
+    if not selected_item:
+        raise Http404("Item not found")
+    # build a prototype list of suppliers for this item (primary + same-category matches)
+    supplier_code_primary = item_to_supplier_code.get(code)
+    item_suppliers = []
+    for s in SUPPLIERS:
+        include = False
+        if s.get("code") == supplier_code_primary:
+            include = True
+        # include suppliers in the same category
+        if not include and selected_item.get("category") and s.get("category") == selected_item.get("category"):
+            include = True
+        # fuzzy match: include if product names mention the item name tokens
+        if not include:
+            for p in s.get("products_supplied", []):
+                pname = p.get("item_name", "").lower()
+                for tok in selected_item.get("name", "").lower().split():
+                    if tok and tok in pname:
+                        include = True
+                        break
+                if include:
+                    break
+
+        if include:
+            # find a sensible price for this item from the supplier's product list
+            price = "—"
+            for p in s.get("products_supplied", []):
+                pname = p.get("item_name", "").lower()
+                if selected_item.get("name", "").lower() in pname or pname in selected_item.get("name", "").lower():
+                    price = p.get("price_per_unit", "—")
+                    break
+            if price == "—" and s.get("products_supplied"):
+                price = s["products_supplied"][0].get("price_per_unit", "—")
+
+            raw_available = s.get("supplier_hold", "—")
+            # normalize supplier_hold: treat "No" (or variants) as 0 available
+            if isinstance(raw_available, str) and raw_available.strip().lower().startswith("no"):
+                available = "0"
+            else:
+                available = raw_available
+            last = s.get("last_ordered_date", "—")
+            status = "Active" if (isinstance(raw_available, str) and raw_available.strip().lower() in ("no", "")) else "On Hold"
+            item_suppliers.append({
+                "id": s.get("code"),
+                "name": s.get("name"),
+                "price_per_unit": price,
+                "available": available,
+                "last_purchase_date": last,
+                "status": status,
+            })
+
+    context = {
+        "item": selected_item,
+        "item_suppliers": item_suppliers,
+    }
+
+    return render(request, "maainventory/edit_item.html", context)
 
 def requests(request):
     """Render a prototype requests page that mirrors the inventory UI for now."""

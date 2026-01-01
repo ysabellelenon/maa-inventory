@@ -395,8 +395,10 @@
         if (action === 'adjust') {
           openPanel(data);
         } else if (action === 'edit') {
-          // reuse same panel for now; content will be changed later
-          openPanel(data);
+          // navigate to dedicated edit page for the item
+          // encoded code ensures safe URL for special characters
+          var editUrl = '/inventory/edit/' + encodeURIComponent(data.code) + '/';
+          window.location.href = editUrl;
         }
         return;
       }

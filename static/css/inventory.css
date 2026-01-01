@@ -1,5 +1,51 @@
 /* Inventory page styles (moved from dashboard.css) */
 .inventory-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+
+/* Breadcrumb styles for edit page */
+.breadcrumbs{
+  font-size:13px;
+  color:#9ca3af;
+  margin-bottom:6px;
+  display:block;
+}
+.breadcrumbs a{
+  color:#9ca3af;
+  text-decoration:none;
+  margin-right:6px;
+}
+.breadcrumbs .sep{
+  margin:0 6px;
+  color:#9ca3af;
+}
+.breadcrumbs .active{
+  color:#D9BD7D;
+  font-weight:600;
+}
+/* Small item meta under the title */
+.item-submeta{
+  font-size:14px;
+  color:#9ca3af;
+  margin-top:6px;
+  margin-bottom:12px;
+  font-weight:500;
+  display:block;
+}
+/* make sure heading element uses the same muted color when styled as subheading */
+h3.item-submeta{ /* explicit selector for subheading semantics */
+  font-size:14px;
+  color:#9ca3af;
+  margin-top:6px;
+  margin-bottom:12px;
+  font-weight:500;
+}
+
+/* Larger item title on edit page */
+.page-header.inventory-header h2{
+  font-size:32px;
+  line-height:1.08;
+  font-weight:700;
+  margin:6px 0 8px 0;
+}
 .header-actions .btn-filter{background:#f3f4f6;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;cursor:pointer;}
 
 .inventory-card .table-actions{display:flex;justify-content:flex-start;padding:12px 12px 12px 12px;margin-bottom:12px;}
@@ -313,6 +359,68 @@
 }
 .action-menu-item:hover{background:#f3f4f6;border-radius:6px;}
 
+/* Toggle switch for locations */
+.switch{position:relative;display:inline-block;width:44px;height:24px}
+.switch input{display:none}
+.switch .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e6e6e6;border-radius:24px;transition:.18s}
+.switch .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;top:3px;background:white;border-radius:50%;transition:.18s;box-shadow:0 1px 2px rgba(0,0,0,0.06)}
+.switch input:checked + .slider{background:#D9BD7D}
+.switch input:checked + .slider:before{transform:translateX(20px)}
+.switch .slider{display:block}
+
+/* Inline save button on heading */
+.btn-save-inline{
+  background:#10b981;
+  border:none;
+  color:#ffffff;
+  padding:12px 20px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:none;
+}
+.btn-save-inline img{width:18px;height:18px;display:block;filter:brightness(0) invert(1);}
+.btn-save-inline span{font-size:16px;line-height:1;}
+.btn-save-inline:active{transform:translateY(1px)}
+
+/* Compact styles for location management panel */
+.locations-panel{font-size:13px;}
+.locations-panel .location-group-header{font-size:12px;padding:6px 0;border-bottom:1px solid #f3f4f6;}
+.locations-panel .location-item{font-size:13px;padding:8px 0;border-bottom:1px solid #fbfbfb;}
+.locations-panel .locations-list{max-height:260px;overflow:auto;}
+.locations-panel .panel-input{padding:8px 10px;}
+
+/* Smaller toggle for locations (override base .switch) */
+.locations-panel .switch{position:relative;display:inline-block;width:36px;height:20px}
+.locations-panel .switch input{display:none}
+.locations-panel .switch .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e6e6e6;border-radius:20px;transition:.18s}
+.locations-panel .switch .slider:before{position:absolute;content:"";height:14px;width:14px;left:3px;top:3px;background:white;border-radius:50%;transition:.18s;box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.locations-panel .switch input:checked + .slider{background:#D9BD7D}
+.locations-panel .switch input:checked + .slider:before{transform:translateX(16px)}
+.locations-panel .switch .slider{display:block}
+
+/* Title styling for locations panel */
+.locations-panel .locations-title{font-size:15px;color:#111827;margin:0;}
+/* Location panel action buttons (Select All / Unselect All) */
+.locations-panel .btn-filter{
+  /* slightly lighter background, gold text */
+  background:#FBF6EE;
+  color:#D9BD7D;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  font-weight:600;
+  cursor:pointer;
+  transition:background .12s ease, transform .08s ease;
+}
+.locations-panel .btn-filter:hover{
+  background:#F5ECE0;
+  transform:translateY(-1px);
+}
+
 .panel-title .title-icon{
   width:22px;
   height:22px;
@@ -353,6 +461,21 @@
 .reason-grid{display:flex;flex-wrap:wrap;gap:8px;}
 .reason-btn{padding:8px 10px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;cursor:pointer;}
 .panel-textarea{width:100%;border:1px solid #e6e6e6;border-radius:8px;padding:10px;background:#fff;}
+/* Fixed larger description textarea */
+.description-field{
+  box-sizing:border-box;
+  width:100%;
+  max-width:920px;
+  height:220px;
+  resize:none;
+  overflow:auto;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #e6e6e6;
+  background:#fff;
+  font-size:14px;
+  line-height:1.4;
+}
 .panel-actions{display:flex;gap:12px;margin-top:12px;}
 .btn-cancel{background:transparent;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;cursor:pointer;}
 .btn-save.primary{background:#D9BD7D;border:1px solid #D9BD7D;color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;}
@@ -436,3 +559,13 @@
   text-rendering:optimizeLegibility;
 }
 
+/* Suppliers table styles */
+.supplier-table{width:100%;border-collapse:collapse;font-size:13px;}
+.supplier-table thead th{background:transparent;border-bottom:1px solid #f3f4f6;text-align:left;padding:8px 10px;color:#6b7280;font-weight:600;font-size:13px;}
+.supplier-table tbody td{padding:8px 10px;border-bottom:1px solid #fbfbfb;color:#374151;vertical-align:middle;}
+.supplier-table tbody tr:last-child td{border-bottom:none;}
+  
+.supplier-table-wrap{border:1px solid #e6e6e6;border-radius:8px;overflow:hidden;background:#fff;}
+/* Supplier name link */
+.supplier-link{color:#D9BD7D;text-decoration:none;}
+.supplier-link:hover{color:#BFA971;text-decoration:underline;}
