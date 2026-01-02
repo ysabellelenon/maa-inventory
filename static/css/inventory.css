@@ -539,7 +539,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   box-sizing:border-box;
   width:100%;
   max-width:920px;
-  height:220px;
+  height:180px;
   resize:none;
   overflow:auto;
   padding:12px;
@@ -642,3 +642,38 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 /* Supplier name link */
 .supplier-link{color:#D9BD7D;text-decoration:none;}
 .supplier-link:hover{color:#BFA971;text-decoration:underline;}
+
+/* Prevent horizontal overflow on edit-item page and make aside responsive */
+/* Allow flex children to shrink instead of forcing the container wider than the viewport */
+.page-header.inventory-header > div,
+.inventory-container,
+.inventory-container > div,
+.inventory-container aside,
+.panel-left,
+.panel-right {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Constrain aside to its intended width but allow it to shrink on small viewports */
+.inventory-container aside {
+  flex-shrink: 1;
+  flex-basis: 360px;
+  max-width: 100%;
+}
+
+/* Ensure long content inside description and other fixed-size fields wraps and never forces horizontal scroll */
+.description-field,
+.panel-input,
+.panel-textarea,
+.supplier-table,
+.supplier-table-wrap {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* As a safety-net, hide any accidental horizontal overflow within the inventory container */
+.inventory-container {
+  overflow-x: hidden;
+}
