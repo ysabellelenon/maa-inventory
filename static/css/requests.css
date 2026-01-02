@@ -72,10 +72,10 @@
 
 /* Tabs above table */
 .tabs-container{margin-bottom:12px;}
-.tabs{display:flex;gap:12px;align-items:center;padding:8px 12px;background:transparent;}
-.tab-btn{background:transparent;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:8px;color:#6b7280;}
-.tab-btn .tab-badge{display:inline-block;padding:3px 8px;border-radius:999px;font-weight:700;font-size:12px;margin-left:6px;}
-.tab-btn.active{padding-bottom:6px;border-bottom:3px solid transparent;}
+.tabs{display:flex;gap:8px;align-items:center;padding:6px 8px;background:transparent;}
+.tab-btn{background:transparent;border:none;padding:6px 8px;border-radius:6px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:#6b7280;font-size:13px;}
+.tab-btn .tab-badge{display:inline-block;padding:2px 6px;border-radius:999px;font-weight:700;font-size:11px;margin-left:6px;}
+.tab-btn.active{padding-bottom:4px;border-bottom:3px solid transparent;}
 .tab-btn.active .tab-badge{color:#fff;}
 
 /* Tab colors in order: All, New, Pending, In Process, Delivered, Completed, Rejected */
@@ -103,4 +103,9 @@
 .tab-btn.active[data-key="completed"]{border-bottom-color:#10B981;color:#111827;}
 .tab-btn.active[data-key="rejected"]{border-bottom-color:#EF4444;color:#111827;}
 
+/* Reduce requests table wrapper height slightly to avoid page-level scrolling */
+.table-wrapper{
+  max-height:50vh;
+  overflow:auto;
+}
 

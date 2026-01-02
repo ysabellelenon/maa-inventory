@@ -24,6 +24,7 @@
           </button>
         </div>
       </div>
+      <div class="table-wrapper">
       <table class="inventory-table">
         <thead>
           <tr>
@@ -59,8 +60,12 @@
               <td class="col-email">{{ item.email|default:"—" }}</td>
               <td class="col-action">
                 <div class="action-btn-container">
-                  <button class="action-btn" aria-label="Manage supplier">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="manage-icon"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+                  <button class="action-btn" aria-label="More actions"
+                          data-code="{{ item.code|default:forloop.counter }}"
+                          data-name="{{ item.name|default:'—' }}"
+                          data-supplier="{{ item.name|default:'—' }}"
+                          data-image="">
+                    <img src="{% static 'icons/more.svg' %}" alt="More" class="action-icon" />
                   </button>
                 </div>
               </td>
@@ -186,6 +191,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
       <div class="table-footer">
         <div class="table-footer-left">
           <label class="show-label">Show
@@ -245,6 +251,87 @@
       if (btn) {
         e.preventDefault();
         toggleRow(btn);
+      }
+    });
+  })();
+</script>
+
+<!-- Action menu (same behavior as Inventory) -->
+<div class="overlay" hidden></div>
+<div class="action-menu" hidden role="menu" aria-hidden="true">
+  <button class="action-menu-item" data-action="edit">Edit</button>
+  <button class="action-menu-item" data-action="adjust">Adjust</button>
+</div>
+
+<script>
+  (function () {
+    var actionMenu = document.querySelector('.action-menu');
+    var currentActionButton = null;
+    if (!actionMenu) return;
+
+    function showActionMenu(button) {
+      currentActionButton = button;
+      var rect = button.getBoundingClientRect();
+      actionMenu.removeAttribute('hidden');
+      actionMenu.setAttribute('aria-hidden', 'false');
+      actionMenu.style.left = '-9999px';
+      actionMenu.style.top = '-9999px';
+      var menuWidth = actionMenu.offsetWidth || 160;
+      var left = rect.right + window.scrollX - menuWidth;
+      var top = rect.bottom + window.scrollY + 6;
+      var minLeft = 8 + window.scrollX;
+      if (left < minLeft) left = minLeft;
+      actionMenu.style.left = left + 'px';
+      actionMenu.style.top = top + 'px';
+    }
+
+    function hideActionMenu() {
+      if (!actionMenu) return;
+      actionMenu.setAttribute('hidden', '');
+      actionMenu.setAttribute('aria-hidden', 'true');
+      currentActionButton = null;
+    }
+
+    document.addEventListener('click', function (e) {
+      var manageBtn = e.target.closest && e.target.closest('.action-btn');
+      if (manageBtn) {
+        e.preventDefault();
+        if (actionMenu && actionMenu.getAttribute('aria-hidden') === 'false' && currentActionButton === manageBtn) {
+          hideActionMenu();
+        } else {
+          showActionMenu(manageBtn);
+        }
+        return;
+      }
+
+      var menuItem = e.target.closest && e.target.closest('.action-menu-item');
+      if (menuItem && currentActionButton) {
+        e.preventDefault();
+        var action = menuItem.getAttribute('data-action');
+        var btn = currentActionButton;
+        var data = {
+          code: btn.getAttribute('data-code') || '—',
+          name: btn.getAttribute('data-name') || '—',
+          supplier: btn.getAttribute('data-supplier') || '—',
+          image: btn.getAttribute('data-image') || ''
+        };
+        hideActionMenu();
+        var path = window.location.pathname;
+        var base = '/';
+        if (path.indexOf('/requests') !== -1) base = '/requests/';
+        else if (path.indexOf('/suppliers') !== -1) base = '/suppliers/';
+        else base = '/inventory/';
+
+        if (action === 'adjust') {
+          window.location.href = base + 'adjust/' + encodeURIComponent(data.code) + '/';
+        } else if (action === 'edit') {
+          window.location.href = base + 'edit/' + encodeURIComponent(data.code) + '/';
+        }
+        return;
+      }
+
+      if (actionMenu && !e.target.closest('.action-menu')) {
+        hideActionMenu();
       }
     });
   })();

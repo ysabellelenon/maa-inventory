@@ -1,4 +1,7 @@
 /* Inventory page styles (moved from dashboard.css) */
+:root{
+  --sidebar-width: 200px;
+}
 .inventory-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 
 /* Breadcrumb styles for edit page */
@@ -41,16 +44,33 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 
 /* Larger item title on edit page */
 .page-header.inventory-header h2{
-  font-size:32px;
-  line-height:1.08;
-  font-weight:700;
-  margin:6px 0 8px 0;
+  margin:0 0 12px 0;
+  color:#111;
 }
 .header-actions .btn-filter{background:#f3f4f6;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;cursor:pointer;}
 
-.inventory-card .table-actions{display:flex;justify-content:flex-start;padding:12px 12px 12px 12px;margin-bottom:12px;}
-.inventory-card .table-actions-left{display:flex;align-items:center;gap:12px;}
+.inventory-card .table-actions{
+  display:flex;
+  justify-content:flex-start;
+  padding:12px 12px 12px 12px;
+  margin-bottom:12px;
+  height:56px;            /* fixed container height */
+  min-height:56px;
+  max-height:56px;
+  box-sizing:border-box;
+  overflow:hidden;        /* prevent vertical growth */
+  align-items:center;
+}
+.inventory-card .table-actions-left{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:nowrap;       /* keep search+filter on one line */
+  overflow:hidden;
+  min-width:0;            /* allow children to shrink */
+}
 .table-search{position:relative;display:inline-block;}
+.table-search{flex:0 0 auto;min-width:0;}
 .table-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:0.7;}
 .table-search-input{
   width:260px;
@@ -62,6 +82,8 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   background:#fff;
   font-size:14px;
 }
+.table-search-input{max-width:100%;}
+.inventory-card .btn-filter{white-space:nowrap;flex:0 0 auto;}
 .table-search-input::placeholder{font-size:13px;color:#9ca3af;}
 .inventory-card .table-footer{
   display:flex;
@@ -94,9 +116,37 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 }
 .inventory-card .btn-filter img{width:16px;height:16px;display:inline-block;}
 .inventory-container{margin-top:8px;}
-.inventory-card{background:var(--card-bg);padding:8px;border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,0.03);overflow:hidden;}
-.inventory-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed;}
-.inventory-table thead th{text-align:left;padding:10px 8px;color:var(--text);font-weight:600;border-bottom:1px solid #f3f3f3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.inventory-card{background:var(--card-bg);padding:8px;border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,0.03);overflow:visible;border:1px solid var(--border);}
+.inventory-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;}
+.inventory-table thead th{text-align:left;padding:10px 8px;color:var(--text);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.table-wrapper{max-height:55vh;overflow:auto;}
+.inventory-table thead th{
+  position:sticky;
+  top:0;
+  background:var(--card-bg);
+  z-index:2;
+  /* ensure header has same padding/height as body cells */
+  padding-top:10px;
+  padding-bottom:10px;
+}
+/* Ensure rows marked hidden remain hidden even with display overrides above */
+.inventory-table tbody tr[hidden],
+.inventory-table .inventory-details[hidden],
+.inventory-table tbody tr[aria-hidden="true"]{
+  display: none;
+}
+
+/* Ensure consistent box-sizing and cell display so header columns align with body */
+.inventory-table, .inventory-table thead, .inventory-table tbody, .inventory-table tr, .inventory-table th, .inventory-table td{
+  box-sizing: border-box;
+}
+.inventory-table th, .inventory-table td{
+  display: table-cell;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .inventory-table .col-code{width:120px;}
 .inventory-table .col-name{width:220px;}
 .inventory-table .col-requested{width:140px;}
@@ -112,11 +162,11 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   text-align: left;
   padding-left: 8px;
 }
-.inventory-table tbody td{padding:10px 8px;border-bottom:1px solid #fafafa;vertical-align:middle;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.inventory-table tbody td{padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:middle;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .inventory-table .col-check{width:48px;}
 .inventory-table tbody .col-code{width:120px;color:#6b7280;vertical-align:middle;padding-right:8px;}
 .inventory-table tbody .col-code .expand{margin-right:6px;}
-.inventory-table tbody .col-name{width:300px;vertical-align:middle;}
+.inventory-table tbody .col-name{width:220px;vertical-align:middle;}
 .inventory-table tbody .item-thumb{width:36px;height:36px;border-radius:6px;background:#fff;border:1px solid #f2f2f2;object-fit:cover;flex:0 0 36px;margin-right:12px;vertical-align:middle;}
 .inventory-table tbody .item-meta{display:inline-block;vertical-align:middle;max-width:calc(100% - 52px);}
 .inventory-table tbody .item-meta .item-title{font-weight:500;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle;}
@@ -144,7 +194,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 }
 .inventory-table tbody .expand{background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:6px;}
 .inventory-row.row-low{background:rgba(245,120,120,0.12);} /* subtle pink band for low rows */
-.status-pill{display:inline-block;padding:6px 10px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid transparent;}
+.status-pill{display:inline-block;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;border:1px solid transparent;}
 .status-good{background:#e6ffef;color:#087f3b;border-color:#d1f6de;}
 .status-low{background:#ffecec;color:#b91c1c;border-color:#f7d0d0;}
 
@@ -288,14 +338,27 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   filter:brightness(0) invert(1);
 }
 
+/* Ensure SVG icons inside the table action button match the white icon style */
+.inventory-table .action-btn svg,
+.inventory-table .action-btn .manage-icon {
+  width:12px;
+  height:12px;
+  display:block;
+  margin:0;
+  padding:0;
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  fill: none !important;
+}
+
 /* Side panel (slide-in) and overlay */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.36);z-index:40;}
 .panel-open .overlay{display:block;}
 .side-panel{
   position:fixed;
   top:20px;
-  right:-740px;
-  width:720px;
+  right:-700px;
+  width:680px;
   height:calc(100% - 40px);
   background:var(--card-bg);
   border-radius:12px;
@@ -325,7 +388,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .panel-left{flex:1;min-width:0;background:#ffffff;padding:18px;border-radius:12px 0 0 0;box-shadow:0 1px 2px rgba(16,24,40,0.03);box-sizing:border-box;display:flex;flex-direction:column;min-height:0;}
 .panel-title-wrap{
   padding:10px 0;
-  border-bottom:0.5px solid #E5E5E6;
+  border-bottom:0.5px solid var(--border);
   border-radius:0;
   margin:0 0 12px 0;
   width:100%;
@@ -422,13 +485,13 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 }
 
 .panel-title .title-icon{
-  width:22px;
-  height:22px;
+  width:20px;
+  height:20px;
   display:inline-block;
   vertical-align:middle;
   margin-right:10px;
 }
-.panel-right{width:300px;flex:0 0 300px;border-left:1px solid #f3f4f6;position:relative;display:flex;flex-direction:column;background:#f3f4f6;padding:18px;border-radius:0 12px 0 0;box-sizing:border-box;min-height:0;}
+.panel-right{width:260px;flex:0 0 260px;border-left:1px solid #f3f4f6;position:relative;display:flex;flex-direction:column;background:#f3f4f6;padding:18px;border-radius:0 12px 0 0;box-sizing:border-box;min-height:0;}
 .panel-right .panel-close{position:absolute;top:18px;right:12px;background:transparent;border:none;font-size:22px;line-height:1;cursor:pointer;color:#6b7280;z-index:70;}
 
 .section-separator{height:1px;background:#bcbcbc;margin:12px 0;border-radius:1px;}
@@ -437,7 +500,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .panel-right .product-detail{margin-top:0;padding-top:0;}
 .panel-left .panel-section{margin-bottom:18px;}
 .product-summary{display:flex;gap:12px;align-items:center;}
-.product-thumb{width:52px;height:52px;border-radius:8px;background:#fff;border:1px solid #f2f2f2;}
+.product-thumb{width:48px;height:48px;border-radius:8px;background:#fff;border:1px solid #f2f2f2;}
 .product-meta .product-name{font-weight:600;color:#111827;}
 .product-meta .product-sku,.product-meta .product-supplier{font-size:13px;color:#6b7280;margin-top:4px;}
 .product-meta-bottom{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
@@ -450,16 +513,26 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .grid-top{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px;}
 .stacked-fields > div{margin-bottom:12px;}
 .panel-input[disabled]{background:#f3f4f6;color:#6b7280;cursor:not-allowed;}
-.reason-btn.active{
+.panel-left .reason-btn.active{
   background:#D9BD7D;
   color:#ffffff;
   border-color:#D9BD7D;
   box-shadow:0 1px 0 rgba(0,0,0,0.04) inset;
+  padding:4px 6px;
+  border-radius:4px;
 }
-.reason-btn:focus{outline:2px solid rgba(193,154,90,0.18);outline-offset:2px;}
+.panel-left .reason-btn:focus{outline:2px solid rgba(193,154,90,0.18);outline-offset:2px;}
 .panel-input{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;}
 .reason-grid{display:flex;flex-wrap:wrap;gap:8px;}
-.reason-btn{padding:8px 10px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;cursor:pointer;}
+.panel-left .reason-btn{
+  padding:4px 6px;
+  border-radius:4px;
+  border:1px solid #e6e6e6;
+  background:#fff;
+  cursor:pointer;
+  font-size:12px;
+  line-height:1;
+}
 .panel-textarea{width:100%;border:1px solid #e6e6e6;border-radius:8px;padding:10px;background:#fff;}
 /* Fixed larger description textarea */
 .description-field{
