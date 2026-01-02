@@ -28,8 +28,8 @@
 .item-submeta{
   font-size:14px;
   color:#9ca3af;
-  margin-top:6px;
-  margin-bottom:12px;
+  margin-top:4px;
+  margin-bottom:8px;
   font-weight:500;
   display:block;
 }
@@ -44,7 +44,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 
 /* Larger item title on edit page */
 .page-header.inventory-header h2{
-  margin:0 0 12px 0;
+  margin:0 0 6px 0;
   color:#111;
 }
 .header-actions .btn-filter{background:#f3f4f6;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;cursor:pointer;}
@@ -436,7 +436,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   background:#10b981;
   border:none;
   color:#ffffff;
-  padding:12px 20px;
+  padding:8px 12px;
   border-radius:999px;
   display:inline-flex;
   align-items:center;
@@ -445,9 +445,35 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   cursor:pointer;
   box-shadow:none;
 }
-.btn-save-inline img{width:18px;height:18px;display:block;filter:brightness(0) invert(1);}
-.btn-save-inline span{font-size:16px;line-height:1;}
+.btn-save-inline img{width:16px;height:16px;display:block;filter:brightness(0) invert(1);}
+.btn-save-inline span{font-size:14px;line-height:1;}
 .btn-save-inline:active{transform:translateY(1px)}
+
+/* Delete button matching inline save button sizing and rounding */
+.btn-delete-inline{
+  background:#ffffff;
+  border:1px solid var(--border);
+  color:#ef4444;
+  padding:8px 12px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:none;
+}
+.btn-delete-inline img{width:16px;height:16px;display:block;filter:none;}
+.btn-delete-inline span{font-size:14px;line-height:1;}
+.btn-delete-inline:active{transform:translateY(1px)}
+/* make delete icon slightly smaller and red */
+.btn-delete-inline img{
+  width:14px;
+  height:14px;
+  display:block;
+  /* tint black SVG to red (#ef4444) */
+  filter: invert(21%) sepia(92%) saturate(4456%) hue-rotate(341deg) brightness(95%) contrast(101%);
+}
 
 /* Compact styles for location management panel */
 .locations-panel{font-size:13px;}
@@ -549,6 +575,104 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   font-size:14px;
   line-height:1.4;
 }
+.tabs-container{margin-top:6px;}
+.tabs{display:flex;gap:12px;align-items:center;padding:6px 0;}
+.tab-btn{background:transparent;border:none;padding:8px 12px;padding-bottom:5px;border-radius:6px;cursor:pointer;font-weight:700;display:inline-flex;align-items:center;gap:8px;color:#6b7280;border-bottom:3px solid #cfcfcf;}
+.tab-btn.active{
+  color:#111827;
+  border-bottom:3px solid #D9BD7D;
+  padding-bottom:5px;
+  background: rgba(255,216,142,0.26); /* match dashboard most-requested row background */
+  border-radius:8px;
+}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.horizontal-field{display:flex;align-items:center;gap:8px;}
+.horizontal-field .field-label{min-width:120px;margin-bottom:0;}
+.horizontal-field .panel-input{flex:1;}
+.active-orders-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr)); /* exactly two cards per row */
+  gap:16px;
+  margin-top:12px;
+}
+@media (max-width:900px){
+  .active-orders-grid{
+    grid-template-columns:1fr; /* stack on small screens */
+  }
+}
+.order-card{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#fff;
+}
+.order-card .product-thumb{width:44px;height:44px;border-radius:8px;flex:0 0 44px;object-fit:cover;}
+
+/* Fix card layout: set fixed height and ensure content stacks with button at bottom */
+.order-card{
+  height:220px;
+  display:flex;
+  box-sizing:border-box;
+  overflow:hidden;
+  align-items:stretch;
+}
+.order-card .card-body{
+  display:flex;
+  flex-direction:column;
+  flex:1;
+  justify-content:space-between;
+}
+.btn-purchase{
+  background:#D9BD7D;
+  color:#ffffff;
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:700;
+}
+.btn-purchase:hover{opacity:0.95;}
+.active-orders-panel .table-actions{display:flex;justify-content:flex-start;padding:12px 0 0 0;margin-bottom:0;align-items:center;gap:12px;}
+.active-orders-panel .table-actions .table-search{display:inline-block;}
+.active-orders-panel .table-search-input{width:240px;box-sizing:border-box;padding:0 8px 0 30px;height:34px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;font-size:13px;}
+.active-orders-panel .table-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:0.7;}
+.active-orders-panel .btn-filter{background:#ffffff;border:1px solid #e6e6e6;padding:6px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--text);}
+.active-orders-panel .btn-filter img{width:16px;height:16px;display:inline-block;}
+
+/* Make search input match filter button height and use smaller placeholder/icon */
+.active-orders-panel .table-search-input{
+  height:34px;
+  padding:0 8px 0 30px; /* slightly increased gap between icon and text */
+  font-size:13px;
+}
+.active-orders-panel .table-search-input::placeholder{
+  font-size:12px;
+  color:#9ca3af;
+}
+.active-orders-panel .table-search-icon{
+  width:12px;
+  height:12px;
+  left:12px;
+  top:50%;
+  transform:translateY(-50%);
+  opacity:0.7;
+}
+.active-orders-panel .btn-filter{
+  height:34px;
+  padding:0 8px;
+  align-items:center;
+}
+.active-orders-panel .btn-filter img{width:12px;height:12px;}
+
+/* Alignment fixes: ensure search and filter are vertically aligned */
+.active-orders-panel .table-actions-left{display:flex;align-items:center;gap:12px;}
+.active-orders-panel .table-search{position:relative;display:inline-block;vertical-align:middle;}
+.active-orders-panel .table-search-input{box-sizing:border-box;vertical-align:middle;}
+.active-orders-panel .btn-filter{vertical-align:middle;display:inline-flex;align-items:center;justify-content:center;}
 .panel-actions{display:flex;gap:12px;margin-top:12px;}
 .btn-cancel{background:transparent;border:1px solid #e6e6e6;padding:8px 12px;border-radius:8px;cursor:pointer;}
 .btn-save.primary{background:#D9BD7D;border:1px solid #D9BD7D;color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;}
@@ -658,7 +782,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 /* Constrain aside to its intended width but allow it to shrink on small viewports */
 .inventory-container aside {
   flex-shrink: 1;
-  flex-basis: 360px;
+  flex-basis: 860px;
   max-width: 100%;
 }
 

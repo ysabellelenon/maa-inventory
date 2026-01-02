@@ -1,0 +1,232 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <div style="display:flex;flex-direction:column;">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'suppliers' %}">Suppliers</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <span class="active" aria-current="page">{{ item.name }}</span>
+      </nav>
+      <h2 style="margin-top:6px;">{{ item.name }}</h2>
+      <h3 class="item-submeta"><strong>Supplier Code:</strong> {{ item.code }} &nbsp;•&nbsp; <strong>Category:</strong> {{ item.category|default:"—" }}</h3>
+      <div class="tabs-container" style="margin-top:6px;">
+        <div class="tabs" role="tablist" aria-label="Supplier tabs">
+          <button class="tab-btn active" data-key="details" role="tab" aria-selected="true">
+            <span>Supplier Details</span>
+          </button>
+          <button class="tab-btn" data-key="items" role="tab" aria-selected="false">
+            <span>Supplier Items</span>
+          </button>
+        </div>
+      </div>
+      <script>
+        // wait for DOM so panels (which are below) exist
+        document.addEventListener('DOMContentLoaded', function () {
+          var tabs = document.querySelectorAll('.tabs .tab-btn');
+          var panels = document.querySelectorAll('.tab-panel');
+          if (!tabs.length || !panels.length) return;
+          function activate(key) {
+            tabs.forEach(function (t) {
+              var k = t.getAttribute('data-key');
+              var active = k === key;
+              t.classList.toggle('active', active);
+              t.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            panels.forEach(function (p) {
+              var k = p.getAttribute('data-key');
+              var active = k === key;
+              p.classList.toggle('active', active);
+              p.style.display = active ? '' : 'none';
+            });
+          }
+          tabs.forEach(function (t) {
+            t.addEventListener('click', function (e) {
+              e.preventDefault();
+              var key = t.getAttribute('data-key');
+              activate(key);
+            });
+          });
+          // initialize to details
+          activate('details');
+        });
+      </script>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button class="btn-save-inline" aria-label="Save">
+        <img src="{% static 'icons/check.svg' %}" alt="" />
+        <span>Save</span>
+      </button>
+      <button class="btn-delete-inline" aria-label="Delete" style="margin-left:8px;">
+        <img src="{% static 'icons/trash.svg' %}" alt="" />
+        <span>Delete</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="inventory-container">
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="flex:1;">
+
+        <div class="tab-panel active" data-key="details">
+          <div style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+            <div style="font-weight:700;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:8px;">Basic Details</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="horizontal-field" style="gap:6px;">
+                <label class="field-label" style="margin-bottom:0;">Supplier Name</label>
+                <input class="panel-input" type="text" value="{{ item.name }}" />
+              </div>
+              <div class="horizontal-field" style="gap:6px;">
+                <label class="field-label" style="margin-bottom:0;">Contact Person</label>
+                <input class="panel-input" type="text" value="{{ item.contact_person|default:'—' }}" />
+              </div>
+              <div class="horizontal-field" style="gap:6px;">
+                <label class="field-label" style="margin-bottom:0;">Category</label>
+                <input class="panel-input" type="text" value="{{ item.category|default:'—' }}" />
+              </div>
+            </div>
+            <div style="margin-top:12px;">
+              <label class="field-label">Note</label>
+              <textarea class="panel-textarea" aria-label="Supplier note">{{ item.notes|default:"" }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-key="items" style="display:none;">
+          <div style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+            <div style="font-weight:700;margin-bottom:8px;">Products Supplied</div>
+            <div class="supplier-table-wrap" style="overflow:auto;">
+              <table class="supplier-table" style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;padding:8px 10px;color:#6b7280;font-size:13px;">Product</th>
+                    <th style="text-align:left;padding:8px 10px;color:#6b7280;font-size:13px;">Price per Unit (OMR)</th>
+                    <th style="text-align:left;padding:8px 10px;color:#6b7280;font-size:13px;">Last Purchase Date</th>
+                    <th style="text-align:left;padding:8px 10px;color:#6b7280;font-size:13px;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for p in item.products_supplied %}
+                  <tr>
+                    <td style="padding:8px 10px;color:#374151;">{{ p.item_name }}</td>
+                    <td style="padding:8px 10px;color:#374151;">{{ p.price_per_unit }}</td>
+                    <td style="padding:8px 10px;color:#374151;">{{ item.last_ordered_date }}</td>
+                    <td style="padding:8px 10px;"><span class="status-pill status-good">Active</span></td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="4" style="padding:8px 10px;color:#6b7280;">No products found for this supplier.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside style="flex:0 0 860px;min-width:0;max-width:860px;">
+          <div class="active-orders-panel" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:700;margin:0;margin-bottom:0;font-size:16px;">Active Orders</div>
+            <div style="color:#6b7280;font-size:13px;">Showing latest</div>
+          </div>
+          <div style="width:100%;border-bottom:1px solid var(--border);margin-top:8px;"></div>
+
+          <div class="table-actions" style="padding-top:10px;">
+            <div class="table-actions-left">
+              <div class="table-search">
+                <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
+                <input class="table-search-input" placeholder="Search products or SKU" aria-label="Search products" />
+              </div>
+              <button class="btn-filter">
+                <img src="{% static 'icons/filter.svg' %}" alt="" />
+                <span>Filter</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="active-orders-grid" style="margin-top:12px;">
+            {% for p in item.products_supplied %}
+            <div class="order-card">
+              <div class="card-body" style="flex:1;">
+                <div class="card-top" style="display:flex;gap:12px;align-items:flex-start;">
+                  <img src="{% static 'images/sample-item.jpg' %}" alt="" class="product-thumb" />
+                  <div class="card-info" style="flex:1;min-width:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                      <div style="min-width:0;">
+                        <div style="font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.item_name }}</div>
+                        <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                          <div style="color:#9ca3af;font-weight:400;font-size:13px;">Item Code</div>
+                          <div style="color:#9ca3af;font-weight:400;font-size:13px;">PK-{{ p.sku|default:'N/A' }}</div>
+                        </div>
+                      </div>
+                      <div style="text-align:right;flex:0 0 auto;margin-left:8px;">
+                        <div><span class="status-pill status-good">In-Stock</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:22px;align-items:flex-start;margin-top:10px;">
+                  <div style="min-width:0;">
+                    <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">Price</div>
+                    <div style="color:#374151;font-weight:700;"><span class="price-value">{{ p.price_per_unit }}</span></div>
+                  </div>
+                  <div style="min-width:0;">
+                    <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">Minimum Order</div>
+                    <div style="color:#374151;"><strong>20 Unit</strong></div>
+                  </div>
+                </div>
+
+                <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+                  <button class="btn-purchase">View Invoice</button>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <div style="color:#6b7280;">No active orders for this supplier.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Defensive fix: ensure each .order-card has a single .product-thumb inside .card-body
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.order-card').forEach(function (card) {
+        var body = card.querySelector('.card-body');
+        if (!body) return;
+        var imgs = Array.from(card.querySelectorAll('.product-thumb'));
+        if (!imgs.length) return;
+        // ensure the first image is inside the card body
+        var first = imgs[0];
+        if (!body.contains(first)) {
+          body.insertBefore(first, body.firstChild);
+        }
+        // remove any additional duplicate images
+        imgs.slice(1).forEach(function (i) { if (i && i.parentNode) i.parentNode.removeChild(i); });
+      });
+      // Normalize price strings to "OMR <value>"
+      document.querySelectorAll('.price-value').forEach(function (el) {
+        var txt = (el.textContent || '').trim();
+        if (!txt) return;
+        if (/OMR/i.test(txt)) {
+          // move OMR to front
+          var rest = txt.replace(/OMR/i, '').trim();
+          el.textContent = 'OMR ' + rest;
+        } else {
+          el.textContent = 'OMR ' + txt;
+        }
+      });
+    });
+  </script>
+
+{% endblock %}
+
+

@@ -176,5 +176,13 @@
   box-sizing: border-box;
 }
 
+/* Hover effect for clickable rows */
+.inventory-table tbody tr.inventory-row {
+  transition: background-color .12s ease, transform .06s ease;
+}
+.inventory-table tbody tr.inventory-row:hover {
+  background-color: #fbf9f2;
+  cursor: pointer;
+}
 
 

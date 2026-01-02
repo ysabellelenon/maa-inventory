@@ -10,7 +10,7 @@ This document centralizes the project's color palette and font choices so pages 
 - `--card-bg`: #ffffff — Card / panel background
 - `--muted`: #9ca3af — Muted text / secondary labels
 - `--accent`: #f7e7d0 — Accent / active backgrounds
-- `--border`: #e6e6e6 — General borders
+- `--border`: #cfcfcf — General borders (darker for improved contrast)
 - `--topbar-border`: #E5E5E6 — Topbar bottom border
 - `--focus`: #D9BD7D — Focus / input highlight (used for search input hover/focus)
 - `--stroke`: #F2F2F2 — Subtle strokes (icon background border)

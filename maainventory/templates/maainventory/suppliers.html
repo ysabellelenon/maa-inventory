@@ -450,6 +450,29 @@
   })();
 </script>
 
+<script>
+  (function () {
+    // make entire row clickable to open the supplier edit page
+    var table = document.querySelector('.inventory-table');
+    if (!table) return;
+
+    table.addEventListener('click', function (e) {
+      var row = e.target.closest && e.target.closest('tr.inventory-row');
+      if (!row) return;
+      // ignore clicks on interactive controls inside the row
+      if (e.target.closest('input') || e.target.closest('button') || e.target.closest('a') || e.target.closest('.action-btn')) {
+        return;
+      }
+      var codeCell = row.querySelector('.col-code');
+      if (!codeCell) return;
+      var code = codeCell.textContent.trim();
+      if (!code) return;
+      // navigate to the supplier edit prototype page
+      window.location.href = '/suppliers/edit/' + encodeURIComponent(code) + '/';
+    });
+  })();
+</script>
+
 {% endblock %}
 
 

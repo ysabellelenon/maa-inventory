@@ -24,5 +24,6 @@ urlpatterns = [
     path("inventory/edit/<str:code>/", views.edit_item, name="edit_item"),
     path("requests/", views.requests, name="requests"),
     path("suppliers/", views.suppliers, name="suppliers"),
+    path("suppliers/edit/<str:code>/", views.edit_supplier, name="edit_supplier"),
     path('admin/', admin.site.urls),
 ]

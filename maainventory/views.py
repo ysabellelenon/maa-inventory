@@ -9,8 +9,8 @@ SUPPLIERS = [
     {"code": "SUP-001", "name": "Oman Printer", "category": "Packaging", "contact_person": "John Paul Bartolome", "phone": "+968 1234 5678", "email": "john@acme.example",
      "location": "Muscat, Oman",
      "products_supplied": [
-         {"item_name": "Printed Labels", "price_per_unit": "0.05 OMR"},
-         {"item_name": "Corrugated Boxes", "price_per_unit": "0.50 OMR"}
+        {"item_name": "Printed Labels", "price_per_unit": "0.05 OMR", "sku": "001"},
+        {"item_name": "Corrugated Boxes", "price_per_unit": "0.50 OMR", "sku": "002"}
      ],
      "delivery_lead_time": "3–5 days",
      "bank_name": "Bank Muscat",
@@ -27,8 +27,8 @@ SUPPLIERS = [
     {"code": "SUP-002", "name": "Al-Madenah", "category": "Bags", "contact_person": "Nada Al-Daghari", "phone": "+968 2345 6789", "email": "nada@example.com",
      "location": "Sohar, Oman",
      "products_supplied": [
-         {"item_name": "Plastic Bags", "price_per_unit": "0.02 OMR"},
-         {"item_name": "Paper Bags", "price_per_unit": "0.03 OMR"}
+        {"item_name": "Plastic Bags", "price_per_unit": "0.02 OMR", "sku": "003"},
+        {"item_name": "Paper Bags", "price_per_unit": "0.03 OMR", "sku": "004"}
      ],
      "delivery_lead_time": "2–4 days",
      "bank_name": "National Bank of Oman",
@@ -45,8 +45,8 @@ SUPPLIERS = [
     {"code": "SUP-003", "name": "Excellent Packing", "category": "Cups", "contact_person": "Gloria Ysabelle Lenon", "phone": "+968 3456 7890", "email": "gloria@example.com",
      "location": "Muscat, Oman",
      "products_supplied": [
-         {"item_name": "12 oz Cup", "price_per_unit": "0.06 OMR"},
-         {"item_name": "16 oz Cup", "price_per_unit": "0.08 OMR"}
+        {"item_name": "12 oz Cup", "price_per_unit": "0.06 OMR", "sku": "005"},
+        {"item_name": "16 oz Cup", "price_per_unit": "0.08 OMR", "sku": "006"}
      ],
      "delivery_lead_time": "5–7 days",
      "bank_name": "HSBC Oman",
@@ -63,8 +63,8 @@ SUPPLIERS = [
     {"code": "SUP-004", "name": "Al Andalus", "category": "Containers", "contact_person": "Ali Al-Ismaili", "phone": "+968 4567 8901", "email": "ali@example.com",
      "location": "Salalah, Oman",
      "products_supplied": [
-         {"item_name": "Food Container Small", "price_per_unit": "0.30 OMR"},
-         {"item_name": "Food Container Large", "price_per_unit": "0.55 OMR"}
+        {"item_name": "Food Container Small", "price_per_unit": "0.30 OMR", "sku": "007"},
+        {"item_name": "Food Container Large", "price_per_unit": "0.55 OMR", "sku": "008"}
      ],
      "delivery_lead_time": "7–10 days",
      "bank_name": "Muscat Securities",
@@ -81,8 +81,8 @@ SUPPLIERS = [
     {"code": "SUP-005", "name": "AL Khalijia Company for Converting Industries", "category": "Straws", "contact_person": "Omran Al-Ismaili", "phone": "+968 5678 9012", "email": "omran@example.com",
      "location": "Muscat, Oman",
      "products_supplied": [
-         {"item_name": "Straw (with Logo)", "price_per_unit": "0.004 OMR"},
-         {"item_name": "Plain Straw", "price_per_unit": "0.002 OMR"}
+        {"item_name": "Straw (with Logo)", "price_per_unit": "0.004 OMR", "sku": "009"},
+        {"item_name": "Plain Straw", "price_per_unit": "0.002 OMR", "sku": "010"}
      ],
      "delivery_lead_time": "4–6 days",
      "bank_name": "Gulf Bank",
@@ -291,6 +291,29 @@ def requests(request):
     }
 
     return render(request, "maainventory/requests.html", context)
+
+
+def edit_supplier(request, code):
+    """Render a simple edit page for a single supplier (prototype).
+
+    For now this reuses the same layout as the item edit page so the UI
+    matches the edit item screen while supplier-specific fields are
+    fleshed out later.
+    """
+    selected_supplier = None
+    for s in SUPPLIERS:
+        if s.get("code") == code:
+            selected_supplier = dict(s)  # shallow copy
+            break
+
+    if not selected_supplier:
+        raise Http404("Supplier not found")
+
+    # reuse the same template layout as edit_item (but stored under a supplier-specific file)
+    context = {
+        "item": selected_supplier,
+    }
+    return render(request, "maainventory/edit_supplier.html", context)
 
 
 def suppliers(request):
