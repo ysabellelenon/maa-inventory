@@ -44,6 +44,16 @@
               p.classList.toggle('active', active);
               p.style.display = active ? '' : 'none';
             });
+            // hide the right column (aside) when viewing the items tab so the content spans full width
+            try {
+              var rightCol = document.querySelector('.inventory-container aside');
+              if (rightCol) {
+                rightCol.style.display = (key === 'items') ? 'none' : '';
+              }
+            } catch (err) {
+              // defensive: if anything goes wrong, don't break tab switching
+              console.error(err);
+            }
           }
           tabs.forEach(function (t) {
             t.addEventListener('click', function (e) {
