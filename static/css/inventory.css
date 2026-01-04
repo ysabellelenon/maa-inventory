@@ -457,6 +457,23 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .btn-save-inline img{width:16px;height:16px;display:block;filter:brightness(0) invert(1);}
 .btn-save-inline span{font-size:14px;line-height:1;}
 .btn-save-inline:active{transform:translateY(1px)}
+.btn-new-request{
+  background:#D9BD7D;
+  border:none;
+  color:#ffffff;
+  padding:8px 12px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:none;
+}
+.btn-new-request img{width:16px;height:16px;display:block;filter:brightness(0) invert(1);}
+.btn-new-request span{font-size:14px;line-height:1;}
+.btn-new-request:active{transform:translateY(1px)}
+.btn-new-request{ text-decoration: none; }
 
 /* Delete button matching inline save button sizing and rounding */
 .btn-delete-inline{
@@ -526,6 +543,185 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   vertical-align:middle;
   margin-right:10px;
 }
+.content{height:calc(100vh - 64px);overflow:hidden;}
+.inventory-container{height:100%;display:flex;flex-direction:column;overflow:hidden;}
+.request-layout{flex:1;display:flex;gap:18px;align-items:stretch;overflow:hidden;}
+.request-left{flex:0 0 360px;min-width:320px;overflow:visible;padding-right:6px;}
+.request-right{flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;overflow:auto;}
+
+.request-right{
+  position:relative;
+  padding-bottom:0 !important;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden; /* ensure inner content controls scrolling */
+}
+/* make the main content area inside the right panel fill available space and scroll */
+.request-right > div:first-child{
+  flex:1 1 auto;
+  overflow:auto;
+  /* reserve minimal internal padding so the sticky action does not overlap content */
+  padding-bottom: 12px !important;
+  display:flex;
+  flex-direction:column;
+}
+.request-action{
+  position:sticky;
+  bottom:18px;
+  z-index:20;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  padding:6px 12px;
+  height:44px;
+  pointer-events:auto;
+  background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,0.6));
+}
+
+/* light gray border for panels on new-request layout */
+.panel-border{
+  border: 1px solid #cfcfcf;
+  box-sizing: border-box;
+}
+
+/* enforce heights for items and cart to prevent unexpected overflow */
+.request-left #items-list{
+  max-height: 385px !important;
+  min-height: 385px !important; /* keep fixed visible area even when few items */
+  overflow: auto !important;
+}
+.request-item-row .item-title{
+  font-size:13px;
+  line-height:1.2;
+}
+.request-item-row .item-code{
+  font-size:12px;
+  color:#6b7280;
+  line-height:1.2;
+  flex:0 0 auto;
+}
+
+/* cart text sizes to match items list */
+#cart-header{
+  font-size:13px;
+  font-weight:600;
+  color:#111827;
+}
+.cart-item-name{
+  font-size:13px;
+  font-weight:600;
+  color:#111827;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cart-item-code{
+  font-size:12px;
+  color:#6b7280;
+  margin-top:6px;
+}
+
+/* small icon-only delete button next to qty */
+.qty-delete{
+  background:transparent;
+  border:none;
+  padding:4px;
+  margin-left:8px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.qty-delete img{
+  width:16px;
+  height:16px;
+  /* tint to red similar to other delete icons in the UI */
+  filter: invert(21%) sepia(92%) saturate(4456%) hue-rotate(341deg) brightness(95%) contrast(101%);
+}
+.request-right #cart-list{
+  flex: 1 1 auto !important;
+  max-height: none !important;
+  overflow: auto !important;
+  display:flex;
+  flex-direction:column;
+}
+
+.cart-footer{background:transparent;}
+.cart-footer > div{box-sizing:border-box;padding-bottom:12px;}
+.cart-footer button{ /* ensure button aligns visually with new-request style */
+  margin:0;
+}
+
+/* cart empty illustration styling: use SVG as mask so we can tint it */
+.cart-empty-icon{
+  width:64px;
+  height:64px;
+  background-color:#D9BD7D;
+  -webkit-mask-image: url('/static/icons/delivery.svg');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-image: url('/static/icons/delivery.svg');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+/* ensure cart-list uses flex so the empty placeholder can center vertically */
+.request-right #cart-list{
+  display:flex;
+  flex-direction:column;
+}
+
+/* ensure cart-empty content centered vertically and fills available space */
+#cart-empty{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  flex:1 1 auto;
+  color:#6b7280;
+}
+
+#cart-empty-text{max-width:64%;text-align:center;}
+
+/* constrain overall layout height so panels never overflow the viewport */
+.request-layout{
+  height: 100%;
+  max-height: calc(100vh - 64px - 40px) !important; /* account for topbar and page padding */
+}
+
+/* ensure left/right columns match height and use internal scrolling */
+.request-left, .request-right{
+  height:100%;
+  max-height:100%;
+}
+
+/* tighten cart-list to the available area inside the right panel */
+#cart-list{
+  max-height: calc(100% - 140px) !important;
+  overflow:auto !important;
+}
+
+/* Stronger enforcement: cap both columns based on viewport so borders cannot escape */
+.request-left{
+  /* left column should not scroll; only the items-list inside it should scroll */
+  max-height: none !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+.request-right{
+  max-height: calc(100vh - 64px - 120px) !important; /* topbar + header + padding buffer */
+  overflow: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* ensure cart-list fits inside the right panel */
+.request-right #cart-list{
+  max-height: calc(100% - 140px) !important;
+  overflow:auto !important;
+}
+
 .panel-right{width:260px;flex:0 0 260px;border-left:1px solid #f3f4f6;position:relative;display:flex;flex-direction:column;background:#f3f4f6;padding:18px;border-radius:0 12px 0 0;box-sizing:border-box;min-height:0;}
 .panel-right .panel-close{position:absolute;top:18px;right:12px;background:transparent;border:none;font-size:22px;line-height:1;cursor:pointer;color:#6b7280;z-index:70;}
 

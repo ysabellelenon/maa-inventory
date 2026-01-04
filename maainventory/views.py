@@ -293,6 +293,35 @@ def requests(request):
     return render(request, "maainventory/requests.html", context)
 
 
+def new_request(request):
+    """Render a 'New Stock Request' page that uses the same edit-page styling.
+
+    Provide sample inventory items and available locations so the UI can
+    demonstrate filtering and adding items to a cart on the client side.
+    """
+    items = [
+        {"code": "001", "name": "Burger Box Large", "initial_qty": "15,000", "remaining_qty": "9,200", "min_qty": "5,000", "status": "GOOD", "locations": ["Thoum Mabella - Kitchen", "Kucu Al Khoud"]},
+        {"code": "002", "name": "Barbeque Bag", "initial_qty": "2,550", "remaining_qty": "1,800", "min_qty": "500", "status": "GOOD", "locations": ["Kucu Al Khoud", "Thoum Mabella - Kitchen"]},
+        {"code": "003", "name": "Bucket", "initial_qty": "29,400", "remaining_qty": "18,000", "min_qty": "10,000", "status": "LOW", "locations": ["Thoum Mabella - Kitchen"]},
+        {"code": "004", "name": "Curve Fries Cup", "initial_qty": "79,442", "remaining_qty": "62,700", "min_qty": "20,000", "status": "GOOD", "locations": ["Kucu Avenues Mall", "Kucu Al Khoud"]},
+        {"code": "005", "name": "Sauce Bag", "initial_qty": "8,857", "remaining_qty": "6,000", "min_qty": "3,000", "status": "LOW", "locations": ["Thoum Mabella - Kitchen", "Kucu Avenues Mall"]},
+        {"code": "006", "name": "Straws", "initial_qty": "610,000", "remaining_qty": "450,000", "min_qty": "200,000", "status": "GOOD", "locations": ["Kucu Al Khoud", "Kucu Avenues Mall"]},
+    ]
+
+    locations = [
+        "Thoum Mabella - Kitchen",
+        "Kucu Al Khoud",
+        "Kucu Avenues Mall",
+        "Boom Al Khoud",
+    ]
+
+    context = {
+        "items": items,
+        "locations": locations,
+    }
+    return render(request, "maainventory/new_request.html", context)
+
+
 def edit_supplier(request, code):
     """Render a simple edit page for a single supplier (prototype).
 

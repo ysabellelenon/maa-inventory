@@ -1,0 +1,247 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <div style="display:flex;flex-direction:column;">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'inventory' %}">Inventory</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <span class="active" aria-current="page">New Stock Request</span>
+      </nav>
+      <h2 style="margin-top:6px;">New Stock Request</h2>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <!-- Save button intentionally removed per design -->
+    </div>
+  </div>
+
+  <div class="inventory-container">
+    <div class="request-layout" style="display:flex;gap:18px;align-items:stretch;">
+      <div class="request-left" style="flex:0 0 360px;min-width:320px;">
+        <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+          <label class="field-label">Choose Location</label>
+          <select id="location-select" class="panel-input" aria-label="Choose Location">
+            <option value="">Select location</option>
+            {% for loc in locations %}
+            <option value="{{ loc }}">{{ loc }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+          <div style="margin-bottom:8px;">
+            <input id="item-search" class="panel-input" placeholder="Search by item or category name" aria-label="Search items" />
+          </div>
+          <div class="items-list" id="items-list" style="max-height:385px;overflow:auto;border-top:1px solid var(--border);">
+            {% for it in items %}
+            <div class="request-item-row" data-code="{{ it.code }}" data-name="{{ it.name }}" data-locations="{{ it.locations|join:',' }}" style="padding:12px 10px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;">
+                <div class="item-title" style="font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ it.name }}</div>
+                <div class="item-code" style="font-size:12px;color:#6b7280;white-space:nowrap;">Item Code: {{ it.code }}</div>
+              </div>
+              <div style="margin-left:12px;color:#6b7280;">›</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="request-right panel-border" style="flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;">
+        <div>
+          <div id="cart-header" style="display:none;font-weight:700;padding:10px 12px;background:rgba(16,24,40,0.02);border-radius:6px;margin-bottom:12px;">Package Item Name <span style="float:right;font-weight:700;">QTY</span></div>
+          <div id="cart-list" style="display:flex;flex-direction:column;gap:8px;overflow:auto;flex:1 1 auto;">
+          <div id="cart-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#6b7280;">
+              <div class="cart-empty-icon" aria-hidden="true" style="margin-bottom:12px;"></div>
+              <div id="cart-empty-text">Select a location to load items available at that location for requisition.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cart-footer" class="cart-footer" aria-hidden="true" style="display:none;">
+          <div style="width:100%;display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--border);">
+            <button id="add-to-basket" class="btn-new-request" style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;">
+              <img src="{% static 'icons/delivery.svg' %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" />
+              <span>Place Request</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var locationSelect = document.getElementById('location-select');
+      var itemSearch = document.getElementById('item-search');
+      var itemsList = document.getElementById('items-list');
+      var cartList = document.getElementById('cart-list');
+      var cartEmpty = document.getElementById('cart-empty');
+      var cartFooter = document.getElementById('cart-footer');
+
+      function updateVisibleItems() {
+        var loc = locationSelect.value;
+        var q = itemSearch.value.trim().toLowerCase();
+        Array.prototype.forEach.call(itemsList.querySelectorAll('.request-item-row'), function (row) {
+          var name = row.getAttribute('data-name') || '';
+          var locations = row.getAttribute('data-locations') || '';
+          var matchesLoc = !loc || locations.indexOf(loc) !== -1;
+          var matchesQuery = !q || name.toLowerCase().indexOf(q) !== -1;
+          row.style.display = (matchesLoc && matchesQuery) ? 'flex' : 'none';
+        });
+      }
+
+      locationSelect && locationSelect.addEventListener('change', function () {
+        // clear cart when location changes
+        Array.prototype.slice.call(cartList.querySelectorAll('.cart-item')).forEach(function (el) { el.remove(); });
+        cartEmpty.style.display = 'flex';
+        // hide header when cart is empty
+        var cartHeader = document.getElementById('cart-header');
+        if (cartHeader) cartHeader.style.display = 'none';
+        // hide footer when cart empty
+        if (cartFooter) {
+          cartFooter.style.display = 'none';
+          cartFooter.setAttribute('aria-hidden', 'true');
+        }
+        updateVisibleItems();
+      });
+
+      itemSearch && itemSearch.addEventListener('input', function () {
+        updateVisibleItems();
+      });
+
+      // add item to cart on click
+      itemsList && itemsList.addEventListener('click', function (e) {
+        var row = e.target.closest && e.target.closest('.request-item-row');
+        if (!row || row.style.display === 'none') return;
+        var code = row.getAttribute('data-code');
+        var name = row.getAttribute('data-name');
+        if (!code) return;
+        // if already in cart, increase qty
+        var existing = cartList.querySelector('.cart-item[data-code="'+code+'"]');
+        if (existing) {
+          var input = existing.querySelector('.qty-input');
+          input.value = parseInt(input.value || '0', 10) + 1;
+          return;
+        }
+        // remove empty placeholder and show header/footer
+        cartEmpty.style.display = 'none';
+        var cartHeader = document.getElementById('cart-header');
+        if (cartHeader) cartHeader.style.display = 'block';
+        if (cartFooter) {
+          cartFooter.style.display = 'block';
+          cartFooter.setAttribute('aria-hidden', 'false');
+        }
+        var item = document.createElement('div');
+        item.className = 'cart-item';
+        item.setAttribute('data-code', code);
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.justifyContent = 'space-between';
+        item.style.padding = '12px';
+        item.style.borderBottom = '1px solid #f3f4f6';
+        var left = document.createElement('div');
+        left.style.flex = '1';
+        left.style.minWidth = '0';
+        left.innerHTML = '<div class="cart-item-name">'+name+'</div><div class="cart-item-code">Item Code: '+code+'</div>';
+        var right = document.createElement('div');
+        right.style.marginLeft = '12px';
+        right.style.display = 'flex';
+        right.style.alignItems = 'center';
+        right.style.gap = '8px';
+        // qty controls
+        var dec = document.createElement('button');
+        dec.type = 'button';
+        dec.className = 'qty-decrease';
+        dec.style.border = '1px solid #e6e6e6';
+        dec.style.background = 'transparent';
+        dec.style.borderRadius = '6px';
+        dec.style.width = '32px';
+        dec.style.height = '32px';
+        dec.textContent = '−';
+        var input = document.createElement('input');
+        input.className = 'qty-input';
+        input.type = 'number';
+        input.value = '1';
+        input.style.width = '48px';
+        input.style.textAlign = 'center';
+        input.style.border = '1px solid #e6e6e6';
+        input.style.borderRadius = '6px';
+        input.style.height = '32px';
+        var inc = document.createElement('button');
+        inc.type = 'button';
+        inc.className = 'qty-increase';
+        inc.style.border = '1px solid #e6e6e6';
+        inc.style.background = 'transparent';
+        inc.style.borderRadius = '6px';
+        inc.style.width = '32px';
+        inc.style.height = '32px';
+        inc.textContent = '+';
+        right.appendChild(dec);
+        right.appendChild(input);
+        right.appendChild(inc);
+        // delete button (icon only)
+        var del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'qty-delete';
+        del.setAttribute('aria-label', 'Remove item');
+        var delImg = document.createElement('img');
+        delImg.setAttribute('src', '{% static "icons/trash.svg" %}');
+        del.appendChild(delImg);
+        right.appendChild(del);
+        item.appendChild(left);
+        item.appendChild(right);
+        cartList.appendChild(item);
+      });
+
+      // cart quantity controls and delete (delegated)
+      cartList && cartList.addEventListener('click', function (e) {
+        var dec = e.target.closest && e.target.closest('.qty-decrease');
+        var inc = e.target.closest && e.target.closest('.qty-increase');
+        var delBtn = e.target.closest && e.target.closest('.qty-delete');
+        if (dec || inc) {
+          var container = (dec || inc).closest && (dec || inc).closest('.cart-item');
+          if (!container) return;
+          var input = container.querySelector('.qty-input');
+          var val = parseInt(input.value || '0', 10);
+          if (dec) val = Math.max(1, val - 1);
+          if (inc) val = val + 1;
+          input.value = val;
+        } else if (delBtn) {
+          var container = delBtn.closest && delBtn.closest('.cart-item');
+          if (!container) return;
+          container.remove();
+          // if cart empty, show placeholder and hide header/footer
+          if (!cartList.querySelector('.cart-item')) {
+            cartEmpty.style.display = 'flex';
+            var cartHeader = document.getElementById('cart-header');
+            if (cartHeader) cartHeader.style.display = 'none';
+            if (cartFooter) {
+              cartFooter.style.display = 'none';
+              cartFooter.setAttribute('aria-hidden', 'true');
+            }
+          }
+        }
+      });
+
+      // simple Add to basket handler (no backend wiring)
+      var addToBasket = document.getElementById('add-to-basket');
+      addToBasket && addToBasket.addEventListener('click', function () {
+        var items = Array.prototype.slice.call(cartList.querySelectorAll('.cart-item'));
+        if (!items.length) {
+          alert('No items in cart');
+          return;
+        }
+        // for prototype, just show a confirmation
+        alert('Added ' + items.length + ' item(s) to basket (prototype).');
+      });
+    })();
+  </script>
+
+{% endblock %}
+
+

@@ -7,7 +7,15 @@
 
 {% block content %}
   <div class="page-header inventory-header">
-    <h2>Inventory</h2>
+    <div style="display:flex;flex-direction:column;">
+      <h2>Inventory</h2>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <a class="btn-new-request" href="{% url 'new_request' %}" aria-label="Request Stock">
+        <img src="{% static 'icons/plus.svg' %}" alt="" />
+        <span>Request Stock</span>
+      </a>
+    </div>
   </div>
 
   <div class="inventory-container">
