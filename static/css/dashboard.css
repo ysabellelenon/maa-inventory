@@ -76,6 +76,20 @@ body.sidebar-collapsed .sidebar-toggle{left:calc(96px - 18px);}
 .search input{width:520px;padding:10px 14px 10px 38px;border-radius:10px;border:1px solid #e6e6e6;background:#fff;transition:border-color .15s;}
 .search .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;opacity:.7;}
 .search input:hover,.search input:focus{border-color:#D9BD7D;outline:none;box-shadow:none;}
+
+/* Global focus styles for all typable fields to ensure consistent focus border color */
+input:focus,
+textarea:focus,
+select:focus,
+[contenteditable="true"]:focus,
+input[type="search"]:focus,
+.table-search-input:focus,
+.panel-input:focus,
+.panel-textarea:focus {
+  border-color: var(--focus) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(217,189,125,0.12) !important;
+}
 .top-actions{display:flex;align-items:center;gap:24px;}
 .top-actions .icon{width:20px;height:20px;}
 .icon-badge{display:inline-flex;align-items:center;justify-content:center;background:#FFFFFF;border:1.5px solid #F2F2F2;border-radius:8px;padding:6px;}
