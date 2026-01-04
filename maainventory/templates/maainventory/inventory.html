@@ -438,6 +438,34 @@
       });
     })();
   </script>
+  <script>
+    (function () {
+      // make entire row clickable to open the inventory edit page (ignore interactive controls)
+      var table = document.querySelector('.inventory-table');
+      if (!table) return;
+
+      table.addEventListener('click', function (e) {
+        var row = e.target.closest && e.target.closest('tr.inventory-row');
+        if (!row) return;
+        // ignore clicks on interactive controls inside the row
+        if (e.target.closest('input') || e.target.closest('button') || e.target.closest('a') || e.target.closest('.action-btn')) {
+          return;
+        }
+        // prefer data-code on the action button if present (gives canonical code)
+        var actionBtn = row.querySelector && row.querySelector('.action-btn');
+        var code = actionBtn && actionBtn.getAttribute && actionBtn.getAttribute('data-code');
+        if (!code) {
+          var codeCell = row.querySelector('.col-code');
+          if (!codeCell) return;
+          code = codeCell.textContent.trim();
+          // strip common prefix if present (e.g. "PK-12345" -> "12345")
+          if (code.indexOf('PK-') === 0) code = code.substring(3);
+        }
+        if (!code) return;
+        window.location.href = '/inventory/edit/' + encodeURIComponent(code) + '/';
+      });
+    })();
+  </script>
 {% endblock %}
 
  
