@@ -10,7 +10,7 @@
     <div style="display:flex;flex-direction:column;">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
-        <a href="{% url 'inventory' %}">Inventory</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'supplier_stock' %}">Supplier Stock</a><span class="sep" aria-hidden="true">&rsaquo;</span>
         <span class="active" aria-current="page">New Stock Request</span>
       </nav>
       <h2 style="margin-top:6px;">New Stock Request</h2>
@@ -24,40 +24,60 @@
     <div class="request-layout" style="display:flex;gap:18px;align-items:stretch;">
       <div class="request-left" style="flex:0 0 360px;min-width:320px;">
         <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
-          <label class="field-label">Choose Location</label>
-          <select id="location-select" class="panel-input" aria-label="Choose Location">
-            <option value="">Select location</option>
-            {% for loc in locations %}
-            <option value="{{ loc }}">{{ loc }}</option>
+          <label class="field-label">Select Branch</label>
+          <select id="branch-select" class="panel-input" aria-label="Select Branch">
+            <option value="">Select branch</option>
+            {% for branch in branches %}
+            <option value="{{ branch.id }}">{{ branch.name }} ({{ branch.brand.name }})</option>
             {% endfor %}
           </select>
         </div>
 
         <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
           <div style="margin-bottom:8px;">
-            <input id="item-search" class="panel-input" placeholder="Search by item or category name" aria-label="Search items" />
+            <input id="supplier-search" class="panel-input" placeholder="Search by supplier name" aria-label="Search suppliers" />
           </div>
-          <div class="items-list" id="items-list" style="max-height:385px;overflow:auto;border-top:1px solid var(--border);">
-            {% for it in items %}
-            <div class="request-item-row" data-code="{{ it.code }}" data-name="{{ it.name }}" data-locations="{{ it.locations|join:',' }}" style="padding:12px 10px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;">
-                <div class="item-title" style="font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ it.name }}</div>
-                <div class="item-code" style="font-size:12px;color:#6b7280;white-space:nowrap;">Item Code: {{ it.code }}</div>
+          <div class="suppliers-list" id="suppliers-list" style="max-height:385px;overflow:auto;border-top:1px solid var(--border);">
+            {% for supplier in suppliers %}
+            <div class="supplier-row" data-supplier-id="{{ supplier.id }}" data-name="{{ supplier.name }}" data-branches="{{ supplier.branches|join:',' }}" style="padding:12px 10px;border-bottom:1px solid #f3f4f6;display:none;flex;align-items:center;justify-content:space-between;cursor:pointer;">
+              <div style="flex:1;min-width:0;">
+                <div class="supplier-name" style="font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ supplier.name }}</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:4px;">{{ supplier.category }}</div>
               </div>
               <div style="margin-left:12px;color:#6b7280;">›</div>
             </div>
             {% endfor %}
+            <div id="no-suppliers" style="padding:20px;text-align:center;color:#6b7280;display:none;">
+              No suppliers available for selected branch
+            </div>
           </div>
         </div>
       </div>
 
       <div class="request-right panel-border" style="flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;">
         <div>
-          <div id="cart-header" style="display:none;font-weight:700;padding:10px 12px;background:rgba(16,24,40,0.02);border-radius:6px;margin-bottom:12px;">Package Item Name <span style="float:right;font-weight:700;">QTY</span></div>
+          <div id="cart-header" style="display:none;font-weight:700;padding:10px 12px;background:rgba(16,24,40,0.02);border-radius:6px;margin-bottom:12px;">
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;">
+              <div>Item Name</div>
+              <div style="text-align:right;">Price</div>
+              <div style="text-align:right;">QTY</div>
+            </div>
+          </div>
           <div id="cart-list" style="display:flex;flex-direction:column;gap:8px;overflow:auto;flex:1 1 auto;">
           <div id="cart-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#6b7280;">
               <div class="cart-empty-icon" aria-hidden="true" style="margin-bottom:12px;"></div>
-              <div id="cart-empty-text">Select a location to view available items and them to cart.</div>
+              <div id="cart-empty-text">Select a branch to view available suppliers.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="total-qty-container" style="display:none;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:600;color:var(--text);font-size:15px;">
+              Total Qty: <span id="total-qty">0</span>
+            </div>
+            <div style="font-weight:600;color:var(--text);font-size:15px;">
+              Total Price: <span id="total-price">0.00</span>
             </div>
           </div>
         </div>
@@ -76,84 +96,131 @@
 
   <script>
     (function () {
-      var locationSelect = document.getElementById('location-select');
-      var itemSearch = document.getElementById('item-search');
-      var itemsList = document.getElementById('items-list');
+      var branchSelect = document.getElementById('branch-select');
+      var supplierSearch = document.getElementById('supplier-search');
+      var suppliersList = document.getElementById('suppliers-list');
       var cartList = document.getElementById('cart-list');
       var cartEmpty = document.getElementById('cart-empty');
       var cartFooter = document.getElementById('cart-footer');
+      var noSuppliers = document.getElementById('no-suppliers');
+      var selectedSupplierId = null;
+      var itemsContainer = null;
+      
+      // Items data from server (filtered to only show items in Supplier Stock)
+      var itemsData = [
+        {% for it in items %}
+        {
+          code: "{{ it.code }}",
+          name: "{{ it.name }}",
+          supplier_id: {{ it.supplier_id }},
+          supplier_name: "{{ it.supplier_name }}",
+          branches: [{{ it.branches|join:',' }}],
+          price_per_unit: {% if it.price_per_unit %}{{ it.price_per_unit }}{% else %}null{% endif %},
+          available_quantity: {% if it.available_quantity %}{{ it.available_quantity }}{% else %}0{% endif %}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      ];
 
-      function updateVisibleItems() {
-        var loc = locationSelect.value;
-        var q = itemSearch.value.trim().toLowerCase();
-        Array.prototype.forEach.call(itemsList.querySelectorAll('.request-item-row'), function (row) {
+      function updateVisibleSuppliers() {
+        var branchId = branchSelect.value;
+        var q = supplierSearch.value.trim().toLowerCase();
+        var visibleCount = 0;
+        
+        Array.prototype.forEach.call(suppliersList.querySelectorAll('.supplier-row'), function (row) {
           var name = row.getAttribute('data-name') || '';
-          var locations = row.getAttribute('data-locations') || '';
-          var matchesLoc = !loc || locations.indexOf(loc) !== -1;
+          var branches = row.getAttribute('data-branches') || '';
+          var branchIds = branches ? branches.split(',') : [];
+          var matchesBranch = !branchId || branchIds.indexOf(branchId) !== -1;
           var matchesQuery = !q || name.toLowerCase().indexOf(q) !== -1;
-          row.style.display = (matchesLoc && matchesQuery) ? 'flex' : 'none';
+          
+          if (matchesBranch && matchesQuery) {
+            row.style.display = 'flex';
+            visibleCount++;
+          } else {
+            row.style.display = 'none';
+          }
         });
+        
+        // Show/hide "no suppliers" message
+        if (branchId && visibleCount === 0) {
+          noSuppliers.style.display = 'block';
+        } else {
+          noSuppliers.style.display = 'none';
+        }
       }
-
-      locationSelect && locationSelect.addEventListener('change', function () {
-        // clear cart when location changes
+      
+      function showItemsForSupplier(supplierId) {
+        var branchId = branchSelect.value;
+        if (!branchId) return;
+        
+        // Filter items for this supplier and branch
+        var filteredItems = itemsData.filter(function(item) {
+          return item.supplier_id == supplierId && item.branches.indexOf(parseInt(branchId)) !== -1;
+        });
+        
+        // Clear cart first
         Array.prototype.slice.call(cartList.querySelectorAll('.cart-item')).forEach(function (el) { el.remove(); });
+        
+        // Show items in the cart area (right side) with quantity controls
+        if (filteredItems.length === 0) {
         cartEmpty.style.display = 'flex';
-        // hide header when cart is empty
+          document.getElementById('cart-empty-text').textContent = 'No items available for this supplier and branch.';
         var cartHeader = document.getElementById('cart-header');
         if (cartHeader) cartHeader.style.display = 'none';
-        // hide footer when cart empty
+          var totalQtyContainer = document.getElementById('total-qty-container');
+          if (totalQtyContainer) totalQtyContainer.style.display = 'none';
         if (cartFooter) {
           cartFooter.style.display = 'none';
           cartFooter.setAttribute('aria-hidden', 'true');
         }
-        updateVisibleItems();
-      });
-
-      itemSearch && itemSearch.addEventListener('input', function () {
-        updateVisibleItems();
-      });
-
-      // add item to cart on click
-      itemsList && itemsList.addEventListener('click', function (e) {
-        var row = e.target.closest && e.target.closest('.request-item-row');
-        if (!row || row.style.display === 'none') return;
-        var code = row.getAttribute('data-code');
-        var name = row.getAttribute('data-name');
-        if (!code) return;
-        // if already in cart, increase qty
-        var existing = cartList.querySelector('.cart-item[data-code="'+code+'"]');
-        if (existing) {
-          var input = existing.querySelector('.qty-input');
-          input.value = parseInt(input.value || '0', 10) + 1;
-          return;
-        }
-        // remove empty placeholder and show header/footer
-        cartEmpty.style.display = 'none';
+        } else {
+          // Hide empty message
+          cartEmpty.style.display = 'none';
+          
+          // Show header
         var cartHeader = document.getElementById('cart-header');
         if (cartHeader) cartHeader.style.display = 'block';
+          
+          // Show total qty container
+          var totalQtyContainer = document.getElementById('total-qty-container');
+          if (totalQtyContainer) totalQtyContainer.style.display = 'block';
+          
+          // Show footer
         if (cartFooter) {
           cartFooter.style.display = 'block';
           cartFooter.setAttribute('aria-hidden', 'false');
         }
-        var item = document.createElement('div');
-        item.className = 'cart-item';
-        item.setAttribute('data-code', code);
-        item.style.display = 'flex';
-        item.style.alignItems = 'center';
-        item.style.justifyContent = 'space-between';
-        item.style.padding = '12px';
-        item.style.borderBottom = '1px solid #f3f4f6';
+          
+          // Add items to cart area with quantity controls
+          filteredItems.forEach(function(item) {
+            var cartItem = document.createElement('div');
+            cartItem.className = 'cart-item';
+            cartItem.setAttribute('data-code', item.code);
+            cartItem.setAttribute('data-name', item.name);
+            // Item layout with grid: Item Name | Price | QTY Controls
+            cartItem.style.display = 'grid';
+            cartItem.style.gridTemplateColumns = '2fr 1fr 1fr';
+            cartItem.style.gap = '12px';
+            cartItem.style.alignItems = 'center';
+            cartItem.style.padding = '12px';
+            cartItem.style.borderBottom = '1px solid #f3f4f6';
+            
         var left = document.createElement('div');
-        left.style.flex = '1';
-        left.style.minWidth = '0';
-        left.innerHTML = '<div class="cart-item-name">'+name+'</div><div class="cart-item-code">Item Code: '+code+'</div>';
+            var availableQtyText = item.available_quantity ? '<div style="font-size:11px;color:#10b981;margin-top:2px;">Available: ' + item.available_quantity.toFixed(0) + ' units in stock</div>' : '';
+            left.innerHTML = '<div class="cart-item-name">' + item.name + '</div><div class="cart-item-code">Item Code: ' + item.code + '</div>' + availableQtyText;
+            
+            var priceDiv = document.createElement('div');
+            priceDiv.style.textAlign = 'right';
+            var price = item.price_per_unit;
+            priceDiv.innerHTML = '<div style="font-weight:500;color:var(--text);">' + (price ? parseFloat(price).toFixed(2) : '—') + '</div>';
+            
         var right = document.createElement('div');
-        right.style.marginLeft = '12px';
         right.style.display = 'flex';
         right.style.alignItems = 'center';
         right.style.gap = '8px';
-        // qty controls
+            right.style.justifyContent = 'flex-end';
+            
+            // Quantity controls
         var dec = document.createElement('button');
         dec.type = 'button';
         dec.className = 'qty-decrease';
@@ -163,15 +230,19 @@
         dec.style.width = '32px';
         dec.style.height = '32px';
         dec.textContent = '−';
+            
         var input = document.createElement('input');
         input.className = 'qty-input';
         input.type = 'number';
-        input.value = '1';
+            input.value = '0';
+            input.min = '0';
+            input.max = item.available_quantity ? Math.floor(item.available_quantity) : '999999';
         input.style.width = '48px';
         input.style.textAlign = 'center';
         input.style.border = '1px solid #e6e6e6';
         input.style.borderRadius = '6px';
         input.style.height = '32px';
+            
         var inc = document.createElement('button');
         inc.type = 'button';
         inc.className = 'qty-increase';
@@ -181,63 +252,255 @@
         inc.style.width = '32px';
         inc.style.height = '32px';
         inc.textContent = '+';
+            
         right.appendChild(dec);
         right.appendChild(input);
         right.appendChild(inc);
-        // delete button (icon only)
-        var del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'qty-delete';
-        del.setAttribute('aria-label', 'Remove item');
-        var delImg = document.createElement('img');
-        delImg.setAttribute('src', '{% static "icons/trash.svg" %}');
-        del.appendChild(delImg);
-        right.appendChild(del);
-        item.appendChild(left);
-        item.appendChild(right);
-        cartList.appendChild(item);
+            
+            cartItem.appendChild(left);
+            cartItem.appendChild(priceDiv);
+            cartItem.appendChild(right);
+            cartList.appendChild(cartItem);
+          });
+          
+          // Update total qty after adding items
+          updateTotalQty();
+        }
+      }
+      
+      function updateTotalQty() {
+        var total = 0;
+        var totalPrice = 0;
+        var inputs = cartList.querySelectorAll('.qty-input');
+        Array.prototype.forEach.call(inputs, function(input) {
+          var qty = parseInt(input.value || '0', 10);
+          total += qty;
+          
+          // Calculate price for this item
+          var cartItem = input.closest('.cart-item');
+          if (cartItem) {
+            var itemCode = cartItem.getAttribute('data-code');
+            // Find the item in itemsData to get price_per_unit
+            var item = itemsData.find(function(it) {
+              return it.code === itemCode;
+            });
+            if (item && item.price_per_unit) {
+              totalPrice += parseFloat(item.price_per_unit) * qty;
+            }
+          }
+        });
+        var totalQtyEl = document.getElementById('total-qty');
+        if (totalQtyEl) {
+          totalQtyEl.textContent = total;
+        }
+        var totalPriceEl = document.getElementById('total-price');
+        if (totalPriceEl) {
+          totalPriceEl.textContent = totalPrice.toFixed(2);
+        }
+      }
+
+      branchSelect && branchSelect.addEventListener('change', function () {
+        // Reset supplier selection
+        selectedSupplierId = null;
+        
+        // clear cart when branch changes
+        Array.prototype.slice.call(cartList.querySelectorAll('.cart-item')).forEach(function (el) { el.remove(); });
+        cartEmpty.style.display = 'flex';
+        document.getElementById('cart-empty-text').textContent = 'Select a supplier to view available items.';
+        // hide header when cart is empty
+        var cartHeader = document.getElementById('cart-header');
+        if (cartHeader) cartHeader.style.display = 'none';
+        // hide total qty container when cart empty
+        var totalQtyContainer = document.getElementById('total-qty-container');
+        if (totalQtyContainer) totalQtyContainer.style.display = 'none';
+        // hide footer when cart empty
+        if (cartFooter) {
+          cartFooter.style.display = 'none';
+          cartFooter.setAttribute('aria-hidden', 'true');
+        }
+        updateTotalQty();
+        updateVisibleSuppliers();
       });
 
-      // cart quantity controls and delete (delegated)
+      supplierSearch && supplierSearch.addEventListener('input', function () {
+        updateVisibleSuppliers();
+      });
+      
+      // Handle supplier click
+      suppliersList && suppliersList.addEventListener('click', function (e) {
+        var row = e.target.closest && e.target.closest('.supplier-row');
+        if (!row || row.style.display === 'none') return;
+        var supplierId = row.getAttribute('data-supplier-id');
+        if (!supplierId) return;
+        selectedSupplierId = supplierId;
+        showItemsForSupplier(supplierId);
+      });
+
+      function updateTotalQty() {
+        var total = 0;
+        var totalPrice = 0;
+        var inputs = cartList.querySelectorAll('.qty-input');
+        Array.prototype.forEach.call(inputs, function(input) {
+          var qty = parseInt(input.value || '0', 10);
+          total += qty;
+          
+          // Calculate price for this item
+          var cartItem = input.closest('.cart-item');
+          if (cartItem) {
+            var itemCode = cartItem.getAttribute('data-code');
+            // Find the item in itemsData to get price_per_unit
+            var item = itemsData.find(function(it) {
+              return it.code === itemCode;
+            });
+            if (item && item.price_per_unit) {
+              totalPrice += parseFloat(item.price_per_unit) * qty;
+            }
+          }
+        });
+        var totalQtyEl = document.getElementById('total-qty');
+        if (totalQtyEl) {
+          totalQtyEl.textContent = total;
+        }
+        var totalPriceEl = document.getElementById('total-price');
+        if (totalPriceEl) {
+          totalPriceEl.textContent = totalPrice.toFixed(2);
+        }
+      }
+
+      // cart quantity controls (delegated)
       cartList && cartList.addEventListener('click', function (e) {
         var dec = e.target.closest && e.target.closest('.qty-decrease');
         var inc = e.target.closest && e.target.closest('.qty-increase');
-        var delBtn = e.target.closest && e.target.closest('.qty-delete');
         if (dec || inc) {
           var container = (dec || inc).closest && (dec || inc).closest('.cart-item');
           if (!container) return;
           var input = container.querySelector('.qty-input');
+          var itemCode = container.getAttribute('data-code');
+          
+          // Get available quantity for this item
+          var item = itemsData.find(function(it) {
+            return it.code === itemCode && it.supplier_id == selectedSupplierId;
+          });
+          var maxQty = item && item.available_quantity ? item.available_quantity : 999999;
+          
           var val = parseInt(input.value || '0', 10);
-          if (dec) val = Math.max(1, val - 1);
-          if (inc) val = val + 1;
+          if (dec) val = Math.max(0, val - 1);
+          if (inc) val = Math.min(maxQty, val + 1);  // Don't exceed available quantity
           input.value = val;
-        } else if (delBtn) {
-          var container = delBtn.closest && delBtn.closest('.cart-item');
-          if (!container) return;
-          container.remove();
-          // if cart empty, show placeholder and hide header/footer
-          if (!cartList.querySelector('.cart-item')) {
-            cartEmpty.style.display = 'flex';
-            var cartHeader = document.getElementById('cart-header');
-            if (cartHeader) cartHeader.style.display = 'none';
-            if (cartFooter) {
-              cartFooter.style.display = 'none';
-              cartFooter.setAttribute('aria-hidden', 'true');
-            }
+          updateTotalQty();
+        }
+      });
+      
+      // Also update total when quantity is manually typed
+      cartList && cartList.addEventListener('input', function (e) {
+        if (e.target && e.target.classList.contains('qty-input')) {
+          var input = e.target;
+          var container = input.closest('.cart-item');
+          if (container) {
+            var itemCode = container.getAttribute('data-code');
+            var item = itemsData.find(function(it) {
+              return it.code === itemCode && it.supplier_id == selectedSupplierId;
+            });
+            var maxQty = item && item.available_quantity ? Math.floor(item.available_quantity) : 999999;
+            
+            // Validate quantity against max available
+            var val = parseInt(input.value || '0', 10);
+            if (val > maxQty) {
+              input.value = maxQty;
+              alert('Cannot order more than ' + maxQty + ' units. This is the maximum available in supplier stock.');
+            } else if (val < 0) {
+              input.value = 0;
           }
+          }
+          updateTotalQty();
         }
       });
 
-      // simple Add to basket handler (no backend wiring)
+      // Place Request handler
       var addToBasket = document.getElementById('add-to-basket');
       addToBasket && addToBasket.addEventListener('click', function () {
-        var items = Array.prototype.slice.call(cartList.querySelectorAll('.cart-item'));
-        if (!items.length) {
-          alert('No items in cart');
+        var branchId = branchSelect ? branchSelect.value : null;
+        var supplierId = selectedSupplierId;
+        
+        if (!branchId) {
+          alert('Please select a branch');
           return;
         }
-        // for prototype, just show a confirmation
-        alert('Added ' + items.length + ' item(s) to basket (prototype).');
+        
+        if (!supplierId) {
+          alert('Please select a supplier');
+          return;
+        }
+        
+        // Collect items with quantities > 0
+        var orderItems = [];
+        var cartItems = Array.prototype.slice.call(cartList.querySelectorAll('.cart-item'));
+        
+        cartItems.forEach(function(cartItem) {
+          var qtyInput = cartItem.querySelector('.qty-input');
+          var qty = parseInt(qtyInput.value || '0', 10);
+          
+          if (qty > 0) {
+            var itemCode = cartItem.getAttribute('data-code');
+            var itemName = cartItem.getAttribute('data-name');
+            
+            // Find price from itemsData
+            var item = itemsData.find(function(it) {
+              return it.code === itemCode;
+            });
+            
+            var price = item && item.price_per_unit ? parseFloat(item.price_per_unit) : 0;
+            
+            orderItems.push({
+              code: itemCode,
+              name: itemName,
+              quantity: qty,
+              price: price
+            });
+          }
+        });
+        
+        if (orderItems.length === 0) {
+          alert('Please add at least one item with quantity > 0');
+          return;
+        }
+        
+        // Disable button during request
+        addToBasket.disabled = true;
+        addToBasket.textContent = 'Processing...';
+        
+        // Send POST request
+        fetch('{% url "new_request" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({
+            branch_id: branchId,
+            supplier_id: supplierId,
+            items: orderItems
+          })
+        })
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(data) {
+          if (data.success) {
+            alert('Purchase Order created successfully!\\nPO Code: ' + data.po_code + '\\n\\nEmail has been sent to the supplier.');
+            // Redirect to purchase orders page
+            window.location.href = '{% url "purchase_orders" %}';
+          } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+          }
+        })
+        .catch(function(error) {
+          alert('Error creating order: ' + error.message);
+        })
+        .finally(function() {
+          addToBasket.disabled = false;
+          addToBasket.innerHTML = '<img src="{% static "icons/delivery.svg" %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" /><span>Place Request</span>';
+        });
       });
     })();
   </script>

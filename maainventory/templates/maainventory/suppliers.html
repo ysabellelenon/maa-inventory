@@ -6,8 +6,24 @@
 {% endblock %}
 
 {% block content %}
-  <div class="page-header inventory-header">
+  {% if messages %}
+    <div style="margin-bottom: 20px;">
+      {% for message in messages %}
+        <div style="padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; background: {% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% else %}var(--accent){% endif %}; color: {% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% else %}var(--text){% endif %}; border: 1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% else %}var(--border){% endif %};">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  
+  <div class="page-header inventory-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Suppliers</h2>
+    {% if is_procurement %}
+    <a href="{% url 'add_supplier' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
+      <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
+      Add Supplier
+    </a>
+    {% endif %}
   </div>
 
   <div class="inventory-container">
@@ -41,9 +57,9 @@
         </thead>
         <tbody>
           {% for item in items %}
-            <tr class="inventory-row">
-              <td class="col-check"><input type="checkbox" class="row-select" aria-label="select supplier #{{ forloop.counter }}" /></td>
-              <td class="col-expand">
+            <tr class="inventory-row" style="cursor: pointer;" onclick="window.location.href='{% url 'edit_supplier' item.id %}'" onmouseover="this.style.backgroundColor='#F9FAFB'" onmouseout="this.style.backgroundColor=''">
+              <td class="col-check" onclick="event.stopPropagation();"><input type="checkbox" class="row-select" aria-label="select supplier #{{ forloop.counter }}" /></td>
+              <td class="col-expand" onclick="event.stopPropagation();">
                 <button class="expand" aria-hidden="true">
                   <img class="expand-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
                 </button>
@@ -54,11 +70,18 @@
                   <div class="item-title">{{ item.name }}</div>
                 </div>
               </td>
-              <td class="col-category">{{ item.category|default:"—" }}</td>
+              <td class="col-category" onclick="event.stopPropagation();">
+                <select class="category-dropdown" data-supplier-id="{{ item.id }}" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-family: var(--font-stack); font-size: 13px; background: var(--card-bg); color: var(--text);">
+                  <option value="">—</option>
+                  {% for category in categories %}
+                    <option value="{{ category.id }}" {% if item.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                  {% endfor %}
+                </select>
+              </td>
               <td class="col-contact">{{ item.contact_person|default:"—" }}</td>
               <td class="col-phone">{{ item.phone|default:"—" }}</td>
               <td class="col-email">{{ item.email|default:"—" }}</td>
-              <td class="col-action">
+              <td class="col-action" onclick="event.stopPropagation();">
                 <div class="action-btn-container">
                   <button class="action-btn" aria-label="More actions"
                           data-code="{{ item.code|default:forloop.counter }}"
@@ -260,7 +283,7 @@
 <div class="overlay" hidden></div>
 <div class="action-menu" hidden role="menu" aria-hidden="true">
   <button class="action-menu-item" data-action="edit">Edit</button>
-  <button class="action-menu-item" data-action="adjust">Adjust</button>
+  <button class="action-menu-item" data-action="delete" style="color: #dc2626;">Delete</button>
 </div>
 
 <script>
@@ -322,10 +345,13 @@
         else if (path.indexOf('/suppliers') !== -1) base = '/suppliers/';
         else base = '/inventory/';
 
-        if (action === 'adjust') {
-          window.location.href = base + 'adjust/' + encodeURIComponent(data.code) + '/';
-        } else if (action === 'edit') {
+        if (action === 'edit') {
           window.location.href = base + 'edit/' + encodeURIComponent(data.code) + '/';
+        } else if (action === 'delete') {
+          var supplierName = data.name || data.supplier || 'this supplier';
+          if (confirm('Are you sure you want to delete ' + supplierName + '? This action cannot be undone.')) {
+            window.location.href = base + 'delete/' + encodeURIComponent(data.code) + '/';
+          }
         }
         return;
       }
@@ -451,25 +477,74 @@
 </script>
 
 <script>
-  (function () {
-    // make entire row clickable to open the supplier edit page
-    var table = document.querySelector('.inventory-table');
-    if (!table) return;
+  // Handle category dropdown changes
+  (function() {
+    var categoryDropdowns = document.querySelectorAll('.category-dropdown');
+    if (!categoryDropdowns.length) return;
 
-    table.addEventListener('click', function (e) {
-      var row = e.target.closest && e.target.closest('tr.inventory-row');
-      if (!row) return;
-      // ignore clicks on interactive controls inside the row
-      if (e.target.closest('input') || e.target.closest('button') || e.target.closest('a') || e.target.closest('.action-btn')) {
-        return;
-      }
-      var codeCell = row.querySelector('.col-code');
-      if (!codeCell) return;
-      var code = codeCell.textContent.trim();
-      if (!code) return;
-      // navigate to the supplier edit prototype page
-      window.location.href = '/suppliers/edit/' + encodeURIComponent(code) + '/';
+    categoryDropdowns.forEach(function(dropdown) {
+      // Store original value
+      dropdown.setAttribute('data-original-value', dropdown.value || '');
+      
+      dropdown.addEventListener('change', function() {
+        var supplierId = this.getAttribute('data-supplier-id');
+        var categoryId = this.value;
+        var originalValue = this.getAttribute('data-original-value') || '';
+        
+        // Make API call to update category
+        fetch('/suppliers/update-category/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            supplier_id: supplierId,
+            category_id: categoryId || null
+          })
+        })
+        .then(function(response) {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error('Network response was not ok');
+        })
+        .then(function(data) {
+          if (data.success) {
+            // Update the original value
+            dropdown.setAttribute('data-original-value', categoryId || '');
+            // Optionally show a success message
+            console.log('Category updated successfully');
+          } else {
+            // Revert on error
+            dropdown.value = originalValue;
+            alert('Error updating category: ' + (data.error || 'Unknown error'));
+          }
+        })
+        .catch(function(error) {
+          console.error('Error:', error);
+          // Revert on error
+          dropdown.value = originalValue;
+          alert('Error updating category. Please try again.');
+        });
+      });
     });
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+          var cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
   })();
 </script>
 

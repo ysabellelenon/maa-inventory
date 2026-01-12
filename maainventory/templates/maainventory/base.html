@@ -7,6 +7,37 @@
   <title>Inventory Management</title>
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   {% block extra_css %}{% endblock %}
+  <style>
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .alert-message {
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    /* Auto-hide messages after 5 seconds */
+    .alert-message {
+      animation: slideIn 0.3s ease-out, fadeOut 0.5s ease-out 4.5s forwards;
+    }
+    
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="app">
@@ -30,6 +61,19 @@
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18.226 5.226-2.52-2.52A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-.351"/><path d="M21.378 12.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/><path d="M8 18h1"/></svg>
           <span>Requests</span>
         </a>
+        <a class="nav-item {% if request.path == '/purchase-orders/' %}active{% endif %}" href="{% url 'purchase_orders' %}">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+          <span>Purchase Orders</span>
+        </a>
+        {% if user.profile.role and 'Warehouse' not in user.profile.role.name %}
+        <a class="nav-item {% if '/item-requests/' in request.path %}active{% endif %}" href="{% url 'item_requests' %}">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <span>Item Requests</span>
+        </a>
+        <a class="nav-item {% if request.path == '/supplier-stock/' %}active{% endif %}" href="{% url 'supplier_stock' %}">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+          <span>Supplier Stock</span>
+        </a>
         <a class="nav-item {% if request.path == '/suppliers/' %}active{% endif %}" href="{% url 'suppliers' %}">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12h.01"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 0l-2 2"/><path d="M22 13a18.15 18.15 0 0 1-20 0"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>
           <span>Suppliers</span>
@@ -42,13 +86,14 @@
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16v5"/><path d="M16 14v7"/><path d="M20 10v11"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18v3"/><path d="M8 14v7"/></svg>
           <span>Reports</span>
         </a>
+        {% endif %}
       </nav>
 
       <div class="logout">
-        <div class="nav-item logout-item" role="button" tabindex="0">
+        <a href="{% url 'logout' %}" class="nav-item logout-item">
           <img src="{% static 'icons/log-out.svg' %}" alt="Logout" />
           <span>Logout</span>
-        </div>
+        </a>
       </div>
     </aside>
 
@@ -67,13 +112,49 @@
             <img class="icon" src="{% static 'icons/bell.svg' %}" alt="notifications" />
           </span>
           <div class="user">
-            <div class="user-name">Maather Al-Mufadhali</div>
-            <div class="user-role">MAA Procurement Manager</div>
+            <div class="user-name">
+              {% if user.is_authenticated %}
+                {% if user.profile.full_name %}
+                  {{ user.profile.full_name }}
+                {% elif user.get_full_name %}
+                  {{ user.get_full_name }}
+                {% else %}
+                  {{ user.username }}
+                {% endif %}
+              {% else %}
+                Guest
+              {% endif %}
+            </div>
+            <div class="user-role">
+              {% if user.is_authenticated %}
+                {% if user.profile.punch_id %}
+                  {{ user.profile.punch_id }}
+                {% endif %}
+                {% if user.profile.role %}
+                  {% if user.profile.punch_id %} • {% endif %}{{ user.profile.role.name }}
+                {% elif not user.profile.punch_id %}
+                  MAA Employee
+                {% endif %}
+              {% else %}
+                Not logged in
+              {% endif %}
+            </div>
           </div>
         </div>
       </header>
 
       <section class="content">
+        {% if messages %}
+          <div style="position: fixed; top: 80px; right: 20px; z-index: 9999; max-width: 400px;">
+            {% for message in messages %}
+              <div class="alert-message alert-{{ message.tags }}" style="padding: 14px 18px; margin-bottom: 12px; border-radius: 8px; background: {% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% elif message.tags == 'warning' %}#fef3c7{% else %}#dbeafe{% endif %}; color: {% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% elif message.tags == 'warning' %}#92400e{% else %}#1e40af{% endif %}; border: 1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% elif message.tags == 'warning' %}#fde68a{% else %}#bfdbfe{% endif %}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: space-between; gap: 12px; animation: slideIn 0.3s ease-out;">
+                <span style="flex: 1;">{{ message }}</span>
+                <button onclick="this.parentElement.remove()" style="background: transparent; border: none; color: inherit; cursor: pointer; opacity: 0.7; font-size: 20px; line-height: 1; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">&times;</button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
         {% block content %}{% endblock %}
       </section>
     </main>
@@ -96,6 +177,16 @@
           img.style.transform = collapsed ? 'rotate(180deg)' : 'rotate(0deg)';
         }
         toggle.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+      });
+    })();
+    
+    // Auto-remove alert messages after animation completes
+    (function() {
+      var alerts = document.querySelectorAll('.alert-message');
+      alerts.forEach(function(alert) {
+        setTimeout(function() {
+          alert.remove();
+        }, 5000); // Remove after 5 seconds (matches animation timing)
       });
     })();
   </script>

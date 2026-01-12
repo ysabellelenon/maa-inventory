@@ -3,10 +3,28 @@
 
 {% block content %}
   <div class="page-header">
-    <h2>Stock Overview</h2>
+    <h2>{% if is_it %}IT Dashboard{% elif is_procurement %}Procurement Dashboard{% else %}Dashboard{% endif %}</h2>
   </div>
 
+  {# IT Dashboard Section - Only for IT users #}
+  {% if is_it %}
+  <div style="margin-bottom: 32px;">
+    <h3 style="margin-bottom: 16px; color: var(--text); font-size: 20px; font-weight: 600;">IT System Overview</h3>
     <div class="stats-grid">
+      {% for s in stats %}
+        <div class="stat-card {{ s.key }}">
+          <div class="stat-value">{{ s.value }}</div>
+          <div class="stat-note">{{ s.note }}</div>
+          <div class="stat-label">{{ s.label }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# Procurement Dashboard Stats - For Procurement users only (IT sees alerts below) #}
+  {% if is_procurement and not is_it %}
+  <div class="stats-grid">
     {% for s in stats %}
       <div class="stat-card {{ s.key }}">
         <div class="stat-value">{{ s.value }}</div>
@@ -15,47 +33,322 @@
       </div>
     {% endfor %}
   </div>
+  {% endif %}
 
-  <div class="panels">
-    <div class="panel panel-left">
-      <h3>Most Requested Items</h3>
+  {# Procurement Dashboard Alerts - For IT and Procurement users #}
+  {% if show_procurement_alerts %}
+  <div style="margin-top: {% if is_it %}32px{% else %}20px{% endif %}; margin-bottom: 32px;">
+    <h3 style="margin-bottom: 16px; color: var(--text); font-size: 20px; font-weight: 600;">Procurement Alerts</h3>
+    
+    <div class="panels">
+      {# Alert 1: Low Stock Items #}
+      <div class="panel panel-left">
+        <h3 style="color: {% if low_stock_count > 0 %}#ef4444{% else %}var(--text){% endif %};">
+          Low Stock Items {% if low_stock_count > 0 %}<span style="font-size: 14px; font-weight: normal;">({{ low_stock_count }})</span>{% endif %}
+        </h3>
+        <div class="list">
+          {% for item in low_stock_items %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name">
+                  <strong>{{ item.item_code }}</strong> - {{ item.item_name }}
+                  {% if item.variation %}
+                    <span style="color: var(--muted); font-size: 12px;">({{ item.variation }})</span>
+                  {% endif %}
+                  <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                    Location: {{ item.location }}
+                  </div>
+                </div>
+                <div class="item-stats">
+                  <div style="color: #ef4444; font-weight: 600;">
+                    {{ item.qty_on_hand|floatformat:0 }} / {{ item.min_stock_qty|floatformat:0 }} {{ item.base_unit }}
+                  </div>
+                  <div style="color: var(--muted); font-size: 12px;">
+                    Shortage: {{ item.shortage|floatformat:0 }} {{ item.base_unit }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name" style="color: var(--muted);">No low stock items</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# Alert 2: Pending Requests #}
+      <div class="panel panel-right">
+        <h3 style="color: {% if pending_requests_count > 0 %}#3b82f6{% else %}var(--text){% endif %};">
+          Pending Requests {% if pending_requests_count > 0 %}<span style="font-size: 14px; font-weight: normal;">({{ pending_requests_count }})</span>{% endif %}
+        </h3>
+        <div class="list">
+          {% for request in pending_requests %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name">
+                  <strong>{{ request.request_code }}</strong>
+                  <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                    {{ request.branch.name }} • {{ request.requested_by.get_full_name|default:request.requested_by.username }}
+                  </div>
+                </div>
+                <div class="item-stats">
+                  <div style="color: {% if request.status == 'Pending' %}#3b82f6{% else %}#f59e0b{% endif %}; font-weight: 500;">
+                    {{ request.get_status_display }}
+                  </div>
+                  <div style="color: var(--muted); font-size: 12px;">
+                    {{ request.created_at|date:"M d, Y" }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name" style="color: var(--muted);">No pending requests</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="panels" style="margin-top: 16px;">
+      {# Alert 3: Items in Supplier Stock #}
+      <div class="panel panel-left">
+        <h3 style="color: {% if supplier_hold_count > 0 %}#f59e0b{% else %}var(--text){% endif %};">
+          Supplier Stock {% if supplier_hold_count > 0 %}<span style="font-size: 14px; font-weight: normal;">({{ supplier_hold_count }})</span>{% endif %}
+        </h3>
+        <div class="list">
+          {% for item in supplier_hold_items %}
+            <div class="list-row" style="{% if item.is_low_stock %}background: #FEF2F2;{% endif %}">
+              <div class="row-content">
+                <div class="item-name">
+                  <strong>{{ item.item_code }}</strong> - {{ item.item_name }}
+                  {% if item.variation %}
+                    <span style="color: var(--muted); font-size: 12px;">({{ item.variation }})</span>
+                  {% endif %}
+                  <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                    Supplier: {{ item.supplier }}
+                    {% if item.is_low_stock %}
+                      <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; background: #FEE2E2; color: #991B1B; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase;">LOW</span>
+                    {% else %}
+                      <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; background: #D1FAE5; color: #065F46; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase;">GOOD</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="item-stats">
+                  <div style="{% if item.is_low_stock %}color: #DC2626;{% else %}color: #059669;{% endif %} font-weight: 600;">
+                    {{ item.qty_on_hand|floatformat:0 }} {{ item.base_unit }}
+                  </div>
+                  <div style="color: var(--muted); font-size: 11px; margin-top: 2px;">
+                    MIN: {{ item.min_stock_qty|floatformat:0 }} {{ item.base_unit }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name" style="color: var(--muted);">No items in supplier stock</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# Alert 4: Items Requiring Ordering Soon #}
+      <div class="panel panel-right">
+        <h3 style="color: {% if items_need_ordering_count > 0 %}#ef4444{% else %}var(--text){% endif %};">
+          Items Requiring Ordering Soon {% if items_need_ordering_count > 0 %}<span style="font-size: 14px; font-weight: normal;">({{ items_need_ordering_count }})</span>{% endif %}
+        </h3>
+        <div class="list">
+          {% for item in items_need_ordering %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name">
+                  <strong>{{ item.item_code }}</strong> - {{ item.item_name }}
+                  {% if item.urgency == 'high' %}
+                    <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px;">URGENT</span>
+                  {% endif %}
+                  <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                    {% if item.days_until_stockout %}
+                      Stockout in ~{{ item.days_until_stockout|floatformat:0 }} days
+                    {% else %}
+                      High pending requests
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="item-stats">
+                  <div style="color: {% if item.urgency == 'high' %}#ef4444{% else %}#f59e0b{% endif %}; font-weight: 600;">
+                    {{ item.current_stock|floatformat:0 }} {{ item.base_unit }}
+                  </div>
+                  <div style="color: var(--muted); font-size: 12px;">
+                    {% if item.daily_avg_consumption > 0 %}
+                      {{ item.daily_avg_consumption|floatformat:1 }}/day
+                    {% endif %}
+                    {% if item.pending_requests > 0 %}
+                      • {{ item.pending_requests|floatformat:0 }} pending
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name" style="color: var(--muted);">No items require immediate ordering</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# IT Dashboard Specific Content - Only for IT users #}
+  {% if is_it %}
+  <div style="margin-top: 32px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="color: var(--text); font-size: 20px; font-weight: 600; margin: 0;">IT Management</h3>
+      <a href="{% url 'punch_id_management' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
+        <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
+        Manage Punch IDs
+      </a>
+    </div>
+    
+    <div class="panels">
+      <div class="panel panel-left">
+        <h3>Recent User Registrations</h3>
+        <div class="list">
+          {% for user_profile in recent_users %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name">
+                  <strong>{{ user_profile.full_name }}</strong>
+                  {% if user_profile.punch_id %}
+                    <span style="color: var(--muted); font-size: 12px;">({{ user_profile.punch_id }})</span>
+                  {% endif %}
+                </div>
+                <div class="item-stats">
+                  <div style="color: var(--muted); font-size: 13px;">
+                    {% if user_profile.role %}
+                      {{ user_profile.role.name }}
+                    {% else %}
+                      No role
+                    {% endif %}
+                  </div>
+                  <div style="color: var(--muted); font-size: 12px;">
+                    {{ user_profile.created_at|date:"M d, Y" }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="list-row">
+              <div class="row-content">
+                <div class="item-name" style="color: var(--muted);">No users registered yet</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel panel-right">
+        <h3>System Status & Activity</h3>
+        <div style="padding: 12px 0;">
+          <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-weight: 500;">Foodics Integration</span>
+              <span style="color: {% if foodics_enabled %}#16a34a{% else %}var(--muted){% endif %};">
+                {% if foodics_enabled %}● Enabled{% else %}○ Disabled{% endif %}
+              </span>
+            </div>
+            {% if foodics_last_sync %}
+              <div style="font-size: 12px; color: var(--muted);">
+                Last sync: {{ foodics_last_sync|date:"M d, Y H:i" }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-weight: 500;">Pending Requests</span>
+              <span style="font-weight: 600; color: #3b82f6;">{{ pending_requests_count }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 500;">Active Orders</span>
+              <span style="font-weight: 600; color: #3b82f6;">{{ active_orders }}</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-weight: 500; margin-bottom: 12px;">Import Jobs</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                <span>Total:</span>
+                <span style="font-weight: 600;">{{ import_jobs_total }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                <span>Pending:</span>
+                <span style="font-weight: 600; color: #3b82f6;">{{ import_jobs_pending }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                <span>Failed:</span>
+                <span style="font-weight: 600; color: #ef4444;">{{ import_jobs_failed }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if role_distribution %}
+    <div class="panel" style="margin-top: 16px;">
+      <h3>User Role Distribution</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 12px;">
+        {% for role in role_distribution %}
+          <div style="padding: 12px; background: var(--accent); border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-weight: 600; margin-bottom: 4px;">{{ role.name }}</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--text);">{{ role.count }}</div>
+            <div style="font-size: 12px; color: var(--muted);">users</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if recent_imports %}
+    <div class="panel" style="margin-top: 16px;">
+      <h3>Recent Import Jobs</h3>
       <div class="list">
-        {% for item in most_requested %}
+        {% for job in recent_imports %}
           <div class="list-row">
-            <div class="row-bar {{ item.bar_class }}"></div>
             <div class="row-content">
-              <div class="item-name">{{ item.name }}</div>
+              <div class="item-name">
+                <strong>Import Job #{{ job.id }}</strong>
+                {% if job.uploaded_by %}
+                  <span style="color: var(--muted); font-size: 12px;">by {{ job.uploaded_by.profile.full_name|default:job.uploaded_by.get_full_name|default:job.uploaded_by.username }}</span>
+                {% endif %}
+              </div>
               <div class="item-stats">
-                <div class="amount">{{ item.amount }}</div>
-                <div class="pct">{{ item.pct }}</div>
+                <div style="color: {% if job.status == 'Completed' %}#16a34a{% elif job.status == 'Failed' %}#ef4444{% else %}#3b82f6{% endif %}; font-weight: 500;">
+                  {{ job.status }}
+                </div>
+                <div style="color: var(--muted); font-size: 12px;">
+                  {{ job.created_at|date:"M d, Y H:i" }}
+                </div>
               </div>
             </div>
           </div>
         {% endfor %}
       </div>
     </div>
-
-    <div class="panel panel-right">
-      <h3>Stock Consumption by Branch</h3>
-      <div class="panel-right-top">
-        <div class="branch-list-container">
-          <ul class="branch-list">
-            {% for b in branch_consumption %}
-              <li>
-                <span class="branch-name">{{ b.name }}</span> <span class="amount">{{ b.amount }}</span> <span class="pct">({{ b.pct }})</span>
-              </li>
-            {% endfor %}
-          </ul>
-        </div>
-        <div class="chart-container">
-          <div class="chart-placeholder">
-            <img src="{% static 'images/pie-chart.png' %}" alt="pie chart" />
-          </div>
-        </div>
-      </div>
-    </div>
+    {% endif %}
   </div>
+  {% endif %}
 
 {% endblock %}
-
-

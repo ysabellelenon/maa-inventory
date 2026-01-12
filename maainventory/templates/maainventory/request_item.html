@@ -1,0 +1,357 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+<style>
+/* Fix scrolling for request item page */
+body {
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  height: auto !important;
+}
+.content {
+  height: auto !important;
+  overflow: visible !important;
+  min-height: calc(100vh - 64px);
+  padding-bottom: 40px;
+}
+.inventory-container {
+  height: auto !important;
+  overflow: visible !important;
+  min-height: auto;
+}
+.request-layout {
+  min-height: 600px;
+}
+.request-right {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <div style="display:flex;flex-direction:column;">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'purchase_orders' %}">Purchase Orders</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <span class="active" aria-current="page">Request Item</span>
+      </nav>
+      <h2 style="margin-top:6px;">Request Item</h2>
+      <p style="color:#6b7280;font-size:14px;margin-top:4px;">Notify supplier about item needs (no invoice)</p>
+    </div>
+  </div>
+
+  <div class="inventory-container" style="margin-bottom: 40px;">
+    <div class="request-layout" style="display:flex;gap:18px;align-items:flex-start;">
+      <div class="request-left" style="flex:0 0 360px;min-width:320px;">
+        <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+          <label class="field-label">Select Branch</label>
+          <select id="branch-select" class="panel-input" aria-label="Select Branch">
+            <option value="">Select branch</option>
+            {% for branch in branches %}
+            <option value="{{ branch.id }}">{{ branch.name }} ({{ branch.brand.name }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+          <div style="margin-bottom:8px;">
+            <input id="supplier-search" class="panel-input" placeholder="Search by supplier name" aria-label="Search suppliers" />
+          </div>
+          <div class="suppliers-list" id="suppliers-list" style="max-height:385px;overflow:auto;border-top:1px solid var(--border);">
+            <div id="no-suppliers" style="padding:20px;text-align:center;color:#6b7280;">
+              Select a branch to view available suppliers
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;">
+          <label class="field-label">Notes (Optional)</label>
+          <textarea id="request-notes" class="panel-textarea" placeholder="Additional notes for supplier..." style="min-height:80px;"></textarea>
+        </div>
+      </div>
+
+      <div class="request-right panel-border" style="flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;min-height:600px;">
+        <div style="flex:1;overflow-y:auto;margin-bottom:12px;">
+          <div id="cart-header" style="display:none;font-weight:700;padding:10px 12px;background:rgba(16,24,40,0.02);border-radius:6px;margin-bottom:12px;">
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+              <div>Item Name</div>
+              <div style="text-align:right;">QTY</div>
+            </div>
+          </div>
+          <div id="cart-list" style="display:flex;flex-direction:column;gap:8px;">
+            <div id="cart-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:#6b7280;">
+              <div class="cart-empty-icon" aria-hidden="true" style="margin-bottom:12px;"></div>
+              <div id="cart-empty-text">Select a supplier to view available items</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex-shrink:0;">
+          <div id="total-qty-container" style="display:none;margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-weight:600;color:var(--text);font-size:15px;">
+                Total Qty: <span id="total-qty">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="cart-footer" class="cart-footer" aria-hidden="true" style="display:none;">
+            <div style="width:100%;display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--border);">
+              <button id="submit-request" class="btn-new-request" style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;">
+                <img src="{% static 'icons/delivery.svg' %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" />
+                <span>Submit Request</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var branchSelect = document.getElementById('branch-select');
+      var supplierSearch = document.getElementById('supplier-search');
+      var suppliersList = document.getElementById('suppliers-list');
+      var noSuppliers = document.getElementById('no-suppliers');
+      var cartList = document.getElementById('cart-list');
+      var cartEmpty = document.getElementById('cart-empty');
+      var cartHeader = document.getElementById('cart-header');
+      var cartFooter = document.getElementById('cart-footer');
+      var totalQtyContainer = document.getElementById('total-qty-container');
+      var totalQtySpan = document.getElementById('total-qty');
+      var submitBtn = document.getElementById('submit-request');
+      var requestNotes = document.getElementById('request-notes');
+
+      var selectedBranchId = null;
+      var selectedSupplierId = null;
+      var cart = {};
+      var itemsData = {}; // Store item details including stock quantity
+
+      // Fetch suppliers for branch
+      branchSelect.addEventListener('change', function() {
+        selectedBranchId = this.value;
+        selectedSupplierId = null;
+        cart = {};
+        updateCart();
+
+        if (!selectedBranchId) {
+          suppliersList.innerHTML = '<div id="no-suppliers" style="padding:20px;text-align:center;color:#6b7280;">Select a branch to view available suppliers</div>';
+          return;
+        }
+
+        fetch(`/api/suppliers-for-branch/?branch_id=${selectedBranchId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.suppliers && data.suppliers.length > 0) {
+              renderSuppliers(data.suppliers);
+            } else {
+              suppliersList.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;">No suppliers available for selected branch</div>';
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching suppliers:', err);
+            suppliersList.innerHTML = '<div style="padding:20px;text-align:center;color:#ef4444;">Error loading suppliers</div>';
+          });
+      });
+
+      function renderSuppliers(suppliers) {
+        suppliersList.innerHTML = '';
+        suppliers.forEach(function(supplier) {
+          var div = document.createElement('div');
+          div.className = 'supplier-row';
+          div.dataset.supplierId = supplier.id;
+          div.style.cssText = 'padding:12px 10px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;cursor:pointer;';
+          div.innerHTML = `
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;color:#111827;">${supplier.name}</div>
+              <div style="font-size:12px;color:#6b7280;margin-top:4px;">${supplier.category || 'No category'}</div>
+            </div>
+            <div style="margin-left:12px;color:#6b7280;">›</div>
+          `;
+          div.addEventListener('click', function() {
+            selectSupplier(supplier.id);
+          });
+          suppliersList.appendChild(div);
+        });
+      }
+
+      function selectSupplier(supplierId) {
+        selectedSupplierId = supplierId;
+        
+        // Highlight selected supplier
+        document.querySelectorAll('.supplier-row').forEach(function(row) {
+          row.style.backgroundColor = row.dataset.supplierId == supplierId ? '#f3f4f6' : '';
+        });
+
+        // Fetch items for supplier, filtered by selected branch
+        var url = `/api/items-for-supplier/?supplier_id=${supplierId}`;
+        if (selectedBranchId) {
+          url += `&branch_id=${selectedBranchId}`;
+        }
+        
+        fetch(url)
+          .then(res => res.json())
+          .then(data => {
+            if (data.items && data.items.length > 0) {
+              renderItems(data.items);
+            } else {
+              cartList.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;">No items available for this supplier in this branch</div>';
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching items:', err);
+            cartList.innerHTML = '<div style="padding:20px;text-align:center;color:#ef4444;">Error loading items</div>';
+          });
+      }
+
+      function renderItems(items) {
+        cartList.innerHTML = '';
+        cartEmpty.style.display = 'none';
+        cartHeader.style.display = 'block';
+        
+        // Store items data for reference
+        itemsData = {};
+        items.forEach(function(item) {
+          itemsData[item.id] = item;
+        });
+
+        items.forEach(function(item) {
+          var itemDiv = document.createElement('div');
+          itemDiv.style.cssText = 'display:grid;grid-template-columns:2fr 1fr;gap:12px;padding:12px;background:#f9fafb;border-radius:6px;align-items:center;';
+          
+          var stockDisplay = item.stock_quantity > 0 
+            ? `<div style="font-size:11px;color:#10b981;margin-top:2px;font-weight:500;">In Stock: ${item.stock_quantity} ${item.base_unit}</div>`
+            : `<div style="font-size:11px;color:#ef4444;margin-top:2px;">Not in stock</div>`;
+          
+          itemDiv.innerHTML = `
+            <div>
+              <div style="font-weight:600;color:#111827;">${item.name}</div>
+              <div style="font-size:12px;color:#6b7280;margin-top:2px;">${item.item_code}</div>
+              ${stockDisplay}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+              <button class="qty-btn" data-action="decrease" data-item-id="${item.id}" style="width:28px;height:28px;border:1px solid #e5e7eb;background:#fff;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+              <input type="number" class="qty-input" data-item-id="${item.id}" value="${cart[item.id] || 0}" min="0" style="width:60px;text-align:center;padding:6px;border:1px solid #e5e7eb;border-radius:4px;" />
+              <button class="qty-btn" data-action="increase" data-item-id="${item.id}" style="width:28px;height:28px;border:1px solid #e5e7eb;background:#fff;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+            </div>
+          `;
+          cartList.appendChild(itemDiv);
+        });
+
+        // Add event listeners
+        document.querySelectorAll('.qty-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var itemId = this.dataset.itemId;
+            var action = this.dataset.action;
+            var input = document.querySelector(`.qty-input[data-item-id="${itemId}"]`);
+            var currentQty = parseInt(input.value) || 0;
+            
+            if (action === 'increase') {
+              input.value = currentQty + 1;
+            } else if (action === 'decrease' && currentQty > 0) {
+              input.value = currentQty - 1;
+            }
+            
+            cart[itemId] = parseInt(input.value);
+            updateCart();
+          });
+        });
+
+        document.querySelectorAll('.qty-input').forEach(function(input) {
+          input.addEventListener('change', function() {
+            var itemId = this.dataset.itemId;
+            cart[itemId] = parseInt(this.value) || 0;
+            updateCart();
+          });
+        });
+
+        updateCart();
+      }
+
+      function updateCart() {
+        var totalQty = 0;
+        var hasItems = false;
+
+        for (var itemId in cart) {
+          if (cart[itemId] > 0) {
+            totalQty += cart[itemId];
+            hasItems = true;
+          }
+        }
+
+        totalQtySpan.textContent = totalQty;
+        totalQtyContainer.style.display = hasItems ? 'block' : 'none';
+        cartFooter.style.display = hasItems ? 'block' : 'none';
+      }
+
+      // Submit request
+      submitBtn.addEventListener('click', function() {
+        if (!selectedSupplierId) {
+          alert('Please select a supplier');
+          return;
+        }
+
+        var items = [];
+        for (var itemId in cart) {
+          if (cart[itemId] > 0) {
+            items.push({
+              item_id: itemId,
+              quantity: cart[itemId]
+            });
+          }
+        }
+
+        if (items.length === 0) {
+          alert('Please add at least one item');
+          return;
+        }
+
+        var data = {
+          supplier_id: selectedSupplierId,
+          items: items,
+          notes: requestNotes.value
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Submitting...</span>';
+
+        fetch('/request-item/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert(`Item request ${data.request_code} submitted successfully!`);
+            window.location.href = data.redirect_url;
+          } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<img src="{% static "icons/delivery.svg" %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" /><span>Submit Request</span>';
+          }
+        })
+        .catch(err => {
+          console.error('Error:', err);
+          alert('Error submitting request');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<img src="{% static "icons/delivery.svg" %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" /><span>Submit Request</span>';
+        });
+      });
+
+      function getCookie(name) {
+        var value = '; ' + document.cookie;
+        var parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+    })();
+  </script>
+{% endblock %}

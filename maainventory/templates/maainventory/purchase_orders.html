@@ -1,0 +1,484 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/requests.css' %}">
+<style>
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+  .inventory-container {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .table-wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  /* Make supplier column narrower */
+  .inventory-table .col-supplier {
+    width: 150px;
+  }
+  .inventory-table tbody .col-supplier {
+    width: 150px;
+  }
+  /* Quantity column */
+  .inventory-table .col-quantity {
+    width: 120px;
+    text-align: center;
+  }
+  .inventory-table tbody .col-quantity {
+    width: 120px;
+    text-align: center;
+  }
+  /* Add vertical lines between all columns */
+  .inventory-table thead th,
+  .inventory-table tbody td {
+    border-right: 1px solid #f0f0f0;
+  }
+  .inventory-table thead th:last-child,
+  .inventory-table tbody td:last-child {
+    border-right: none;
+  }
+  /* Remove border from checkbox and expand columns */
+  .inventory-table .col-check,
+  .inventory-table .col-expand {
+    border-right: none !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <h2>Purchase Orders</h2>
+  </div>
+
+  <div class="inventory-container">
+    <div class="inventory-card">
+      <div class="table-actions">
+        <div class="table-actions-left">
+          <div class="table-search">
+            <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
+            <input class="table-search-input" placeholder="Search by PO code, supplier, or items" aria-label="Search purchase orders" />
+          </div>
+          <button class="btn-filter">
+            <img src="{% static 'icons/filter.svg' %}" alt="" />
+            <span>Filter</span>
+          </button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" class="select-all" aria-label="Select all orders" /></th>
+            <th class="col-expand"></th>
+            <th class="col-code">PO Code</th>
+            <th class="col-supplier">Supplier</th>
+            <th class="col-name">Items</th>
+            <th class="col-requested">Order Date</th>
+            <th class="col-status">Status</th>
+            <th class="col-quantity">Quantity</th>
+            <th class="col-name amount-column">Total Amount</th>
+            <th class="col-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr class="inventory-row" style="cursor: pointer;" onclick="window.location.href='{% url 'view_purchase_order' order.id %}'" onmouseover="this.style.backgroundColor='#F9FAFB'" onmouseout="this.style.backgroundColor=''">
+              <td class="col-check" onclick="event.stopPropagation();"><input type="checkbox" class="row-select" aria-label="select order #{{ forloop.counter }}" /></td>
+              <td class="col-expand" onclick="event.stopPropagation();">
+                <button class="expand" aria-hidden="true">
+                  <img class="expand-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
+                </button>
+              </td>
+              <td class="col-code">
+                <a href="{% url 'view_purchase_order' order.id %}" onclick="event.stopPropagation();" style="color: var(--focus); text-decoration: none; font-weight: 600;">
+                  {{ order.po_code }}
+                </a>
+              </td>
+              <td class="col-supplier">
+                <div class="item-meta">
+                  <div class="item-title">{{ order.supplier }}</div>
+                </div>
+              </td>
+              <td class="col-name">
+                <div class="item-meta" style="line-height: 1.2;">
+                  <div class="item-title" style="margin-bottom: 1px; white-space: normal; letter-spacing: -0.2px;">{{ order.item_names }}</div>
+                  <div style="font-size: 12px; color: #6B7280; margin-top: 1px;">{{ order.total_items }} item{{ order.total_items|pluralize }}</div>
+                </div>
+              </td>
+              <td class="col-requested">{{ order.created_at_display }}</td>
+              <td class="col-status">
+                {% if order.status == 'Draft' %}
+                  <span class="status-pill status-pending">{{ order.status }}</span>
+                {% elif order.status == 'Sent' %}
+                  <span class="status-pill status-in-process">{{ order.status }}</span>
+                {% elif order.status == 'Signed' %}
+                  <span class="status-pill status-approved">{{ order.status }}</span>
+                {% elif order.status == 'Confirmed' %}
+                  <span class="status-pill status-approved">{{ order.status }}</span>
+                {% elif order.status == 'In Production' %}
+                  <span class="status-pill status-in-process">{{ order.status }}</span>
+                {% elif order.status == 'Ready' %}
+                  <span class="status-pill status-approved">{{ order.status }}</span>
+                {% elif order.status == 'Partially Received' %}
+                  <span class="status-pill status-in-process">{{ order.status }}</span>
+                {% elif order.status == 'Received' %}
+                  <span class="status-pill status-completed">{{ order.status }}</span>
+                {% elif order.status == 'On Hold' %}
+                  <span class="status-pill status-pending">{{ order.status }}</span>
+                {% elif order.status == 'Cancelled' %}
+                  <span class="status-pill status-rejected">{{ order.status }}</span>
+                {% else %}
+                  <span class="status-pill">{{ order.status }}</span>
+                {% endif %}
+              </td>
+              <td class="col-quantity">
+                <div class="item-meta">
+                  <div class="item-title" style="font-weight: 600; color: #101828;">{{ order.total_quantity }}</div>
+                </div>
+              </td>
+              <td class="col-name amount-column">
+                <div class="item-meta">
+                  <div class="item-title" style="font-weight: 600; color: #101828;">OMR {{ order.total_amount }}</div>
+                </div>
+              </td>
+              <td class="col-action" onclick="event.stopPropagation();" style="position: relative;">
+                <div class="action-btn-container">
+                  <button class="action-btn" aria-label="More actions"
+                          data-order-id="{{ order.id }}"
+                          data-po-code="{{ order.po_code }}"
+                          data-supplier="{{ order.supplier }}"
+                          data-status="{{ order.status }}">
+                    <img src="{% static 'icons/more.svg' %}" alt="More" class="action-icon" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr class="inventory-details" hidden>
+              <td colspan="10">
+                <div class="details-inner">
+                  <div class="details-header">Order Details</div>
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">PO Code</div>
+                        <div class="detail-value">{{ order.po_code }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Supplier</div>
+                        <div class="detail-value">{{ order.supplier }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Created By</div>
+                        <div class="detail-value">{{ order.created_by }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Order Date</div>
+                        <div class="detail-value">{{ order.created_at_display }}</div>
+                      </div>
+                    </div>
+                    {% if order.requested_delivery_date %}
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Requested Delivery Date</div>
+                        <div class="detail-value">{{ order.requested_delivery_date }}</div>
+                      </div>
+                    </div>
+                    {% endif %}
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Total Items</div>
+                        <div class="detail-value">{{ order.total_items }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Total Amount</div>
+                        <div class="detail-value" style="font-weight: 600; color: #D9BD7D;">OMR {{ order.total_amount }}</div>
+                      </div>
+                    </div>
+                    {% if order.email_sent_at %}
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Email Sent</div>
+                        <div class="detail-value">{{ order.email_sent_at }}</div>
+                      </div>
+                    </div>
+                    {% endif %}
+                    <div class="detail-item detail-full">
+                      <div class="detail-pair">
+                        <div class="detail-label">Items</div>
+                        <div class="detail-value">{{ order.item_names }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item detail-full">
+                      <div class="detail-pair">
+                        <div class="detail-label">Actions</div>
+                        <div class="detail-value">
+                          <a href="{% url 'view_purchase_order' order.id %}" onclick="event.stopPropagation();" style="display: inline-block; padding: 8px 16px; background: #D9BD7D; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; margin-right: 8px;">
+                            View Details
+                          </a>
+                          <a href="{% url 'view_invoice' order.id %}" target="_blank" onclick="event.stopPropagation();" style="display: inline-block; padding: 8px 16px; background: #F9FAFB; color: #101828; text-decoration: none; border-radius: 6px; font-weight: 500; border: 1px solid #E5E7EB;">
+                            View Invoice
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 40px; color: #6B7280;">
+                No purchase orders found. <a href="{% url 'new_request' %}" style="color: var(--focus);">Create your first purchase order</a>.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      <div class="table-footer">
+        <div class="table-footer-left">
+          <label class="show-label">Show
+            <select class="page-size" aria-label="Results per page">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <span class="entries-info">Showing {{ orders|length }} order{{ orders|length|pluralize }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  (function () {
+    var rightIcon = "{% static 'icons/chevron-right.svg' %}";
+    var downIcon = "{% static 'icons/chevron-down.svg' %}";
+    function toggleRow(button) {
+      var row = button.closest('tr');
+      if (!row) return;
+      var details = row.nextElementSibling;
+      var img = button.querySelector('img.expand-icon');
+      var expanded = row.classList.toggle('expanded');
+      if (details && details.classList.contains('inventory-details')) {
+        if (expanded) {
+          details.removeAttribute('hidden');
+        } else {
+          details.setAttribute('hidden', '');
+        }
+      }
+      if (img) {
+        img.setAttribute('src', expanded ? downIcon : rightIcon);
+      }
+      button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.expand');
+      if (btn) {
+        e.preventDefault();
+        toggleRow(btn);
+      }
+    });
+  })();
+</script>
+
+<!-- Action menu -->
+<div class="overlay" hidden></div>
+<div class="action-menu" hidden role="menu" aria-hidden="true">
+  <button class="action-menu-item" data-action="view-details">View Details</button>
+  <button class="action-menu-item" data-action="view-invoice">View Invoice</button>
+  {% if is_warehouse_staff %}
+  <button class="action-menu-item" data-action="mark-received" style="color: #10B981; font-weight: 600;">Mark as Received</button>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    var actionMenu = document.querySelector('.action-menu');
+    var currentActionButton = null;
+    if (!actionMenu) return;
+
+    function showActionMenu(button) {
+      currentActionButton = button;
+      var rect = button.getBoundingClientRect();
+      actionMenu.removeAttribute('hidden');
+      actionMenu.setAttribute('aria-hidden', 'false');
+      actionMenu.style.left = '-9999px';
+      actionMenu.style.top = '-9999px';
+      var menuWidth = actionMenu.offsetWidth || 160;
+      var left = rect.right + window.scrollX - menuWidth;
+      var top = rect.bottom + window.scrollY + 6;
+      var minLeft = 8 + window.scrollX;
+      if (left < minLeft) left = minLeft;
+      actionMenu.style.left = left + 'px';
+      actionMenu.style.top = top + 'px';
+    }
+
+    function hideActionMenu() {
+      if (!actionMenu) return;
+      actionMenu.setAttribute('hidden', '');
+      actionMenu.setAttribute('aria-hidden', 'true');
+      currentActionButton = null;
+    }
+
+    // Attach handlers directly to action buttons
+    var actionButtons = document.querySelectorAll('.action-btn');
+    actionButtons.forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (actionMenu && actionMenu.getAttribute('aria-hidden') === 'false' && currentActionButton === btn) {
+          hideActionMenu();
+        } else {
+          showActionMenu(btn);
+        }
+      });
+    });
+
+    // Handle menu item clicks
+    document.addEventListener('click', function (e) {
+      var menuItem = e.target.closest && e.target.closest('.action-menu-item');
+      if (menuItem && currentActionButton) {
+        e.preventDefault();
+        var action = menuItem.getAttribute('data-action');
+        var btn = currentActionButton;
+        var orderId = btn.getAttribute('data-order-id');
+        var poCode = btn.getAttribute('data-po-code');
+        var status = btn.getAttribute('data-status');
+        
+        hideActionMenu();
+        
+        if (action === 'view-details' && orderId) {
+          window.location.href = '/purchase-orders/' + orderId + '/';
+        } else if (action === 'view-invoice' && orderId) {
+          window.open('/invoice/' + orderId + '/', '_blank');
+        } else if (action === 'mark-received' && orderId) {
+          // Check if already received
+          if (status === 'Received') {
+            alert('This order has already been marked as received.');
+            return;
+          }
+          if (status === 'Cancelled') {
+            alert('Cannot mark a cancelled order as received.');
+            return;
+          }
+          
+          if (confirm('Mark purchase order ' + poCode + ' as received? This will add all items to inventory.')) {
+            // Call the API to mark as received
+            fetch('/purchase-orders/' + orderId + '/mark-received/', {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+              }
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data.success) {
+                alert(data.message || 'Order marked as received successfully! Items have been added to inventory.');
+                window.location.reload();
+              } else {
+                alert('Error: ' + (data.error || 'Unknown error occurred'));
+              }
+            })
+            .catch(function(err) {
+              alert('Error processing request');
+              console.error(err);
+            });
+          }
+        }
+        return;
+      }
+
+      if (actionMenu && !e.target.closest('.action-menu')) {
+        hideActionMenu();
+      }
+    });
+    
+    function getCookie(name) {
+      var value = '; ' + document.cookie;
+      var parts = value.split('; ' + name + '=');
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+  })();
+</script>
+
+<script>
+  (function () {
+    var selectAll = document.querySelector('.select-all');
+    var table = document.querySelector('.inventory-table');
+    if (!selectAll || !table) return;
+
+    function updateSelectAllState() {
+      var rowCheckboxes = table.querySelectorAll('tbody input.row-select');
+      var total = rowCheckboxes.length;
+      var checked = 0;
+      rowCheckboxes.forEach(function (cb) { if (cb.checked) checked++; });
+      if (checked === 0) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+      } else if (checked === total) {
+        selectAll.checked = true;
+        selectAll.indeterminate = false;
+      } else {
+        selectAll.checked = false;
+        selectAll.indeterminate = true;
+      }
+    }
+
+    selectAll.addEventListener('change', function () {
+      var checked = selectAll.checked;
+      var rowCheckboxes = table.querySelectorAll('tbody input.row-select');
+      rowCheckboxes.forEach(function (cb) { cb.checked = checked; });
+    });
+
+    table.addEventListener('change', function (e) {
+      if (e.target && e.target.matches('input.row-select')) {
+        updateSelectAllState();
+      }
+    });
+
+    updateSelectAllState();
+  })();
+</script>
+
+<script>
+  // Search functionality
+  (function () {
+    var searchInput = document.querySelector('.table-search-input');
+    var table = document.querySelector('.inventory-table');
+    if (!searchInput || !table) return;
+
+    searchInput.addEventListener('input', function () {
+      var searchTerm = this.value.toLowerCase();
+      var rows = table.querySelectorAll('tbody tr.inventory-row');
+      
+      rows.forEach(function (row) {
+        var text = row.textContent.toLowerCase();
+        var shouldShow = text.indexOf(searchTerm) !== -1;
+        row.style.display = shouldShow ? '' : 'none';
+        
+        // Also hide/show the details row
+        var detailsRow = row.nextElementSibling;
+        if (detailsRow && detailsRow.classList.contains('inventory-details')) {
+          detailsRow.style.display = shouldShow ? '' : 'none';
+        }
+      });
+    });
+  })();
+</script>
+
+{% endblock %}

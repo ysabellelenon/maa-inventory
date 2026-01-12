@@ -1,0 +1,611 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order - {{ order.po_code }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #101828;
+            padding: 40px;
+            background: #F9FAFB;
+        }
+        
+        .invoice-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #D9BD7D;
+        }
+        
+        .company-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        
+        .company-details h1 {
+            color: #D9BD7D;
+            font-size: 32px;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        
+        .company-details p {
+            color: #667085;
+            font-size: 14px;
+        }
+        
+        .po-info {
+            text-align: right;
+        }
+        
+        .po-info h2 {
+            font-size: 24px;
+            color: #101828;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .po-info p {
+            font-size: 14px;
+            color: #667085;
+            margin: 5px 0;
+        }
+        
+        .po-info .po-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #D9BD7D;
+        }
+        
+        .details-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .detail-box {
+            padding: 20px;
+            background: #F9FAFB;
+            border-radius: 8px;
+            border: 1px solid #EAECF0;
+        }
+        
+        .detail-box h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #667085;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .detail-box p {
+            margin: 8px 0;
+            font-size: 15px;
+            color: #344054;
+        }
+        
+        .detail-box strong {
+            color: #101828;
+            font-weight: 600;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        
+        .items-table thead {
+            background: #D9BD7D;
+            color: #111111;
+        }
+        
+        .items-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .items-table th:last-child,
+        .items-table td:last-child {
+            text-align: right;
+        }
+        
+        .items-table tbody tr {
+            border-bottom: 1px solid #EAECF0;
+        }
+        
+        .items-table tbody tr:hover {
+            background: #F9FAFB;
+        }
+        
+        .items-table td {
+            padding: 15px;
+            font-size: 14px;
+            color: #344054;
+        }
+        
+        .items-table .item-code {
+            color: #667085;
+            font-size: 13px;
+        }
+        
+        .items-table td strong {
+            color: #101828;
+            font-weight: 600;
+        }
+        
+        .summary {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 40px;
+        }
+        
+        .summary-box {
+            width: 350px;
+            background: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #EAECF0;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 15px;
+            color: #344054;
+        }
+        
+        .summary-row.total {
+            border-top: 2px solid #D9BD7D;
+            margin-top: 10px;
+            padding-top: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #D9BD7D;
+        }
+        
+        .footer {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid #EAECF0;
+            color: #667085;
+            font-size: 13px;
+        }
+        
+        .footer p {
+            margin: 5px 0;
+        }
+        
+        .footer strong {
+            color: #344054;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-draft {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .status-sent {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+        
+        .status-confirmed {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            
+            .invoice-container {
+                box-shadow: none;
+                padding: 30px;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="company-info">
+                <img src="{% static 'images/MAA-logo-transparent.png' %}" alt="MAA Logo" class="logo">
+                <div class="company-details">
+                    <h1>MAA Inventory</h1>
+                    <p>Inventory Management System</p>
+                    <p>Oman</p>
+                </div>
+            </div>
+            <div class="po-info">
+                <h2>PURCHASE ORDER</h2>
+                <p class="po-number">{{ order.po_code }}</p>
+                <p><strong>Date:</strong> {{ order.created_at|date:"d M, Y" }}</p>
+            </div>
+        </div>
+        
+        <!-- Details Section -->
+        <div class="details-section">
+            <div class="detail-box">
+                <h3>Supplier Information</h3>
+                <p><strong>{{ order.supplier.name }}</strong></p>
+                {% if order.supplier.contact_person %}
+                <p>Contact: {{ order.supplier.contact_person }}</p>
+                {% endif %}
+                {% if order.supplier.email %}
+                <p>Email: {{ order.supplier.email }}</p>
+                {% endif %}
+                {% if order.supplier.phone %}
+                <p>Phone: {{ order.supplier.phone }}</p>
+                {% endif %}
+                {% if order.supplier.address %}
+                <p>Address: {{ order.supplier.address }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="detail-box">
+                <h3>Order Information</h3>
+                <p><strong>Created By:</strong> {{ order.created_by.profile.full_name|default:order.created_by.get_full_name|default:order.created_by.username }}</p>
+                <p><strong>Order Date:</strong> {{ order.created_at|date:"d M, Y H:i" }}</p>
+                {% if order.requested_delivery_date %}
+                <p><strong>Requested Delivery:</strong> {{ order.requested_delivery_date|date:"d M, Y" }}</p>
+                {% endif %}
+                {% if order.hold_at_supplier %}
+                <p><strong>Note:</strong> <span style="color: #dc2626;">Hold at Supplier</span></p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Items Table -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item_data in items_with_totals %}
+                <tr>
+                    <td>
+                        <strong>{{ item_data.item.item.name }}</strong><br>
+                        <span class="item-code">Code: {{ item_data.item.item.item_code }}</span>
+                    </td>
+                    <td>{{ item_data.item.qty_ordered }} {{ item_data.item.item.base_unit|default:"units" }}</td>
+                    <td>OMR {{ item_data.item.price_per_unit|floatformat:2 }}</td>
+                    <td>OMR {{ item_data.line_total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Summary -->
+        <div class="summary">
+            <div class="summary-box">
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span>OMR {{ subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total Amount:</span>
+                    <span>OMR {{ total|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Signature Section -->
+        {% if is_signed %}
+        <div class="signature-section" style="margin-top: 60px; padding-top: 40px; border-top: 2px solid #E5E7EB;">
+            <h3 style="color: #D9BD7D; margin-bottom: 20px; font-size: 18px;">Supplier Signature</h3>
+            <div style="background: #F9FAFB; padding: 20px; border-radius: 8px; border: 1px solid #E5E7EB;">
+                <p style="margin-bottom: 15px;"><strong>Signed by:</strong> {{ signature.supplier_name_signed }}</p>
+                <p style="margin-bottom: 15px;"><strong>Signed on:</strong> {{ signature.signed_at|date:"F d, Y, g:i A" }}</p>
+                {% if signature.signature_data %}
+                <div style="margin-top: 20px;">
+                    {% with sig_data=signature.signature_data %}
+                        {% if "data:image" in sig_data %}
+                            {# Already a full data URL - use directly #}
+                            <img src="{{ sig_data }}" alt="Supplier Signature" style="max-width: 100%; height: auto; border: 1px solid #D1D5DB; border-radius: 4px; background: white; padding: 10px;" />
+                        {% else %}
+                            {# Just base64 string - add prefix #}
+                            <img src="data:image/png;base64,{{ sig_data }}" alt="Supplier Signature" style="max-width: 100%; height: auto; border: 1px solid #D1D5DB; border-radius: 4px; background: white; padding: 10px;" />
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="signature-section" style="margin-top: 60px; padding-top: 40px; border-top: 2px solid #E5E7EB;">
+            <h3 style="color: #D9BD7D; margin-bottom: 20px; font-size: 18px;">Supplier Signature</h3>
+            <p style="color: #6B7280; margin-bottom: 20px;">Please sign below to confirm this purchase order:</p>
+            
+            <form id="signature-form" style="background: #F9FAFB; padding: 30px; border-radius: 8px; border: 1px solid #E5E7EB;">
+                <div style="margin-bottom: 20px;">
+                    <label for="supplier-name" style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Supplier Name:</label>
+                    <input type="text" id="supplier-name" name="supplier_name" value="{{ order.supplier.name }}" required style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Signature:</label>
+                    <div style="background: white; border: 2px solid #D1D5DB; border-radius: 6px; padding: 10px; position: relative;">
+                        <canvas id="signature-canvas" width="600" height="200" style="border: 1px solid #E5E7EB; border-radius: 4px; cursor: crosshair; touch-action: none;"></canvas>
+                        <button type="button" id="clear-signature" style="margin-top: 10px; padding: 8px 16px; background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; border-radius: 6px; cursor: pointer; font-size: 14px;">Clear</button>
+                    </div>
+                </div>
+                
+                <button type="submit" id="submit-signature" style="padding: 12px 24px; background: #D9BD7D; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s;">
+                    Submit Signature
+                </button>
+                <div id="signature-message" style="margin-top: 15px; display: none;"></div>
+            </form>
+        </div>
+        {% endif %}
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Thank you for your business!</strong></p>
+            <p>This is an automatically generated purchase order from MAA Inventory System.</p>
+            <p>For any queries, please contact the procurement department.</p>
+        </div>
+    </div>
+    
+    {% if not is_signed %}
+    <script>
+        (function() {
+            var canvas = document.getElementById('signature-canvas');
+            var ctx = canvas.getContext('2d');
+            var form = document.getElementById('signature-form');
+            var clearBtn = document.getElementById('clear-signature');
+            var submitBtn = document.getElementById('submit-signature');
+            var messageDiv = document.getElementById('signature-message');
+            var isDrawing = false;
+            var lastX = 0;
+            var lastY = 0;
+            
+            // Set canvas size - use display size directly for accurate cursor tracking
+            function resizeCanvas() {
+                var rect = canvas.getBoundingClientRect();
+                // Use display size directly (no DPR scaling) for accurate cursor tracking
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+                
+                // Set drawing style
+                ctx.strokeStyle = '#101828';
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Get coordinates - since canvas size matches display size, use coordinates directly
+            function getCoordinates(e) {
+                var rect = canvas.getBoundingClientRect();
+                
+                if (e.touches && e.touches.length > 0) {
+                    return {
+                        x: e.touches[0].clientX - rect.left,
+                        y: e.touches[0].clientY - rect.top
+                    };
+                } else {
+                    return {
+                        x: e.clientX - rect.left,
+                        y: e.clientY - rect.top
+                    };
+                }
+            }
+            
+            // Start drawing
+            function startDrawing(e) {
+                e.preventDefault();
+                isDrawing = true;
+                var coords = getCoordinates(e);
+                lastX = coords.x;
+                lastY = coords.y;
+            }
+            
+            // Draw
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                var coords = getCoordinates(e);
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(coords.x, coords.y);
+                ctx.stroke();
+                lastX = coords.x;
+                lastY = coords.y;
+            }
+            
+            // Stop drawing
+            function stopDrawing(e) {
+                e.preventDefault();
+                isDrawing = false;
+            }
+            
+            // Event listeners
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDrawing);
+            
+            // Clear canvas
+            clearBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+            
+            // Submit form
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Check if signature is drawn
+                var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                var hasSignature = false;
+                for (var i = 0; i < imageData.data.length; i += 4) {
+                    if (imageData.data[i + 3] > 0) {
+                        hasSignature = true;
+                        break;
+                    }
+                }
+                
+                if (!hasSignature) {
+                    showMessage('Please draw your signature before submitting.', 'error');
+                    return;
+                }
+                
+                // Get signature as base64
+                var signatureData = canvas.toDataURL('image/png');
+                var supplierName = document.getElementById('supplier-name').value;
+                
+                if (!supplierName.trim()) {
+                    showMessage('Please enter supplier name.', 'error');
+                    return;
+                }
+                
+                // Disable submit button
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+                
+                // Determine signature submission URL
+                var signUrl;
+                {% if portal_token %}
+                    signUrl = '{% url "submit_invoice_signature_by_token" portal_token.token %}';
+                {% else %}
+                    signUrl = '{% url "submit_invoice_signature" order.id %}';
+                {% endif %}
+                
+                // Send to server
+                fetch(signUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        signature_data: signatureData,
+                        supplier_name: supplierName
+                    })
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        showMessage('Signature submitted successfully! The page will reload...', 'success');
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showMessage('Error: ' + (data.error || 'Unknown error'), 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Submit Signature';
+                    }
+                })
+                .catch(function(error) {
+                    showMessage('Error submitting signature: ' + error.message, 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Signature';
+                });
+            });
+            
+            function showMessage(message, type) {
+                messageDiv.textContent = message;
+                messageDiv.style.display = 'block';
+                messageDiv.style.padding = '12px';
+                messageDiv.style.borderRadius = '6px';
+                messageDiv.style.marginTop = '15px';
+                if (type === 'success') {
+                    messageDiv.style.background = '#D1FAE5';
+                    messageDiv.style.color = '#065F46';
+                    messageDiv.style.border = '1px solid #A7F3D0';
+                } else {
+                    messageDiv.style.background = '#FEE2E2';
+                    messageDiv.style.color = '#991B1B';
+                    messageDiv.style.border = '1px solid #FECACA';
+                }
+            }
+            
+            // Get CSRF token
+            function getCookie(name) {
+                var cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i++) {
+                        var cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        })();
+    </script>
+    {% endif %}
+</body>
+</html>
+

@@ -1,0 +1,287 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/requests.css' %}">
+<style>
+  body {
+    overflow-x: hidden;
+  }
+  .inventory-container {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .table-wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .col-supplier {
+    width: 150px;
+  }
+  .inventory-table tbody .col-supplier {
+    width: 150px;
+  }
+  .col-quantity {
+    width: 120px;
+    text-align: center;
+  }
+  .inventory-table tbody .col-quantity {
+    width: 120px;
+    text-align: center;
+  }
+  .inventory-table thead th,
+  .inventory-table tbody td {
+    border-right: 1px solid #f0f0f0;
+  }
+  .inventory-table thead th:last-child,
+  .inventory-table tbody td:last-child {
+    border-right: none;
+  }
+  .inventory-table .col-check,
+  .inventory-table .col-expand {
+    border-right: none !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>Item Requests</h2>
+    <a href="{% url 'request_item' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
+      <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
+      New Request
+    </a>
+  </div>
+
+  <div class="inventory-container">
+    <div class="inventory-card">
+      <div class="table-actions">
+        <div class="table-actions-left">
+          <div class="table-search">
+            <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
+            <input class="table-search-input" placeholder="Search by request code, supplier, or items" aria-label="Search item requests" />
+          </div>
+          <button class="btn-filter">
+            <img src="{% static 'icons/filter.svg' %}" alt="" />
+            <span>Filter</span>
+          </button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" class="select-all" aria-label="Select all requests" /></th>
+            <th class="col-expand"></th>
+            <th class="col-code">Request Code</th>
+            <th class="col-supplier">Supplier</th>
+            <th class="col-name">Items</th>
+            <th class="col-requested">Request Date</th>
+            <th class="col-status">Status</th>
+            <th class="col-quantity">Quantity</th>
+            <th class="col-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requests %}
+            <tr class="inventory-row" style="cursor: pointer;" onclick="window.location.href='{% url 'view_item_request' req.id %}'" onmouseover="this.style.backgroundColor='#F9FAFB'" onmouseout="this.style.backgroundColor=''">
+              <td class="col-check" onclick="event.stopPropagation();"><input type="checkbox" class="row-select" aria-label="select request #{{ forloop.counter }}" /></td>
+              <td class="col-expand" onclick="event.stopPropagation();">
+                <button class="expand" aria-hidden="true">
+                  <img class="expand-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
+                </button>
+              </td>
+              <td class="col-code">
+                <a href="{% url 'view_item_request' req.id %}" onclick="event.stopPropagation();" style="color: var(--focus); text-decoration: none; font-weight: 600;">
+                  {{ req.request_code }}
+                </a>
+              </td>
+              <td class="col-supplier">
+                <div class="item-meta">
+                  <div class="item-title">{{ req.supplier }}</div>
+                </div>
+              </td>
+              <td class="col-name">
+                <div class="item-meta" style="line-height: 1.2;">
+                  <div class="item-title" style="margin-bottom: 1px; white-space: normal; letter-spacing: -0.2px;">{{ req.item_names }}</div>
+                  <div style="font-size: 12px; color: #6B7280; margin-top: 1px;">{{ req.total_items }} item{{ req.total_items|pluralize }}</div>
+                </div>
+              </td>
+              <td class="col-requested">{{ req.created_at_display }}</td>
+              <td class="col-status">
+                {% if req.status_value == 'Pending' %}
+                  <span class="status-pill status-pending">{{ req.status }}</span>
+                {% elif req.status_value == 'Notified' %}
+                  <span class="status-pill status-in-process">{{ req.status }}</span>
+                {% elif req.status_value == 'InProduction' %}
+                  <span class="status-pill status-in-process">{{ req.status }}</span>
+                {% elif req.status_value == 'Ready' %}
+                  <span class="status-pill status-approved">{{ req.status }}</span>
+                {% elif req.status_value == 'MovedToStock' %}
+                  <span class="status-pill status-completed">{{ req.status }}</span>
+                {% elif req.status_value == 'Cancelled' %}
+                  <span class="status-pill status-rejected">{{ req.status }}</span>
+                {% else %}
+                  <span class="status-pill">{{ req.status }}</span>
+                {% endif %}
+              </td>
+              <td class="col-quantity">
+                <div class="item-meta">
+                  <div class="item-title" style="font-weight: 600; color: #101828;">{{ req.total_quantity }}</div>
+                </div>
+              </td>
+              <td class="col-action" onclick="event.stopPropagation();">
+                <div class="action-btn-container">
+                  <button class="action-btn" aria-label="More actions"
+                          data-request-id="{{ req.id }}"
+                          data-request-code="{{ req.request_code }}"
+                          data-supplier="{{ req.supplier }}"
+                          data-status="{{ req.status_value }}">
+                    <img src="{% static 'icons/more.svg' %}" alt="More" class="action-icon" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr class="inventory-details" hidden>
+              <td colspan="10">
+                <div class="details-inner">
+                  <div class="details-header">Request Details</div>
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Request Code</div>
+                        <div class="detail-value">{{ req.request_code }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Supplier</div>
+                        <div class="detail-value">{{ req.supplier }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Created By</div>
+                        <div class="detail-value">{{ req.created_by }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Request Date</div>
+                        <div class="detail-value">{{ req.created_at_display }}</div>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <div class="detail-pair">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value">{{ req.status }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 40px; color: #6b7280;">
+                No item requests found. Click "New Request" to create one.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Expand/collapse rows
+    (function () {
+      var expandButtons = document.querySelectorAll('.expand');
+      expandButtons.forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var row = btn.closest('tr');
+          var detailsRow = row.nextElementSibling;
+          var icon = btn.querySelector('.expand-icon');
+          if (detailsRow && detailsRow.classList.contains('inventory-details')) {
+            var isHidden = detailsRow.hidden;
+            detailsRow.hidden = !isHidden;
+            icon.style.transform = isHidden ? 'rotate(90deg)' : '';
+          }
+        });
+      });
+    })();
+
+    // Action menu
+    (function() {
+      var actionBtns = document.querySelectorAll('.action-btn');
+      
+      actionBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var requestId = this.dataset.requestId;
+          var requestCode = this.dataset.requestCode;
+          var status = this.dataset.status;
+          
+          var menu = document.createElement('div');
+          menu.style.cssText = 'position:absolute;background:white;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:1000;min-width:150px;';
+          
+          var viewBtn = document.createElement('button');
+          viewBtn.textContent = 'View Details';
+          viewBtn.style.cssText = 'width:100%;text-align:left;padding:10px 16px;border:none;background:none;cursor:pointer;font-size:14px;';
+          viewBtn.onclick = function() {
+            window.location.href = '/item-requests/' + requestId + '/';
+          };
+          
+          menu.appendChild(viewBtn);
+          
+          // Add "Move to Stock" button if not already moved or cancelled
+          if (status !== 'MovedToStock' && status !== 'Cancelled') {
+            var confirmBtn = document.createElement('button');
+            confirmBtn.textContent = 'Move to Stock';
+            confirmBtn.style.cssText = 'width:100%;text-align:left;padding:10px 16px;border:none;background:none;cursor:pointer;font-size:14px;color:#10B981;';
+            confirmBtn.onclick = function() {
+              if (confirm('Move items from ' + requestCode + ' to supplier stock? This confirms items are ready.')) {
+                fetch('/item-requests/' + requestId + '/confirm-stock/', {
+                  method: 'POST',
+                  headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                  }
+                })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.success) {
+                    window.location.href = data.redirect_url;
+                  } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                  }
+                });
+              }
+            };
+            menu.appendChild(confirmBtn);
+          }
+          
+          var rect = this.getBoundingClientRect();
+          menu.style.top = (rect.bottom + window.scrollY) + 'px';
+          menu.style.left = (rect.left + window.scrollX - 100) + 'px';
+          
+          document.body.appendChild(menu);
+          
+          setTimeout(function() {
+            document.addEventListener('click', function closeMenu() {
+              menu.remove();
+              document.removeEventListener('click', closeMenu);
+            });
+          }, 10);
+        });
+      });
+      
+      function getCookie(name) {
+        var value = '; ' + document.cookie;
+        var parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+    })();
+  </script>
+{% endblock %}

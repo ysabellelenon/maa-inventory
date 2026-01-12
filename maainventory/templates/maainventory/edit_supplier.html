@@ -3,6 +3,36 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+<style>
+/* Make the edit supplier page scrollable */
+body.edit-supplier-page-open .content {
+  height: auto !important;
+  overflow: visible !important;
+  min-height: calc(100vh - 64px);
+  padding-bottom: 40px;
+}
+body.edit-supplier-page-open .inventory-container {
+  height: auto !important;
+  overflow: visible !important;
+  min-height: auto;
+}
+/* Allow internal elements to scroll normally when needed */
+body.edit-supplier-page-open .inventory-container,
+body.edit-supplier-page-open .inventory-container * {
+  -webkit-overflow-scrolling: touch;
+}
+/* Ensure the page wrapper allows scrolling */
+body.edit-supplier-page-open {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+</style>
+<script>
+  // Add class to body when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('edit-supplier-page-open');
+  });
+</script>
 {% endblock %}
 
 {% block content %}
@@ -68,14 +98,14 @@
       </script>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <button class="btn-save-inline" aria-label="Save">
+      <button type="submit" form="supplier-form" class="btn-save-inline" aria-label="Save">
         <img src="{% static 'icons/check.svg' %}" alt="" />
         <span>Save</span>
       </button>
-      <button class="btn-delete-inline" aria-label="Delete" style="margin-left:8px;">
-        <img src="{% static 'icons/trash.svg' %}" alt="" />
-        <span>Delete</span>
-      </button>
+      <a href="{% url 'suppliers' %}" class="btn-delete-inline" aria-label="Cancel" style="margin-left:8px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+        <img src="{% static 'icons/chevron-left.svg' %}" alt="" />
+        <span>Back</span>
+      </a>
     </div>
   </div>
 
@@ -83,29 +113,272 @@
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
       <div style="flex:1;">
 
+        <form method="post" action="{% url 'edit_supplier' item.code %}" id="supplier-form">
+          {% csrf_token %}
+          
+          {% if messages %}
+            <div style="margin-bottom: 20px;">
+              {% for message in messages %}
+                <div style="padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; background: {% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% else %}var(--accent){% endif %}; color: {% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% else %}var(--text){% endif %}; border: 1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% else %}var(--border){% endif %};">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if form.non_field_errors %}
+            <div style="margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
+              {% for error in form.non_field_errors %}
+                {{ error }}
+              {% endfor %}
+            </div>
+          {% endif %}
+
         <div class="tab-panel active" data-key="details">
           <div style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
             <div style="font-weight:700;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:8px;">Basic Details</div>
             <div style="display:flex;flex-direction:column;gap:12px;">
               <div class="horizontal-field" style="gap:6px;">
-                <label class="field-label" style="margin-bottom:0;">Supplier Name</label>
-                <input class="panel-input" type="text" value="{{ item.name }}" />
+                  <label class="field-label" style="margin-bottom:0;">Supplier Name <span style="color: #ef4444;">*</span></label>
+                  {{ form.name }}
+                  {% if form.name.errors %}
+                    <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                      {% for error in form.name.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="horizontal-field" style="gap:6px;">
+                  <label class="field-label" style="margin-bottom:0;">Email <span style="color: #ef4444;">*</span></label>
+                  {{ form.email }}
+                  {% if form.email.errors %}
+                    <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                      {% for error in form.email.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="horizontal-field" style="gap:6px;">
+                  <label class="field-label" style="margin-bottom:0;">Phone <span style="color: #ef4444;">*</span></label>
+                  {{ form.phone }}
+                  {% if form.phone.errors %}
+                    <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                      {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
               </div>
               <div class="horizontal-field" style="gap:6px;">
                 <label class="field-label" style="margin-bottom:0;">Contact Person</label>
-                <input class="panel-input" type="text" value="{{ item.contact_person|default:'—' }}" />
+                  {{ form.contact_person }}
+                  {% if form.contact_person.errors %}
+                    <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                      {% for error in form.contact_person.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
               </div>
               <div class="horizontal-field" style="gap:6px;">
                 <label class="field-label" style="margin-bottom:0;">Category</label>
-                <input class="panel-input" type="text" value="{{ item.category|default:'—' }}" />
+                  {{ form.category }}
+                  {% if form.category.errors %}
+                    <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                      {% for error in form.category.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div>
+                  <label class="field-label">Address</label>
+                  {{ form.address }}
+                  {% if form.address.errors %}
+                    <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                      {% for error in form.address.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                  <div>
+                    <label class="field-label">Delivery Schedule & Cutoff Times</label>
+                    <div class="delivery-days-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                    <!-- Monday -->
+                    <div class="delivery-day-item" data-day="monday">
+                      <label class="delivery-day-checkbox-label">
+                        <input type="checkbox" class="day-checkbox" data-day="monday" name="day_monday" {% if form.cutoff_monday.value %}checked{% endif %} />
+                        <span>Monday</span>
+                      </label>
+                      <div class="cutoff-time-wrapper" id="cutoff-wrapper-monday" style="display: {% if form.cutoff_monday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_cutoff_monday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.cutoff_monday }}
+                      </div>
+                    </div>
+                    <!-- Tuesday -->
+                    <div class="delivery-day-item" data-day="tuesday">
+                      <label class="delivery-day-checkbox-label">
+                        <input type="checkbox" class="day-checkbox" data-day="tuesday" name="day_tuesday" {% if form.cutoff_tuesday.value %}checked{% endif %} />
+                        <span>Tuesday</span>
+                      </label>
+                      <div class="cutoff-time-wrapper" id="cutoff-wrapper-tuesday" style="display: {% if form.cutoff_tuesday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_cutoff_tuesday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.cutoff_tuesday }}
+                      </div>
+                    </div>
+                    <!-- Wednesday -->
+                    <div class="delivery-day-item" data-day="wednesday">
+                      <label class="delivery-day-checkbox-label">
+                        <input type="checkbox" class="day-checkbox" data-day="wednesday" name="day_wednesday" {% if form.cutoff_wednesday.value %}checked{% endif %} />
+                        <span>Wednesday</span>
+                      </label>
+                      <div class="cutoff-time-wrapper" id="cutoff-wrapper-wednesday" style="display: {% if form.cutoff_wednesday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_cutoff_wednesday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.cutoff_wednesday }}
+                      </div>
+                    </div>
+                    <!-- Thursday -->
+                    <div class="delivery-day-item" data-day="thursday">
+                      <label class="delivery-day-checkbox-label">
+                        <input type="checkbox" class="day-checkbox" data-day="thursday" name="day_thursday" {% if form.cutoff_thursday.value %}checked{% endif %} />
+                        <span>Thursday</span>
+                      </label>
+                      <div class="cutoff-time-wrapper" id="cutoff-wrapper-thursday" style="display: {% if form.cutoff_thursday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_cutoff_thursday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.cutoff_thursday }}
+                      </div>
+                    </div>
+                    <!-- Friday -->
+                    <div class="delivery-day-item" data-day="friday">
+                      <label class="delivery-day-checkbox-label">
+                        <input type="checkbox" class="day-checkbox" data-day="friday" name="day_friday" {% if form.cutoff_friday.value %}checked{% endif %} />
+                        <span>Friday</span>
+                      </label>
+                      <div class="cutoff-time-wrapper" id="cutoff-wrapper-friday" style="display: {% if form.cutoff_friday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_cutoff_friday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.cutoff_friday }}
+                      </div>
+                    </div>
+                    <!-- Saturday -->
+                    <div class="delivery-day-item" data-day="saturday">
+                      <label class="delivery-day-checkbox-label">
+                        <input type="checkbox" class="day-checkbox" data-day="saturday" name="day_saturday" {% if form.cutoff_saturday.value %}checked{% endif %} />
+                        <span>Saturday</span>
+                      </label>
+                      <div class="cutoff-time-wrapper" id="cutoff-wrapper-saturday" style="display: {% if form.cutoff_saturday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_cutoff_saturday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.cutoff_saturday }}
+                      </div>
+                    </div>
+                    <!-- Sunday -->
+                    <div class="delivery-day-item" data-day="sunday">
+                      <label class="delivery-day-checkbox-label">
+                        <input type="checkbox" class="day-checkbox" data-day="sunday" name="day_sunday" {% if form.cutoff_sunday.value %}checked{% endif %} />
+                        <span>Sunday</span>
+                      </label>
+                      <div class="cutoff-time-wrapper" id="cutoff-wrapper-sunday" style="display: {% if form.cutoff_sunday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_cutoff_sunday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.cutoff_sunday }}
+                      </div>
+                    </div>
+                  </div>
+                  {{ form.delivery_days }}
+                  {% if form.delivery_days.errors %}
+                    <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                      {% for error in form.delivery_days.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div>
+                  <label class="field-label">Order Schedule & Cutoff Times</label>
+                  <div class="order-days-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                    <!-- Monday -->
+                    <div class="order-day-item" data-day="monday">
+                      <label class="order-day-checkbox-label">
+                        <input type="checkbox" class="order-day-checkbox" data-day="monday" name="order_day_monday" {% if form.order_cutoff_monday.value %}checked{% endif %} />
+                        <span>Monday</span>
+                      </label>
+                      <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-monday" style="display: {% if form.order_cutoff_monday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_order_cutoff_monday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.order_cutoff_monday }}
+                      </div>
+                    </div>
+                    <!-- Tuesday -->
+                    <div class="order-day-item" data-day="tuesday">
+                      <label class="order-day-checkbox-label">
+                        <input type="checkbox" class="order-day-checkbox" data-day="tuesday" name="order_day_tuesday" {% if form.order_cutoff_tuesday.value %}checked{% endif %} />
+                        <span>Tuesday</span>
+                      </label>
+                      <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-tuesday" style="display: {% if form.order_cutoff_tuesday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_order_cutoff_tuesday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.order_cutoff_tuesday }}
+                      </div>
+                    </div>
+                    <!-- Wednesday -->
+                    <div class="order-day-item" data-day="wednesday">
+                      <label class="order-day-checkbox-label">
+                        <input type="checkbox" class="order-day-checkbox" data-day="wednesday" name="order_day_wednesday" {% if form.order_cutoff_wednesday.value %}checked{% endif %} />
+                        <span>Wednesday</span>
+                      </label>
+                      <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-wednesday" style="display: {% if form.order_cutoff_wednesday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_order_cutoff_wednesday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.order_cutoff_wednesday }}
+                      </div>
+                    </div>
+                    <!-- Thursday -->
+                    <div class="order-day-item" data-day="thursday">
+                      <label class="order-day-checkbox-label">
+                        <input type="checkbox" class="order-day-checkbox" data-day="thursday" name="order_day_thursday" {% if form.order_cutoff_thursday.value %}checked{% endif %} />
+                        <span>Thursday</span>
+                      </label>
+                      <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-thursday" style="display: {% if form.order_cutoff_thursday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_order_cutoff_thursday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.order_cutoff_thursday }}
+                      </div>
+                    </div>
+                    <!-- Friday -->
+                    <div class="order-day-item" data-day="friday">
+                      <label class="order-day-checkbox-label">
+                        <input type="checkbox" class="order-day-checkbox" data-day="friday" name="order_day_friday" {% if form.order_cutoff_friday.value %}checked{% endif %} />
+                        <span>Friday</span>
+                      </label>
+                      <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-friday" style="display: {% if form.order_cutoff_friday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_order_cutoff_friday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.order_cutoff_friday }}
+                      </div>
+                    </div>
+                    <!-- Saturday -->
+                    <div class="order-day-item" data-day="saturday">
+                      <label class="order-day-checkbox-label">
+                        <input type="checkbox" class="order-day-checkbox" data-day="saturday" name="order_day_saturday" {% if form.order_cutoff_saturday.value %}checked{% endif %} />
+                        <span>Saturday</span>
+                      </label>
+                      <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-saturday" style="display: {% if form.order_cutoff_saturday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_order_cutoff_saturday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.order_cutoff_saturday }}
+                      </div>
+                    </div>
+                    <!-- Sunday -->
+                    <div class="order-day-item" data-day="sunday">
+                      <label class="order-day-checkbox-label">
+                        <input type="checkbox" class="order-day-checkbox" data-day="sunday" name="order_day_sunday" {% if form.order_cutoff_sunday.value %}checked{% endif %} />
+                        <span>Sunday</span>
+                      </label>
+                      <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-sunday" style="display: {% if form.order_cutoff_sunday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+                        <label for="id_order_cutoff_sunday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
+                        {{ form.order_cutoff_sunday }}
+                      </div>
               </div>
             </div>
-            <div style="margin-top:12px;">
-              <label class="field-label">Note</label>
-              <textarea class="panel-textarea" aria-label="Supplier note">{{ item.notes|default:"" }}</textarea>
+                  {{ form.order_days }}
+                  {% if form.order_days.errors %}
+                    <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                      {% for error in form.order_days.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div>
+                  <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text); cursor: pointer;">
+                    {{ form.is_active }}
+                    Active
+                  </label>
+                </div>
             </div>
           </div>
         </div>
+        </form>
 
         <div class="tab-panel" data-key="items" style="display:none;">
           <div style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
@@ -121,12 +394,15 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for p in item.products_supplied %}
+                  {% for p in item.supplier_items %}
                   <tr>
-                    <td style="padding:8px 10px;color:#374151;">{{ p.item_name }}</td>
+                    <td style="padding:8px 10px;color:#374151;">
+                      <strong>{{ p.item_code }}</strong> - {{ p.item_name }}
+                      {% if p.variation %}<span style="color: var(--muted); font-size: 12px;">({{ p.variation }})</span>{% endif %}
+                    </td>
                     <td style="padding:8px 10px;color:#374151;">{{ p.price_per_unit }}</td>
-                    <td style="padding:8px 10px;color:#374151;">{{ item.last_ordered_date }}</td>
-                    <td style="padding:8px 10px;"><span class="status-pill status-good">Active</span></td>
+                    <td style="padding:8px 10px;color:#374151;">{{ p.last_purchase_date }}</td>
+                    <td style="padding:8px 10px;"><span class="status-pill status-good">{{ p.status }}</span></td>
                   </tr>
                   {% empty %}
                   <tr><td colspan="4" style="padding:8px 10px;color:#6b7280;">No products found for this supplier.</td></tr>
@@ -159,46 +435,27 @@
             </div>
           </div>
 
-          <div class="active-orders-grid" style="margin-top:12px;">
-            {% for p in item.products_supplied %}
-            <div class="order-card">
-              <div class="card-body" style="flex:1;">
-                <div class="card-top" style="display:flex;gap:12px;align-items:flex-start;">
-                  <img src="{% static 'images/sample-item.jpg' %}" alt="" class="product-thumb" />
-                  <div class="card-info" style="flex:1;min-width:0;">
+          <div style="margin-top:12px;">
+            {% for order in item.orders %}
+            <div style="background:var(--card-bg);padding:12px;border-radius:8px;border:1px solid var(--border);margin-bottom:8px;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-                      <div style="min-width:0;">
-                        <div style="font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.item_name }}</div>
+                <div style="flex:1;">
+                  <div style="font-weight:700;color:#111827;">{{ order.po_code }}</div>
                         <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-                          <div style="color:#9ca3af;font-weight:400;font-size:13px;">Item Code</div>
-                          <div style="color:#9ca3af;font-weight:400;font-size:13px;">PK-{{ p.sku|default:'N/A' }}</div>
+                    <div style="color:#9ca3af;font-weight:400;font-size:13px;">Status: {{ order.status }}</div>
                         </div>
+                  <div style="color:#9ca3af;font-weight:400;font-size:13px;margin-top:4px;">Created: {{ order.created_at }}</div>
+                  {% if order.requested_delivery_date != "—" %}
+                  <div style="color:#9ca3af;font-weight:400;font-size:13px;margin-top:4px;">Delivery: {{ order.requested_delivery_date }}</div>
+                  {% endif %}
                       </div>
-                      <div style="text-align:right;flex:0 0 auto;margin-left:8px;">
-                        <div><span class="status-pill status-good">In-Stock</span></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style="display:flex;gap:22px;align-items:flex-start;margin-top:10px;">
-                  <div style="min-width:0;">
-                    <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">Price</div>
-                    <div style="color:#374151;font-weight:700;"><span class="price-value">{{ p.price_per_unit }}</span></div>
-                  </div>
-                  <div style="min-width:0;">
-                    <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">Minimum Order</div>
-                    <div style="color:#374151;"><strong>20 Unit</strong></div>
-                  </div>
-                </div>
-
-                <div style="margin-top:10px;display:flex;justify-content:flex-end;">
-                  <button class="btn-purchase">View Invoice</button>
+                <div style="text-align:right;">
+                  <span class="status-pill status-good">{{ order.status }}</span>
                 </div>
               </div>
             </div>
             {% empty %}
-            <div style="color:#6b7280;">No active orders for this supplier.</div>
+            <div style="padding:12px;color:#6b7280;text-align:center;">No orders found for this supplier.</div>
             {% endfor %}
           </div>
         </div>
@@ -233,6 +490,136 @@
         } else {
           el.textContent = 'OMR ' + txt;
         }
+      });
+    });
+  </script>
+
+<style>
+  .form-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-stack);
+  }
+  .form-input:focus {
+    border-color: var(--focus);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(217,189,125,0.12);
+  }
+  .delivery-day-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .order-day-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .order-day-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .order-day-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--focus);
+    flex-shrink: 0;
+  }
+  .order-day-checkbox-label input[type="checkbox"]:checked + span {
+    font-weight: 600;
+    color: var(--focus);
+  }
+  .cutoff-time-input {
+    width: 100%;
+    max-width: 200px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-stack);
+  }
+  .cutoff-time-input:focus {
+    border-color: var(--focus);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(217,189,125,0.12);
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const dayCheckboxes = document.querySelectorAll('.day-checkbox');
+    
+    dayCheckboxes.forEach(function(checkbox) {
+      const dayLower = checkbox.getAttribute('data-day');
+      const cutoffWrapper = document.getElementById('cutoff-wrapper-' + dayLower);
+      const cutoffInput = cutoffWrapper ? cutoffWrapper.querySelector('input[type="time"]') : null;
+      
+      // Show/hide cutoff time field based on checkbox state
+      function toggleCutoffField() {
+        if (checkbox.checked && cutoffWrapper && cutoffInput) {
+          cutoffWrapper.style.display = 'block';
+          cutoffInput.required = true;
+          cutoffInput.setAttribute('required', 'required');
+        } else if (cutoffWrapper && cutoffInput) {
+          cutoffWrapper.style.display = 'none';
+          cutoffInput.required = false;
+          cutoffInput.removeAttribute('required');
+          cutoffInput.value = ''; // Clear value when unchecked
+        }
+      }
+      
+      // Check initial state (for editing existing suppliers)
+      if (cutoffInput && cutoffInput.value) {
+        checkbox.checked = true;
+        toggleCutoffField();
+      }
+      
+      // Listen for changes
+      checkbox.addEventListener('change', toggleCutoffField);
+    });
+    
+    // Order days checkboxes - same logic as delivery days
+    const orderDayCheckboxes = document.querySelectorAll('.order-day-checkbox');
+    
+    orderDayCheckboxes.forEach(function(checkbox) {
+      const dayLower = checkbox.getAttribute('data-day');
+      const cutoffWrapper = document.getElementById('order-cutoff-wrapper-' + dayLower);
+      const cutoffInput = cutoffWrapper ? cutoffWrapper.querySelector('input[type="time"]') : null;
+      
+      // Show/hide cutoff time field based on checkbox state
+      function toggleCutoffField() {
+        if (checkbox.checked && cutoffWrapper && cutoffInput) {
+          cutoffWrapper.style.display = 'block';
+          cutoffInput.required = true;
+          cutoffInput.setAttribute('required', 'required');
+        } else if (cutoffWrapper && cutoffInput) {
+          cutoffWrapper.style.display = 'none';
+          cutoffInput.required = false;
+          cutoffInput.removeAttribute('required');
+          cutoffInput.value = ''; // Clear value when unchecked
+        }
+      }
+      
+      // Check initial state (for editing existing suppliers)
+      if (cutoffInput && cutoffInput.value) {
+        checkbox.checked = true;
+        toggleCutoffField();
+      } else {
+        // Initialize on page load even if no value
+        toggleCutoffField();
+      }
+      
+      // Listen for checkbox changes
+      checkbox.addEventListener('change', toggleCutoffField);
       });
     });
   </script>

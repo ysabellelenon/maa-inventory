@@ -1,0 +1,180 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+<style>
+  /* Override height restrictions for this page to show all items */
+  .inventory-container {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  .content {
+    height: auto !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Ensure table can grow to show all rows */
+  tbody {
+    max-height: none !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <div style="display:flex;flex-direction:column;">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'item_requests' %}">Item Requests</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <span class="active" aria-current="page">{{ item_request.request_code }}</span>
+      </nav>
+      <h2 style="margin-top:6px;">{{ item_request.request_code }}</h2>
+      <h3 class="item-submeta"><strong>Supplier:</strong> {{ item_request.supplier.name }} &nbsp;•&nbsp; <strong>Status:</strong> {{ item_request.get_status_display }}</h3>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      {% if item_request.status != 'MovedToStock' and item_request.status != 'Cancelled' %}
+      <button id="confirm-stock-btn" class="btn-save-inline" style="background:#10B981;border-color:#10B981;">
+        <img src="{% static 'icons/check.svg' %}" alt="" />
+        <span>Move to Stock</span>
+      </button>
+      {% endif %}
+      <a href="{% url 'item_requests' %}" class="btn-delete-inline" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+        <img src="{% static 'icons/chevron-left.svg' %}" alt="" />
+        <span>Back</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="inventory-container">
+    <div style="background:var(--card-bg);padding:20px;border-radius:8px;margin-bottom:20px;">
+      <h3 style="margin-bottom:16px;font-size:16px;font-weight:700;">Request Details</h3>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+        <div>
+          <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Request Code</div>
+          <div style="font-weight:600;">{{ item_request.request_code }}</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Supplier</div>
+          <div style="font-weight:600;">{{ item_request.supplier.name }}</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Created By</div>
+          <div style="font-weight:600;">{{ item_request.created_by.get_full_name|default:item_request.created_by.username }}</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Request Date</div>
+          <div style="font-weight:600;">{{ item_request.created_at|date:"F d, Y" }}</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Status</div>
+          <div>
+            {% if item_request.status == 'Pending' %}
+              <span class="status-pill status-pending">{{ item_request.get_status_display }}</span>
+            {% elif item_request.status == 'Notified' %}
+              <span class="status-pill status-in-process">{{ item_request.get_status_display }}</span>
+            {% elif item_request.status == 'InProduction' %}
+              <span class="status-pill status-in-process">{{ item_request.get_status_display }}</span>
+            {% elif item_request.status == 'Ready' %}
+              <span class="status-pill status-approved">{{ item_request.get_status_display }}</span>
+            {% elif item_request.status == 'MovedToStock' %}
+              <span class="status-pill status-completed">{{ item_request.get_status_display }}</span>
+            {% else %}
+              <span class="status-pill">{{ item_request.get_status_display }}</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if item_request.notes %}
+        <div style="grid-column:1/-1;">
+          <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Notes</div>
+          <div style="font-weight:500;">{{ item_request.notes }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="background:var(--card-bg);padding:20px;border-radius:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;font-size:16px;font-weight:700;">Requested Items</h3>
+        <span style="font-size:14px;color:#6b7280;font-weight:500;">Total: {{ total_items_count|default:request_items|length }} item{{ request_items|length|pluralize }}</span>
+      </div>
+      <div style="overflow-x:auto;overflow-y:visible;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:2px solid #e5e7eb;">
+              <th style="text-align:left;padding:12px 8px;font-size:13px;color:#6b7280;font-weight:600;">Item Code</th>
+              <th style="text-align:left;padding:12px 8px;font-size:13px;color:#6b7280;font-weight:600;">Item Name</th>
+              {% if request_items.0.variation %}
+              <th style="text-align:left;padding:12px 8px;font-size:13px;color:#6b7280;font-weight:600;">Variation</th>
+              {% endif %}
+              <th style="text-align:right;padding:12px 8px;font-size:13px;color:#6b7280;font-weight:600;">Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in request_items %}
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:12px 8px;font-weight:600;color:#374151;">{{ item.item_code }}</td>
+              <td style="padding:12px 8px;color:#374151;">{{ item.item_name }}</td>
+              {% if request_items.0.variation %}
+              <td style="padding:12px 8px;color:#374151;">{{ item.variation|default:"—" }}</td>
+              {% endif %}
+              <td style="padding:12px 8px;text-align:right;font-weight:600;color:#374151;">{{ item.quantity }} {{ item.base_unit }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" style="padding:40px;text-align:center;color:#6b7280;">
+                No items in this request.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    {% if item_request.status != 'MovedToStock' and item_request.status != 'Cancelled' %}
+    var confirmBtn = document.getElementById('confirm-stock-btn');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function() {
+        if (confirm('Move items from {{ item_request.request_code }} to supplier stock? This confirms that items are ready.')) {
+          this.disabled = true;
+          this.innerHTML = '<span>Moving...</span>';
+          
+          fetch('{% url "confirm_item_stock" item_request.id %}', {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken')
+            }
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              window.location.href = data.redirect_url;
+            } else {
+              alert('Error: ' + (data.error || 'Unknown error'));
+              this.disabled = false;
+              this.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" /><span>Move to Stock</span>';
+            }
+          })
+          .catch(err => {
+            alert('Error moving to stock');
+            console.error(err);
+            this.disabled = false;
+            this.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" /><span>Move to Stock</span>';
+          });
+        }
+      });
+    }
+    {% endif %}
+
+    function getCookie(name) {
+      var value = '; ' + document.cookie;
+      var parts = value.split('; ' + name + '=');
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+  </script>
+{% endblock %}

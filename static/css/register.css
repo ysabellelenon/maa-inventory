@@ -1,0 +1,285 @@
+/* Registration page styles using design tokens */
+
+body.register-page {
+  background: var(--bg) !important;
+  min-height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 40px 20px !important;
+  margin: 0 !important;
+  font-family: var(--font-stack) !important;
+  overflow-y: auto !important;
+  height: auto !important;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.register-container {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding-top: 20px;
+}
+
+.register-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.08);
+  margin: 0;
+  overflow: visible;
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 32px;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.register-logo {
+  height: 60px;
+  margin-bottom: 16px;
+  margin-top: 0;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+}
+
+.register-header h1 {
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.register-subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font-stack);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input:hover,
+.form-select:hover {
+  border-color: var(--focus);
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--focus);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(217, 189, 125, 0.12);
+}
+
+.form-input::placeholder {
+  color: var(--muted);
+}
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.field-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 12px;
+}
+
+.form-errors {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.help-text {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.register-button {
+  width: 100%;
+  padding: 14px;
+  background: var(--focus);
+  color: var(--text);
+  border: 1px solid var(--focus);
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-stack);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  margin-top: 8px;
+}
+
+.register-button:hover {
+  background: #c9a85f;
+  border-color: #c9a85f;
+}
+
+.register-button:active {
+  background: #b8964f;
+  border-color: #b8964f;
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.register-footer p {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.login-link {
+  color: var(--focus);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.login-link:hover {
+  color: #c9a85f;
+  text-decoration: underline;
+}
+
+/* Branch checkbox styling */
+.branches-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.branches-checkbox-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.branches-checkbox-group li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.branches-checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--focus);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.branches-checkbox-group input[type="checkbox"]:checked {
+  background-color: var(--focus);
+  border-color: var(--focus);
+}
+
+.branches-checkbox-group input[type="checkbox"]:focus {
+  outline: 2px solid rgba(217, 189, 125, 0.3);
+  outline-offset: 2px;
+}
+
+.branches-checkbox-group label {
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  margin: 0;
+  font-weight: 400;
+  flex: 1;
+}
+
+.branches-checkbox-group label:hover {
+  color: var(--focus);
+}
+
+/* Empty state for branches */
+.branches-checkbox-group:empty::before {
+  content: "No active branches available";
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .register-card {
+    padding: 24px;
+  }
+
+  .register-header h1 {
+    font-size: 24px;
+  }
+
+  .register-logo {
+    height: 40px;
+  }
+}
+

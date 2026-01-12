@@ -1,0 +1,537 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <div style="display:flex;flex-direction:column;">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'inventory' %}">Inventory</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <span class="active" aria-current="page">Add New Inventory Item</span>
+      </nav>
+      <h2 style="margin-top:6px;">Add New Inventory Item</h2>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <a href="{% url 'inventory' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid var(--border);">
+        <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" style="width: 16px; height: 16px;" />
+        Back
+      </a>
+    </div>
+  </div>
+
+  <div class="inventory-container">
+    <div class="request-layout" style="display:flex;gap:18px;align-items:stretch;">
+      <div class="request-left" style="flex:0 0 360px;min-width:320px;">
+        <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+          <label class="field-label">Choose Category</label>
+          <select id="category-select" class="panel-input" aria-label="Choose Category">
+            <option value="">Select category</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
+          <div style="margin-bottom:8px;">
+            <input id="supplier-search" class="panel-input" placeholder="Search by supplier name" aria-label="Search suppliers" />
+          </div>
+          <div class="suppliers-list" id="suppliers-list" style="max-height:385px;overflow:auto;border-top:1px solid var(--border);">
+            {% for supplier in suppliers %}
+            <div class="request-item-row" data-id="{{ supplier.id }}" data-name="{{ supplier.name }}" data-category="{{ supplier.category_id|default:'' }}" style="padding:12px 10px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                <div class="supplier-title" style="font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ supplier.name }}</div>
+                <div class="supplier-category" style="font-size:12px;color:#6b7280;">{% if supplier.category %}{{ supplier.category }}{% else %}No category{% endif %}</div>
+              </div>
+              <div style="margin-left:12px;color:#6b7280;">›</div>
+            </div>
+            {% empty %}
+            <div style="padding:12px 10px;color:#6b7280;text-align:center;">
+              No suppliers available.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:0;display:flex;gap:18px;align-items:stretch;">
+        <div class="request-right panel-border" style="flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;">
+          <form method="post" action="{% url 'add_item' %}" id="supplier-item-form" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% if messages %}
+              <div style="margin-bottom: 20px;">
+                {% for message in messages %}
+                  <div style="padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; background: {% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% else %}var(--accent){% endif %}; color: {% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% else %}var(--text){% endif %}; border: 1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% else %}var(--border){% endif %};">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+              <div style="margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
+                {% for error in form.non_field_errors %}
+                  {{ error }}
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+              <div>
+                <label for="{{ form.supplier.id_for_label }}" class="field-label">{{ form.supplier.label }} <span style="color: #ef4444;">*</span></label>
+                {{ form.supplier }}
+                <input type="hidden" name="supplier" id="supplier-hidden" value="" />
+                <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">Select a supplier from the list on the left</div>
+                {% if form.supplier.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.supplier.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div>
+                <label for="{{ form.item_name.id_for_label }}" class="field-label">{{ form.item_name.label }} <span style="color: #ef4444;">*</span></label>
+                {{ form.item_name }}
+                {% if form.item_name.help_text %}
+                  <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">{{ form.item_name.help_text }}</div>
+                {% endif %}
+                {% if form.item_name.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.item_name.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div>
+                <label for="{{ form.item_min_stock_qty.id_for_label }}" class="field-label">{{ form.item_min_stock_qty.label }} <span style="color: #ef4444;">*</span></label>
+                {{ form.item_min_stock_qty }}
+                {% if form.item_min_stock_qty.help_text %}
+                  <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">{{ form.item_min_stock_qty.help_text }}</div>
+                {% endif %}
+                {% if form.item_min_stock_qty.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.item_min_stock_qty.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div>
+                <label for="{{ form.item_code.id_for_label }}" class="field-label">{{ form.item_code.label }}</label>
+                {{ form.item_code }}
+                {% if form.item_code.help_text %}
+                  <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">{{ form.item_code.help_text }}</div>
+                {% endif %}
+                {% if form.item_code.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.item_code.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div>
+                <label for="{{ form.base_unit.id_for_label }}" class="field-label">{{ form.base_unit.label }} <span style="color: #ef4444;">*</span></label>
+                {{ form.base_unit }}
+                {% if form.base_unit.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.base_unit.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div>
+                <label for="{{ form.price_per_unit.id_for_label }}" class="field-label">{{ form.price_per_unit.label }} <span style="color: #ef4444;">*</span></label>
+                {{ form.price_per_unit }}
+                {% if form.price_per_unit.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.price_per_unit.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div>
+                <label for="{{ form.min_order_qty.id_for_label }}" class="field-label">{{ form.min_order_qty.label }} <span style="color: #ef4444;">*</span></label>
+                {{ form.min_order_qty }}
+                {% if form.min_order_qty.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.min_order_qty.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div style="grid-column: 1 / -1;">
+                <label for="id_photos" class="field-label">Photos</label>
+                <div style="display: flex; gap: 12px; align-items: flex-start;">
+                  <div style="flex: 1;">
+                    <input type="file" name="photos" id="id_photos" 
+                           class="form-input" accept="image/*" multiple 
+                           style="padding: 8px; border: 1px solid var(--border); border-radius: 8px;"
+                           onchange="addPhotos(this)">
+                    <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">Upload up to 5 photos for this item (optional). You can select files one by one.</div>
+                    <div id="photo-count" style="color: #6b7280; font-size: 12px; margin-top: 4px;"></div>
+                  </div>
+                </div>
+                <div id="photo-preview-container" style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px;"></div>
+              </div>
+
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text); cursor: pointer;">
+                {{ form.is_active }}
+                Active
+              </label>
+            </div>
+
+            <div style="width:100%;display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--border);">
+              <button type="submit" class="btn-new-request" style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;">
+                <img src="{% static 'icons/plus.svg' %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" />
+                <span>Add New Inventory Item</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-border" style="flex:0 0 400px;min-width:320px;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;max-height:calc(100vh - 200px);">
+          <label class="field-label" style="margin-bottom:12px;font-weight:600;font-size:15px;">Branches Using This Item</label>
+          <div style="margin-bottom:12px;flex-shrink:0;">
+            <input type="text" id="branch-search" class="panel-input" placeholder="Search branches..." aria-label="Search branches" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-stack);font-size:13px;" />
+          </div>
+          <div id="branches-container" style="display:flex;flex-direction:column;gap:16px;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;max-height:100%;">
+            {% for brand_data in brands_branches %}
+            <div class="brand-branch-group" data-brand="{{ brand_data.name|lower }}" style="background:var(--accent);padding:12px;border-radius:8px;border:1px solid var(--border);">
+              <div style="font-weight:600;margin-bottom:10px;color:var(--text);font-size:14px;">{{ brand_data.name }}</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                {% for branch in brand_data.branches %}
+                <label class="branch-item" data-branch-name="{{ branch.name|lower }}" style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--focus)';this.style.background='#f7e7d0';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card-bg)';">
+                  <input type="checkbox" name="branches" form="supplier-item-form" value="{{ branch.id }}" style="width:18px;height:18px;cursor:pointer;accent-color:var(--focus);" />
+                  <span style="font-size:13px;color:var(--text);">{{ branch.name }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            {% empty %}
+            <div style="padding:12px;color:#6b7280;text-align:center;background:var(--accent);border-radius:8px;">
+              No branches available.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .form-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--font-stack);
+    }
+    .form-input:focus {
+      border-color: var(--focus);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(217,189,125,0.12);
+    }
+    .field-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: var(--text);
+    }
+  </style>
+
+  <script>
+    (function () {
+      var categorySelect = document.getElementById('category-select');
+      var supplierSearch = document.getElementById('supplier-search');
+      var suppliersList = document.getElementById('suppliers-list');
+      var supplierSelect = document.getElementById('id_supplier');
+
+      // Store all supplier options with their category IDs
+      var allSupplierOptions = [];
+      if (supplierSelect) {
+        for (var i = 0; i < supplierSelect.options.length; i++) {
+          var option = supplierSelect.options[i];
+          if (option.value) {
+            // Find the supplier row to get its category
+            var supplierRow = suppliersList.querySelector('[data-id="' + option.value + '"]');
+            var categoryId = supplierRow ? supplierRow.getAttribute('data-category') || '' : '';
+            allSupplierOptions.push({
+              option: option,
+              categoryId: categoryId,
+              value: option.value,
+              text: option.text
+            });
+          }
+        }
+      }
+
+      function updateVisibleSuppliers() {
+        var categoryId = categorySelect.value;
+        var q = supplierSearch.value.trim().toLowerCase();
+        
+        // If no category is selected, hide all suppliers
+        if (!categoryId) {
+          Array.prototype.forEach.call(suppliersList.querySelectorAll('.request-item-row'), function (row) {
+            row.style.display = 'none';
+          });
+          
+          // Clear supplier dropdown
+          if (supplierSelect) {
+            supplierSelect.innerHTML = '<option value="">--------</option>';
+            supplierSelect.value = '';
+          }
+          return;
+        }
+        
+        // Update sidebar list visibility
+        Array.prototype.forEach.call(suppliersList.querySelectorAll('.request-item-row'), function (row) {
+          var name = row.getAttribute('data-name') || '';
+          var category = row.getAttribute('data-category') || '';
+          var matchesCategory = category === categoryId;
+          var matchesQuery = !q || name.toLowerCase().indexOf(q) !== -1;
+          row.style.display = (matchesCategory && matchesQuery) ? 'flex' : 'none';
+        });
+
+        // Update supplier dropdown options based on category
+        if (supplierSelect) {
+          var currentValue = supplierSelect.value;
+          // Clear all options except the first empty one
+          supplierSelect.innerHTML = '<option value="">--------</option>';
+          
+          // Add suppliers that match the selected category
+          allSupplierOptions.forEach(function(item) {
+            if (item.categoryId === categoryId) {
+              var option = document.createElement('option');
+              option.value = item.value;
+              option.textContent = item.text;
+              supplierSelect.appendChild(option);
+            }
+          });
+
+          // Restore the selected value if it's still available
+          if (currentValue && supplierSelect.querySelector('option[value="' + currentValue + '"]')) {
+            supplierSelect.value = currentValue;
+          } else {
+            supplierSelect.value = '';
+          }
+        }
+      }
+
+      categorySelect && categorySelect.addEventListener('change', function () {
+        updateVisibleSuppliers();
+      });
+
+      supplierSearch && supplierSearch.addEventListener('input', function () {
+        updateVisibleSuppliers();
+      });
+
+      // When clicking a supplier in the list, select it in the dropdown
+      suppliersList && suppliersList.addEventListener('click', function (e) {
+        var row = e.target.closest && e.target.closest('.request-item-row');
+        if (!row || row.style.display === 'none') return;
+        var supplierId = row.getAttribute('data-id');
+        var supplierName = row.getAttribute('data-name');
+        if (!supplierId || !supplierSelect) return;
+        
+        // Find and select the matching supplier option
+        var option = supplierSelect.querySelector('option[value="' + supplierId + '"]');
+        if (option) {
+          supplierSelect.value = supplierId;
+          supplierSelect.dispatchEvent(new Event('change'));
+          
+          // Update hidden input for form submission (since dropdown is disabled)
+          var hiddenInput = document.getElementById('supplier-hidden');
+          if (hiddenInput) {
+            hiddenInput.value = supplierId;
+          }
+          
+          // Highlight the selected supplier row
+          suppliersList.querySelectorAll('.request-item-row').forEach(function(r) {
+            r.style.background = '';
+            r.style.borderLeft = '';
+          });
+          row.style.background = '#f7e7d0';
+          row.style.borderLeft = '3px solid var(--focus)';
+        }
+      });
+
+      // Initialize on page load
+      updateVisibleSuppliers();
+    })();
+
+    // Branch search functionality
+    (function() {
+      var branchSearch = document.getElementById('branch-search');
+      var branchesContainer = document.getElementById('branches-container');
+      
+      if (!branchSearch || !branchesContainer) return;
+      
+      branchSearch.addEventListener('input', function() {
+        var query = this.value.trim().toLowerCase();
+        var brandGroups = branchesContainer.querySelectorAll('.brand-branch-group');
+        
+        brandGroups.forEach(function(brandGroup) {
+          var branchItems = brandGroup.querySelectorAll('.branch-item');
+          var visibleCount = 0;
+          
+          branchItems.forEach(function(branchItem) {
+            var branchName = branchItem.getAttribute('data-branch-name') || '';
+            var brandName = brandGroup.getAttribute('data-brand') || '';
+            
+            // Show if query matches branch name or brand name
+            var matches = !query || 
+                         branchName.indexOf(query) !== -1 || 
+                         brandName.indexOf(query) !== -1;
+            
+            if (matches) {
+              branchItem.style.display = 'flex';
+              visibleCount++;
+            } else {
+              branchItem.style.display = 'none';
+            }
+          });
+          
+          // Hide brand group if no branches are visible
+          if (visibleCount === 0) {
+            brandGroup.style.display = 'none';
+          } else {
+            brandGroup.style.display = 'block';
+          }
+        });
+      });
+    })();
+  </script>
+
+  <script>
+    // Store selected photos
+    let selectedPhotos = [];
+    const maxPhotos = 5;
+    const photoInput = document.getElementById('id_photos');
+
+    function addPhotos(input) {
+      const files = Array.from(input.files);
+      const remainingSlots = maxPhotos - selectedPhotos.length;
+      
+      if (remainingSlots <= 0) {
+        alert('Maximum 5 photos allowed. Please remove some photos before adding more.');
+        input.value = '';
+        return;
+      }
+
+      // Add new files to the selection (up to the limit)
+      const filesToAdd = files.slice(0, remainingSlots);
+      
+      filesToAdd.forEach(file => {
+        if (selectedPhotos.length < maxPhotos) {
+          selectedPhotos.push(file);
+        }
+      });
+
+      if (files.length > remainingSlots) {
+        alert(`Only ${remainingSlots} photo(s) were added. Maximum 5 photos allowed.`);
+      }
+
+      updatePhotoPreview();
+      updatePhotoCount();
+      updateFileInput();
+      
+      // Clear the input so user can select more files
+      input.value = '';
+    }
+
+    function removePhoto(index) {
+      selectedPhotos.splice(index, 1);
+      updatePhotoPreview();
+      updatePhotoCount();
+      updateFileInput();
+    }
+
+    function updateFileInput() {
+      // Create a new DataTransfer object to hold all selected files
+      // This ensures the files are included in the form submission
+      try {
+        const dataTransfer = new DataTransfer();
+        selectedPhotos.forEach(file => {
+          dataTransfer.items.add(file);
+        });
+        photoInput.files = dataTransfer.files;
+        console.log('Updated file input with', selectedPhotos.length, 'files');
+      } catch (e) {
+        // Fallback for browsers that don't support DataTransfer
+        console.warn('DataTransfer not supported:', e);
+        // For older browsers, we'll need to handle submission differently
+      }
+    }
+    
+    // Ensure files are included on form submit
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('supplier-item-form');
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          // Make sure the file input has all selected photos before submit
+          updateFileInput();
+          
+          // Verify files are in the input
+          if (photoInput.files.length !== selectedPhotos.length) {
+            console.warn('File count mismatch. Input has', photoInput.files.length, 'but selectedPhotos has', selectedPhotos.length);
+            // Try to update again
+            updateFileInput();
+          }
+          
+          console.log('Form submitting with', photoInput.files.length, 'photos');
+        });
+      }
+    });
+
+    function updatePhotoPreview() {
+      const container = document.getElementById('photo-preview-container');
+      container.innerHTML = '';
+
+      selectedPhotos.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const photoDiv = document.createElement('div');
+          photoDiv.style.cssText = 'position: relative; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--accent);';
+          
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.cssText = 'width: 100%; height: 100px; object-fit: cover; display: block;';
+          
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.innerHTML = '×';
+          removeBtn.style.cssText = 'position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;';
+          removeBtn.onclick = () => removePhoto(index);
+          removeBtn.title = 'Remove photo';
+          
+          photoDiv.appendChild(img);
+          photoDiv.appendChild(removeBtn);
+          container.appendChild(photoDiv);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function updatePhotoCount() {
+      const countDiv = document.getElementById('photo-count');
+      const count = selectedPhotos.length;
+      
+      if (count > 0) {
+        countDiv.innerHTML = count + ' photo(s) selected (maximum ' + maxPhotos + ')';
+        if (count >= maxPhotos) {
+          countDiv.innerHTML += ' <span style="color: #991b1b;">(Maximum reached)</span>';
+        }
+      } else {
+        countDiv.innerHTML = '';
+      }
+    }
+  </script>
+
+{% endblock %}

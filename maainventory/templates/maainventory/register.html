@@ -1,0 +1,230 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register - MAA Inventory</title>
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/register.css' %}">
+</head>
+<body class="register-page">
+  <div class="register-container">
+    <div class="register-card">
+      <div class="register-header">
+        <img src="{% static 'images/MAA-logo-transparent.png' %}" alt="MAA logo" class="register-logo" />
+        <h1>Registration of MAA Employees</h1>
+        <p class="register-subtitle">Sign up to access the MAA Inventory Management System</p>
+      </div>
+
+      <form method="post" class="register-form" action="{% url 'register' %}">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="form-group">
+          <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="field-errors">
+              {% for error in form.username.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="field-errors">
+              {% for error in form.email.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.full_name.id_for_label }}" class="form-label">{{ form.full_name.label }}</label>
+          {{ form.full_name }}
+          {% if form.full_name.errors %}
+            <div class="field-errors">
+              {% for error in form.full_name.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.punch_id.id_for_label }}" class="form-label">{{ form.punch_id.label }} <span style="color: #ef4444;">*</span></label>
+          {{ form.punch_id }}
+          {% if form.punch_id.help_text %}
+            <div class="help-text">{{ form.punch_id.help_text }}</div>
+          {% endif %}
+          {% if form.punch_id.errors %}
+            <div class="field-errors">
+              {% for error in form.punch_id.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.role.id_for_label }}" class="form-label">{{ form.role.label }}</label>
+          {{ form.role }}
+          {% if form.role.errors %}
+            <div class="field-errors">
+              {% for error in form.role.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.brand.id_for_label }}" class="form-label">{{ form.brand.label }}</label>
+          {{ form.brand }}
+          {% if form.brand.help_text %}
+            <div class="help-text">{{ form.brand.help_text }}</div>
+          {% endif %}
+          {% if form.brand.errors %}
+            <div class="field-errors">
+              {% for error in form.brand.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group" id="branches-group" style="display: none;">
+          <label class="form-label">{{ form.branches.label }}</label>
+          <div class="branches-checkbox-group" id="branches-container">
+            <!-- Branches will be populated dynamically via JavaScript -->
+          </div>
+          {% if form.branches.help_text %}
+            <div class="help-text">{{ form.branches.help_text }}</div>
+          {% endif %}
+          {% if form.branches.errors %}
+            <div class="field-errors">
+              {% for error in form.branches.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.password1.id_for_label }}" class="form-label">{{ form.password1.label }}</label>
+          {{ form.password1 }}
+          {% if form.password1.errors %}
+            <div class="field-errors">
+              {% for error in form.password1.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% if form.password1.help_text %}
+            <div class="help-text">{{ form.password1.help_text }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.password2.id_for_label }}" class="form-label">{{ form.password2.label }}</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}
+            <div class="field-errors">
+              {% for error in form.password2.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="register-button">Create Account</button>
+      </form>
+
+      <div class="register-footer">
+        <p>Already have an account? <a href="{% url 'login' %}" class="login-link">Log in here</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Branch data grouped by brand ID
+    const allBranches = {
+      {% regroup all_branches by brand as branches_by_brand %}
+      {% for brand_group in branches_by_brand %}
+        {{ brand_group.grouper.id }}: [
+          {% for branch in brand_group.list %}
+            {id: {{ branch.id }}, name: "{{ branch.name|escapejs }}"}{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        ]{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const brandSelect = document.getElementById('id_brand');
+      const branchesGroup = document.getElementById('branches-group');
+      const branchesContainer = document.getElementById('branches-container');
+
+      function updateBranches() {
+        const selectedBrandId = brandSelect.value;
+        branchesContainer.innerHTML = '';
+
+        if (selectedBrandId && allBranches[selectedBrandId]) {
+          branchesGroup.style.display = 'block';
+          const branches = allBranches[selectedBrandId];
+          
+          branches.forEach(function(branch) {
+            const label = document.createElement('label');
+            label.style.display = 'flex';
+            label.style.alignItems = 'center';
+            label.style.gap = '10px';
+            label.style.padding = '8px 0';
+            label.style.cursor = 'pointer';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = 'branches';
+            checkbox.value = branch.id;
+            checkbox.id = 'id_branches_' + branch.id;
+            checkbox.style.width = '18px';
+            checkbox.style.height = '18px';
+            checkbox.style.cursor = 'pointer';
+            checkbox.style.accentColor = '#D9BD7D';
+
+            const span = document.createElement('span');
+            span.textContent = branch.name;
+            span.style.color = '#111111';
+            span.style.fontSize = '14px';
+
+            label.appendChild(checkbox);
+            label.appendChild(span);
+            branchesContainer.appendChild(label);
+          });
+        } else {
+          branchesGroup.style.display = 'none';
+        }
+      }
+
+      brandSelect.addEventListener('change', updateBranches);
+      
+      // Initialize on page load if brand is already selected (form errors)
+      if (brandSelect.value) {
+        updateBranches();
+      }
+    });
+  </script>
+</body>
+</html>
+

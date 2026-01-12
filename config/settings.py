@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -75,8 +80,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'inventory_db'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
@@ -105,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Dubai'  # UTC+4 (4 hours ahead of UTC)
 
 USE_I18N = True
 
@@ -126,3 +135,26 @@ STATICFILES_DIRS = [
 
 # In production you would run `collectstatic` into STATIC_ROOT and serve that
 # directory from your web server. For local dev this is sufficient.
+
+# Login settings
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/login/'
+
+# Media files (user uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'noreply.financepin@gmail.com'
+EMAIL_HOST_PASSWORD = 'qalp zwgv xhzs nakt'
+DEFAULT_FROM_EMAIL = 'maainventorynotification <noreply.financepin@gmail.com>'
+SERVER_EMAIL = 'noreply.financepin@gmail.com'
+
+# Portal Token Configuration
+# Note: Tokens are now set to not expire (valid indefinitely)
+PORTAL_TOKEN_EXPIRATION_DAYS = int(os.getenv('PORTAL_TOKEN_EXPIRATION_DAYS', '3650'))  # Default: 10 years (effectively no expiration)

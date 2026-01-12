@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - MAA Inventory</title>
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/register.css' %}">
+</head>
+<body class="register-page">
+  <div class="register-container">
+    <div class="register-card">
+      <div class="register-header">
+        <img src="{% static 'images/MAA-logo-transparent.png' %}" alt="MAA logo" class="register-logo" />
+        <h1>Login</h1>
+        <p class="register-subtitle">Sign in to access the MAA Inventory Management System</p>
+      </div>
+
+      <form method="post" class="register-form" action="{% url 'login' %}">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if messages %}
+          {% for message in messages %}
+            <div style="padding: 12px 16px; margin-bottom: 16px; border-radius: 8px; background: {% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% else %}var(--accent){% endif %}; color: {% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% else %}var(--text){% endif %}; border: 1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% else %}var(--border){% endif %};">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <div class="form-group">
+          <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="field-errors">
+              {% for error in form.username.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.password.id_for_label }}" class="form-label">{{ form.password.label }}</label>
+          {{ form.password }}
+          {% if form.password.errors %}
+            <div class="field-errors">
+              {% for error in form.password.errors %}
+                <span class="error-text">{{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="register-button">Sign In</button>
+      </form>
+
+      <div class="register-footer">
+        <p>Don't have an account? <a href="{% url 'register' %}" class="login-link">Register here</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

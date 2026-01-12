@@ -11,9 +11,9 @@
       <h2>Warehouse Inventory</h2>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <a class="btn-new-request" href="{% url 'new_request' %}" aria-label="Request Stock">
+      <a class="btn-new-request" href="{% url 'add_item' %}" aria-label="Add Item">
         <img src="{% static 'icons/plus.svg' %}" alt="" />
-        <span>Request Stock</span>
+        <span>Add Item</span>
       </a>
     </div>
   </div>
@@ -37,13 +37,14 @@
         <thead>
           <tr>
             <th class="col-check"></th>
-            <th class="col-expand"></th>
             <th class="col-code">Item Code</th>
             <th class="col-name">Item Name</th>
-            <th class="col-desc">Current Supplier</th>
-            <th class="col-init">Qty</th>
-            <th class="col-remain">Remaining</th>
+            <th class="col-category">Category</th>
             <th class="col-min">MIN</th>
+            <th class="col-qty">Qty</th>
+            <th class="col-remaining">Remaining</th>
+            <th class="col-price">Price</th>
+            <th class="col-unit">Base Unit</th>
             <th class="col-status">Status</th>
             <th class="col-action">Action</th>
           </tr>
@@ -52,22 +53,22 @@
           {% for item in items %}
             <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}">
               <td class="col-check"><input type="checkbox" aria-label="select {{ item.code }}" /></td>
-              <td class="col-expand">
-                <button class="expand" aria-hidden="true">
-                  <img class="expand-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
-                </button>
+              <td class="col-code">
+                <div class="item-meta">
+                  <div class="item-title">{{ item.code }}</div>
+                </div>
               </td>
-              <td class="col-code">PK-{{ item.code }}</td>
               <td class="col-name">
-                <img class="item-thumb" src="{% static 'images/sample-item.jpg' %}" alt="" />
                 <div class="item-meta">
                   <div class="item-title">{{ item.name }}</div>
                 </div>
               </td>
-              <td class="col-desc">{{ item.supplier|default:"—" }}</td>
-              <td class="col-init">{{ item.initial_qty }}</td>
-              <td class="col-remain">{{ item.remaining_qty }}</td>
-              <td class="col-min">{{ item.min_qty }}</td>
+              <td class="col-category">{{ item.category|default:"—" }}</td>
+              <td class="col-min">{{ item.min_stock_qty }}</td>
+              <td class="col-qty">{{ item.qty|default:"0" }}</td>
+              <td class="col-remaining">{{ item.remaining|default:"0" }}</td>
+              <td class="col-price">{{ item.price|default:"—" }}</td>
+              <td class="col-unit">{{ item.base_unit|default:"—" }}</td>
               <td class="col-status">
                 <span class="status-pill {% if item.status == 'LOW' %}status-low{% else %}status-good{% endif %}">{{ item.status }}</span>
               </td>
@@ -75,28 +76,9 @@
                 <div class="action-btn-container">
                   <button class="action-btn" aria-label="More actions"
                           data-code="{{ item.code }}"
-                          data-name="{{ item.name }}"
-                          data-supplier="{{ item.supplier|default:'—' }}"
-                          data-image="{% static 'images/sample-item.jpg' %}">
+                          data-name="{{ item.name }}">
                     <img src="{% static 'icons/more.svg' %}" alt="More" class="action-icon" />
                   </button>
-                </div>
-              </td>
-            </tr>
-            <tr class="inventory-details" hidden>
-              <td colspan="10">
-                <div class="details-inner">
-                  <div class="details-header">Details</div>
-                  <div class="details-grid">
-                    <div class="detail-item">
-                      <div class="detail-label">Foodics</div>
-                      <div class="detail-value">{{ item.foodics|default:"123" }}</div>
-                    </div>
-                    <div class="detail-item">
-                      <div class="detail-label">Talabat</div>
-                      <div class="detail-value">{{ item.talabat|default:"45" }}</div>
-                    </div>
-                  </div>
                 </div>
               </td>
             </tr>
@@ -134,45 +116,11 @@
     </div>
   </div>
 
-<script>
-  (function () {
-    var rightIcon = "{% static 'icons/chevron-right.svg' %}";
-    var downIcon = "{% static 'icons/chevron-down.svg' %}";
-    function toggleRow(button) {
-      var row = button.closest('tr');
-      if (!row) return;
-      var details = row.nextElementSibling;
-      var img = button.querySelector('img.expand-icon');
-      var expanded = row.classList.toggle('expanded');
-      if (details && details.classList.contains('inventory-details')) {
-        if (expanded) {
-          details.removeAttribute('hidden');
-        } else {
-          details.setAttribute('hidden', '');
-        }
-      }
-      if (img) {
-        img.setAttribute('src', expanded ? downIcon : rightIcon);
-      }
-      // update aria-expanded
-      button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    }
-
-    document.addEventListener('click', function (e) {
-      var btn = e.target.closest && e.target.closest('.expand');
-      if (btn) {
-        e.preventDefault();
-        toggleRow(btn);
-      }
-    });
-  })();
-</script>
 
 <!-- Side panel: Audit / Manage item -->
 <div class="overlay" hidden></div>
 <div class="action-menu" hidden role="menu" aria-hidden="true">
-  <button class="action-menu-item" data-action="edit">Edit Item Info</button>
-  <button class="action-menu-item" data-action="adjust">Adjust Stock</button>
+  <button class="action-menu-item" data-action="delete" style="color: #dc2626;">Delete</button>
 </div>
 <aside class="side-panel" aria-hidden="true" hidden>
   <div class="side-panel-inner">
@@ -395,20 +343,13 @@
         e.preventDefault();
         var action = menuItem.getAttribute('data-action');
         var btn = currentActionButton;
-        var data = {
-          code: btn.getAttribute('data-code') || '—',
-          name: btn.getAttribute('data-name') || '—',
-          supplier: btn.getAttribute('data-supplier') || '—',
-          image: btn.getAttribute('data-image') || ''
-        };
+        var code = btn.getAttribute('data-code') || '—';
+        var name = btn.getAttribute('data-name') || 'this item';
         hideActionMenu();
-        if (action === 'adjust') {
-          openPanel(data);
-        } else if (action === 'edit') {
-          // navigate to dedicated edit page for the item
-          // encoded code ensures safe URL for special characters
-          var editUrl = '/inventory/edit/' + encodeURIComponent(data.code) + '/';
-          window.location.href = editUrl;
+        if (action === 'delete') {
+          if (confirm('Are you sure you want to delete "' + name + '"? This action cannot be undone.')) {
+            window.location.href = '/inventory/delete/' + encodeURIComponent(code) + '/';
+          }
         }
         return;
       }
@@ -448,7 +389,7 @@
   </script>
   <script>
     (function () {
-      // make entire row clickable to open the inventory edit page (ignore interactive controls)
+      // Make entire row clickable to open the inventory edit page (ignore interactive controls)
       var table = document.querySelector('.inventory-table');
       if (!table) return;
 
@@ -456,19 +397,12 @@
         var row = e.target.closest && e.target.closest('tr.inventory-row');
         if (!row) return;
         // ignore clicks on interactive controls inside the row
-        if (e.target.closest('input') || e.target.closest('button') || e.target.closest('a') || e.target.closest('.action-btn')) {
+        if (e.target.closest('input') || e.target.closest('button') || e.target.closest('a') || e.target.closest('.action-btn') || e.target.closest('.action-menu')) {
           return;
         }
-        // prefer data-code on the action button if present (gives canonical code)
+        // get code from action button data attribute
         var actionBtn = row.querySelector && row.querySelector('.action-btn');
         var code = actionBtn && actionBtn.getAttribute && actionBtn.getAttribute('data-code');
-        if (!code) {
-          var codeCell = row.querySelector('.col-code');
-          if (!codeCell) return;
-          code = codeCell.textContent.trim();
-          // strip common prefix if present (e.g. "PK-12345" -> "12345")
-          if (code.indexOf('PK-') === 0) code = code.substring(3);
-        }
         if (!code) return;
         window.location.href = '/inventory/edit/' + encodeURIComponent(code) + '/';
       });
