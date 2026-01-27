@@ -222,6 +222,23 @@ body.view-purchase-order-page-open {
         {% endif %}
       </div>
 
+      <!-- Warehouse Note Section (only visible to warehouse staff before receiving) -->
+      {% if is_warehouse_staff and order.status != 'Received' and order.status != 'Cancelled' %}
+      <div class="info-card" style="background: #FEF3C7; border: 1px solid #FCD34D;">
+        <h3 style="border-bottom-color: #F59E0B;">Receiving Notes (Optional)</h3>
+        <p style="color: #92400E; margin-bottom: 12px; font-size: 14px;">
+          Add any notes about missing quantities, damaged items, or other issues. You can send the note to the supplier and the person who created this order.
+        </p>
+        <textarea id="receiving-note" placeholder="Example: Missing 5 units of Item ABC, 2 boxes damaged..." style="width: 100%; min-height: 100px; padding: 12px; border: 1px solid #E5E7EB; border-radius: 6px; font-family: var(--font-stack); font-size: 14px; resize: vertical; margin-bottom: 12px;"></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button id="send-note-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #D9BD7D; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Send Note
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Order Items -->
       <div class="info-card">
         <h3>Order Items ({{ items|length }})</h3>
@@ -292,17 +309,76 @@ body.view-purchase-order-page-open {
 
   {% if is_warehouse_staff and order.status != 'Received' and order.status != 'Cancelled' %}
   <script>
+    // Handle Send Note button
+    document.getElementById('send-note-btn').addEventListener('click', function() {
+      var note = document.getElementById('receiving-note').value.trim();
+      
+      if (!note) {
+        alert('Please enter a note before sending.');
+        return;
+      }
+      
+      if (!confirm('Send this note to the supplier and order creator? This will cancel the current order and create a new one.')) {
+        return;
+      }
+      
+      this.disabled = true;
+      var originalText = this.innerHTML;
+      this.innerHTML = '<span>Sending...</span>';
+      
+      fetch('{% url "send_receiving_note" order.id %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          note: note
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('Note sent successfully! Order cancelled and recreated. The page will refresh.');
+          // Refresh the page to show updated status
+          window.location.reload();
+        } else {
+          alert('Error: ' + (data.error || 'Unknown error occurred'));
+          this.disabled = false;
+          this.innerHTML = originalText;
+        }
+      })
+      .catch(err => {
+        alert('Error sending note');
+        console.error(err);
+        this.disabled = false;
+        this.innerHTML = originalText;
+      });
+    });
+    
+    // Handle Mark as Received button
     document.getElementById('mark-received-btn').addEventListener('click', function() {
-      if (confirm('Mark this purchase order as received? This will add all items to inventory.')) {
+      var note = document.getElementById('receiving-note').value.trim();
+      var confirmMsg = 'Mark this purchase order as received? This will add all items to inventory.';
+      if (note) {
+        confirmMsg += '\n\nNote: A note has been added. An email will be sent to the supplier and order creator.';
+      }
+      
+      if (confirm(confirmMsg)) {
         this.disabled = true;
         this.innerHTML = '<span>Processing...</span>';
+        
+        var noteValue = note || '';
         
         fetch('{% url "mark_order_received" order.id %}', {
           method: 'POST',
           headers: {
             'X-CSRFToken': getCookie('csrftoken'),
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify({
+            note: noteValue
+          })
         })
         .then(res => res.json())
         .then(data => {

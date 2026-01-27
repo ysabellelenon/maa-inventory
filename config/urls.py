@@ -44,6 +44,7 @@ urlpatterns = [
     path("purchase-orders/", views.purchase_orders, name="purchase_orders"),
     path("purchase-orders/<int:order_id>/", views.view_purchase_order, name="view_purchase_order"),
     path("purchase-orders/<int:order_id>/mark-received/", views.mark_order_received, name="mark_order_received"),
+    path("purchase-orders/<int:order_id>/send-receiving-note/", views.send_receiving_note, name="send_receiving_note"),
     path("api/suppliers-for-branch/", views_item_requests.api_suppliers_for_branch, name="api_suppliers_for_branch"),
     path("api/items-for-supplier/", views_item_requests.api_items_for_supplier, name="api_items_for_supplier"),
     path("request-item/", views_item_requests.request_item, name="request_item"),
@@ -56,6 +57,8 @@ urlpatterns = [
     path("suppliers/edit/<str:code>/", views.edit_supplier, name="edit_supplier"),
     path("suppliers/delete/<str:code>/", views.delete_supplier, name="delete_supplier"),
     path("suppliers/update-category/", views.update_supplier_category, name="update_supplier_category"),
+    path("reports/", views.reports, name="reports"),
+    path("api/add-price-discussion/", views.add_price_discussion, name="add_price_discussion"),
     path('admin/', admin.site.urls),
 ]
 

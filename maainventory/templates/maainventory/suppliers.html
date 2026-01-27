@@ -18,12 +18,18 @@
   
   <div class="page-header inventory-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Suppliers</h2>
-    {% if is_procurement %}
-    <a href="{% url 'add_supplier' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
-      <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
-      Add Supplier
-    </a>
-    {% endif %}
+    <div style="display: flex; gap: 12px;">
+      {% if is_procurement %}
+      <button id="add-price-discussion-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; border: 1px solid var(--focus); border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+        <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
+        Add Price Discussion
+      </button>
+      <a href="{% url 'add_supplier' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
+        <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
+        Add Supplier
+      </a>
+      {% endif %}
+    </div>
   </div>
 
   <div class="inventory-container">
@@ -224,22 +230,46 @@
               <option value="50">50</option>
             </select>
           </label>
-          <span class="entries-info">Showing 1 to 10 of 50 entries</span>
+          <span class="entries-info">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+          </span>
         </div>
         <div class="table-footer-right">
+          {% if page_obj.paginator.num_pages > 1 %}
           <nav class="pagination" aria-label="Pagination">
-            <button class="page-prev" aria-label="Previous page">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-prev" aria-label="Previous page">
               <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
-            </button>
-            <button class="page-num active" aria-current="page">1</button>
-            <button class="page-num">2</button>
-            <button class="page-num">3</button>
-            <span class="page-dots">…</span>
-            <button class="page-num">10</button>
-            <button class="page-next" aria-label="Next page">
+            </a>
+            {% else %}
+            <span class="page-prev" style="opacity: 0.5; cursor: not-allowed;">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </span>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="page-num active" aria-current="page">{{ num }}</span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+              {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+              {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+                <span class="page-dots">…</span>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-next" aria-label="Next page">
               <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
-            </button>
+            </a>
+            {% else %}
+            <span class="page-next" style="opacity: 0.5; cursor: not-allowed;">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </span>
+            {% endif %}
           </nav>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -315,17 +345,21 @@
       currentActionButton = null;
     }
 
-    document.addEventListener('click', function (e) {
-      var manageBtn = e.target.closest && e.target.closest('.action-btn');
-      if (manageBtn) {
+    // Attach handlers directly to action buttons
+    var actionButtons = document.querySelectorAll('.action-btn');
+    actionButtons.forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
         e.preventDefault();
-        if (actionMenu && actionMenu.getAttribute('aria-hidden') === 'false' && currentActionButton === manageBtn) {
+        e.stopPropagation();
+        if (actionMenu && actionMenu.getAttribute('aria-hidden') === 'false' && currentActionButton === btn) {
           hideActionMenu();
         } else {
-          showActionMenu(manageBtn);
+          showActionMenu(btn);
         }
-        return;
-      }
+      });
+    });
+
+    document.addEventListener('click', function (e) {
 
       var menuItem = e.target.closest && e.target.closest('.action-menu-item');
       if (menuItem && currentActionButton) {
@@ -529,6 +563,217 @@
         });
       });
     });
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+          var cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  })();
+</script>
+
+<!-- Price Discussion Modal -->
+<div id="price-discussion-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
+  <div style="background: white; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="margin: 0; font-size: 20px; font-weight: 600; color: var(--text);">Add Price Discussion</h3>
+      <button id="close-price-discussion-modal" style="background: none; border: none; cursor: pointer; padding: 4px; font-size: 24px; color: var(--muted);">&times;</button>
+    </div>
+    
+    <form id="price-discussion-form">
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 14px;">Supplier *</label>
+        <select id="discussion-supplier-select" required style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--card-bg);">
+          <option value="">Select Supplier</option>
+          {% for supplier in all_suppliers %}
+            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 14px;">Item *</label>
+        <select id="discussion-item-select" required style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--card-bg);" disabled>
+          <option value="">Select Supplier First</option>
+        </select>
+        <div id="item-price-info" style="margin-top: 8px; padding: 8px; background: var(--accent); border-radius: 6px; font-size: 13px; color: var(--text); display: none;">
+          Current Price: <strong id="current-price-display">—</strong>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 14px;">Discussed Price (OMR) *</label>
+        <input type="number" id="discussion-price" required step="0.01" min="0" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" placeholder="0.00">
+      </div>
+      
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 14px;">Discussion Date *</label>
+        <input type="datetime-local" id="discussion-date" required style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;">
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 14px;">Notes</label>
+        <textarea id="discussion-notes" rows="3" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: var(--font-stack); resize: vertical;" placeholder="Add notes about the price discussion..."></textarea>
+      </div>
+      
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button type="button" id="cancel-price-discussion" style="padding: 10px 20px; border: 1px solid var(--border); background: white; border-radius: 8px; cursor: pointer; font-weight: 500; color: var(--text);">Cancel</button>
+        <button type="submit" style="padding: 10px 20px; background: var(--focus); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">Add Discussion</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var modal = document.getElementById('price-discussion-modal');
+    var openBtn = document.getElementById('add-price-discussion-btn');
+    var closeBtn = document.getElementById('close-price-discussion-modal');
+    var cancelBtn = document.getElementById('cancel-price-discussion');
+    var form = document.getElementById('price-discussion-form');
+    var supplierSelect = document.getElementById('discussion-supplier-select');
+    var itemSelect = document.getElementById('discussion-item-select');
+    var priceInput = document.getElementById('discussion-price');
+    var dateInput = document.getElementById('discussion-date');
+    var notesInput = document.getElementById('discussion-notes');
+    var priceInfo = document.getElementById('item-price-info');
+    var currentPriceDisplay = document.getElementById('current-price-display');
+    
+    // Supplier items data from Django
+    var supplierItems = {{ supplier_items_json|safe }};
+    
+    // Set default date to now
+    var now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    dateInput.value = now.toISOString().slice(0, 16);
+    
+    // Open modal
+    if (openBtn) {
+      openBtn.addEventListener('click', function() {
+        modal.style.display = 'flex';
+      });
+    }
+    
+    // Close modal
+    function closeModal() {
+      modal.style.display = 'none';
+      form.reset();
+      itemSelect.disabled = true;
+      itemSelect.innerHTML = '<option value="">Select Supplier First</option>';
+      priceInfo.style.display = 'none';
+    }
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    
+    // Close on outside click
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+    
+    // Update items when supplier changes
+    if (supplierSelect) {
+      supplierSelect.addEventListener('change', function() {
+        var supplierId = parseInt(this.value);
+        itemSelect.innerHTML = '<option value="">Select Item</option>';
+        itemSelect.disabled = !supplierId;
+        priceInfo.style.display = 'none';
+        
+        if (supplierId && supplierItems[supplierId]) {
+          var items = supplierItems[supplierId];
+          items.forEach(function(item) {
+            var option = document.createElement('option');
+            option.value = item.id;
+            var label = item.item_code + ' - ' + item.item_name;
+            if (item.variation) label += ' (' + item.variation + ')';
+            option.textContent = label;
+            option.setAttribute('data-price', item.current_price);
+            option.setAttribute('data-unit', item.base_unit);
+            itemSelect.appendChild(option);
+          });
+        }
+      });
+    }
+    
+    // Update price info when item changes
+    if (itemSelect) {
+      itemSelect.addEventListener('change', function() {
+        var selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          var price = selectedOption.getAttribute('data-price');
+          var unit = selectedOption.getAttribute('data-unit');
+          currentPriceDisplay.textContent = 'OMR ' + parseFloat(price).toFixed(2) + ' / ' + unit;
+          priceInfo.style.display = 'block';
+        } else {
+          priceInfo.style.display = 'none';
+        }
+      });
+    }
+    
+    // Handle form submission
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        var supplierItemId = itemSelect.value;
+        var discussedPrice = priceInput.value;
+        var discussedDate = dateInput.value;
+        var notes = notesInput.value;
+        
+        if (!supplierItemId || !discussedPrice || !discussedDate) {
+          alert('Please fill in all required fields');
+          return;
+        }
+        
+        // Convert local datetime to ISO format
+        var dateObj = new Date(discussedDate);
+        var isoDate = dateObj.toISOString();
+        
+        // Make API call
+        fetch('/api/add-price-discussion/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            supplier_item_id: supplierItemId,
+            discussed_price: discussedPrice,
+            discussed_date: isoDate,
+            notes: notes
+          })
+        })
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(data) {
+          if (data.success) {
+            alert('Price discussion added successfully!');
+            closeModal();
+            // Optionally reload the page or update UI
+            window.location.reload();
+          } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+          }
+        })
+        .catch(function(error) {
+          console.error('Error:', error);
+          alert('Error adding price discussion. Please try again.');
+        });
+      });
+    }
     
     // Helper function to get CSRF token
     function getCookie(name) {

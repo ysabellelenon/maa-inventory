@@ -50,8 +50,14 @@
 {% endblock %}
 
 {% block content %}
-  <div class="page-header inventory-header">
+  <div class="page-header inventory-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Purchase Orders</h2>
+    {% if user.profile.role and 'Warehouse' not in user.profile.role.name %}
+    <a href="{% url 'supplier_stock' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid var(--border);">
+      <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" style="width: 16px; height: 16px;" />
+      Back to Supplier Stock
+    </a>
+    {% endif %}
   </div>
 
   <div class="inventory-container">
@@ -256,7 +262,46 @@
               <option value="50">50</option>
             </select>
           </label>
-          <span class="entries-info">Showing {{ orders|length }} order{{ orders|length|pluralize }}</span>
+          <span class="entries-info">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} order{{ page_obj.paginator.count|pluralize }}
+          </span>
+        </div>
+        <div class="table-footer-right">
+          {% if page_obj.paginator.num_pages > 1 %}
+          <nav class="pagination" aria-label="Pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-prev" aria-label="Previous page">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </a>
+            {% else %}
+            <span class="page-prev" style="opacity: 0.5; cursor: not-allowed;">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </span>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="page-num active" aria-current="page">{{ num }}</span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+              {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+              {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+                <span class="page-dots">…</span>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-next" aria-label="Next page">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </a>
+            {% else %}
+            <span class="page-next" style="opacity: 0.5; cursor: not-allowed;">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </span>
+            {% endif %}
+          </nav>
+          {% endif %}
         </div>
       </div>
     </div>

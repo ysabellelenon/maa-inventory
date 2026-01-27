@@ -65,6 +65,11 @@
     text-align: center;
   }
   
+  .inventory-table .col-pending {
+    width: 100px;
+    text-align: center;
+  }
+  
   .inventory-table .col-min {
     width: 80px;
     text-align: center;
@@ -120,10 +125,16 @@
 {% block content %}
   <div class="page-header inventory-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Supplier Stock</h2>
-    <a href="{% url 'new_request' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus); margin-right: 32px;">
-      <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
-      Request Stock
-    </a>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <a href="{% url 'purchase_orders' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
+        <img src="{% static 'icons/delivery.svg' %}" alt="Purchase Orders" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
+        Purchase Orders
+      </a>
+      <a href="{% url 'new_request' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
+        <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
+        Order Stock
+      </a>
+    </div>
   </div>
 
   <div class="inventory-container">
@@ -162,6 +173,7 @@
             <th class="col-code">Item Code</th>
             <th class="col-name">Item Name</th>
             <th class="col-quantity">Quantity</th>
+            <th class="col-pending">Pending</th>
             <th class="col-min">MIN</th>
             <th class="col-status">Status</th>
             <th class="col-code">Request Code</th>
@@ -186,6 +198,14 @@
               <td class="col-quantity">
                 <span style="font-weight: 600; color: #101828;">{{ stock.quantity }}</span>
                 <span style="font-size: 12px; color: #6b7280; margin-left: 4px;">{{ stock.base_unit }}</span>
+              </td>
+              <td class="col-pending">
+                {% if stock.pending_quantity > 0 %}
+                  <span style="font-weight: 600; color: #F59E0B;">{{ stock.pending_quantity|floatformat:0 }}</span>
+                  <span style="font-size: 12px; color: #9ca3af; margin-left: 4px;">{{ stock.base_unit }}</span>
+                {% else %}
+                  <span style="color: #9ca3af;">—</span>
+                {% endif %}
               </td>
               <td class="col-min">
                 <span style="font-weight: 600; color: #6b7280; font-size: 13px;">{{ stock.min_stock_qty }}</span>
@@ -216,6 +236,57 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
+      <div class="table-footer">
+        <div class="table-footer-left">
+          <label class="show-label">Show
+            <select class="page-size" aria-label="Results per page">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <span class="entries-info">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+          </span>
+        </div>
+        <div class="table-footer-right">
+          {% if page_obj.paginator.num_pages > 1 %}
+          <nav class="pagination" aria-label="Pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.item %}&item={{ request.GET.item }}{% endif %}" class="page-prev" aria-label="Previous page">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </a>
+            {% else %}
+            <span class="page-prev" style="opacity: 0.5; cursor: not-allowed;">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </span>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="page-num active" aria-current="page">{{ num }}</span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.item %}&item={{ request.GET.item }}{% endif %}" class="page-num">{{ num }}</a>
+              {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                <a href="?page={{ num }}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.item %}&item={{ request.GET.item }}{% endif %}" class="page-num">{{ num }}</a>
+              {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+                <span class="page-dots">…</span>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}{% if request.GET.item %}&item={{ request.GET.item }}{% endif %}" class="page-next" aria-label="Next page">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </a>
+            {% else %}
+            <span class="page-next" style="opacity: 0.5; cursor: not-allowed;">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </span>
+            {% endif %}
+          </nav>
+          {% endif %}
+        </div>
       </div>
       
       <!-- Totals Section -->

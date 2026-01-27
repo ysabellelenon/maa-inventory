@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from decimal import Decimal
-from .models import UserProfile, Role, Branch, BranchUser, Brand, ValidPunchID, Supplier, SupplierCategory, Item, SupplierItem, ItemVariation, BaseUnit, ItemPhoto
+from .models import UserProfile, Role, Branch, BranchUser, Brand, ValidPunchID, Supplier, SupplierCategory, Item, SupplierItem, ItemVariation, BaseUnit, ItemPhoto, SupplierPriceDiscussion
 
 
 class RegistrationForm(UserCreationForm):
@@ -119,19 +119,22 @@ class RegistrationForm(UserCreationForm):
         return user
 
 
-class LoginForm(AuthenticationForm):
-    """Custom login form with styling"""
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['username'].widget.attrs.update({
+class LoginForm(forms.Form):
+    """Custom login form using email instead of username"""
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={
             'class': 'form-input',
-            'placeholder': 'Enter username'
+            'placeholder': 'Enter email'
         })
-        self.fields['password'].widget.attrs.update({
+    )
+    password = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={
             'class': 'form-input',
             'placeholder': 'Enter password'
         })
+    )
 
 
 class SupplierForm(forms.ModelForm):
@@ -156,7 +159,7 @@ class SupplierForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Enter phone number'}),
             'address': forms.Textarea(attrs={'class': 'form-input', 'placeholder': 'Enter address (optional)', 'rows': 3}),
             'category': forms.Select(attrs={'class': 'form-input', 'placeholder': 'Select category'}),
-            'contact_person': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Enter contact person name (optional)'}),
+            'contact_person': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Enter contact person name'}),
             'delivery_days': forms.HiddenInput(),  # Hidden, will be set from checkbox selection and cutoff times
             'order_days': forms.HiddenInput(),  # Hidden, will be set from checkbox selection and cutoff times
             'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
@@ -184,7 +187,7 @@ class SupplierForm(forms.ModelForm):
         self.fields['delivery_days'].required = False  # Hidden field
         self.fields['order_days'].required = False  # Hidden field
         self.fields['address'].required = False
-        self.fields['contact_person'].required = False
+        self.fields['contact_person'].required = True
         
         # Add cutoff time fields for each day (initially hidden)
         for day, day_label in self.DAYS_OF_WEEK:
@@ -574,3 +577,39 @@ class SupplierItemForm(forms.ModelForm):
             instance.save()
             # Note: branches are saved to Item, not SupplierItem, so we handle it in the view
         return instance
+
+
+class PriceDiscussionForm(forms.ModelForm):
+    """Form for adding price discussions with suppliers"""
+    
+    class Meta:
+        model = SupplierPriceDiscussion
+        fields = ['supplier_item', 'discussed_price', 'discussed_date', 'notes']
+        widgets = {
+            'supplier_item': forms.HiddenInput(),
+            'discussed_price': forms.NumberInput(attrs={
+                'class': 'form-input',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': 'Price discussed (OMR)'
+            }),
+            'discussed_date': forms.DateTimeInput(attrs={
+                'class': 'form-input',
+                'type': 'datetime-local'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-input',
+                'rows': 3,
+                'placeholder': 'Notes about the price discussion...'
+            })
+        }
+        labels = {
+            'discussed_price': 'Discussed Price (OMR)',
+            'discussed_date': 'Discussion Date',
+            'notes': 'Notes'
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['discussed_price'].required = True
+        self.fields['discussed_date'].required = True

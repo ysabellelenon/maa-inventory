@@ -11,9 +11,9 @@
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
         <a href="{% url 'supplier_stock' %}">Supplier Stock</a><span class="sep" aria-hidden="true">&rsaquo;</span>
-        <span class="active" aria-current="page">New Stock Request</span>
+        <span class="active" aria-current="page">New Stock Order</span>
       </nav>
-      <h2 style="margin-top:6px;">New Stock Request</h2>
+      <h2 style="margin-top:6px;">New Stock Order</h2>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <!-- Save button intentionally removed per design -->
@@ -27,8 +27,12 @@
           <label class="field-label">Select Branch</label>
           <select id="branch-select" class="panel-input" aria-label="Select Branch">
             <option value="">Select branch</option>
-            {% for branch in branches %}
-            <option value="{{ branch.id }}">{{ branch.name }} ({{ branch.brand.name }})</option>
+            {% for brand_data in brands_branches %}
+            <optgroup label="{{ brand_data.name }}">
+              {% for branch in brand_data.branches %}
+              <option value="{{ branch.id }}">{{ branch.name }}</option>
+              {% endfor %}
+            </optgroup>
             {% endfor %}
           </select>
         </div>
@@ -116,7 +120,8 @@
           supplier_name: "{{ it.supplier_name }}",
           branches: [{{ it.branches|join:',' }}],
           price_per_unit: {% if it.price_per_unit %}{{ it.price_per_unit }}{% else %}null{% endif %},
-          available_quantity: {% if it.available_quantity %}{{ it.available_quantity }}{% else %}0{% endif %}
+          available_quantity: {% if it.available_quantity %}{{ it.available_quantity }}{% else %}0{% endif %},
+          pending_quantity: {% if it.pending_quantity %}{{ it.pending_quantity }}{% else %}0{% endif %}
         }{% if not forloop.last %},{% endif %}
         {% endfor %}
       ];
@@ -206,8 +211,9 @@
             cartItem.style.borderBottom = '1px solid #f3f4f6';
             
         var left = document.createElement('div');
-            var availableQtyText = item.available_quantity ? '<div style="font-size:11px;color:#10b981;margin-top:2px;">Available: ' + item.available_quantity.toFixed(0) + ' units in stock</div>' : '';
-            left.innerHTML = '<div class="cart-item-name">' + item.name + '</div><div class="cart-item-code">Item Code: ' + item.code + '</div>' + availableQtyText;
+            var availableQtyText = item.available_quantity ? '<div style="font-size:11px;color:#10b981;margin-top:2px;">Available: ' + item.available_quantity.toFixed(0) + ' units</div>' : '';
+            var pendingQtyText = item.pending_quantity && item.pending_quantity > 0 ? '<div style="font-size:11px;color:#F59E0B;margin-top:2px;">Pending: ' + item.pending_quantity.toFixed(0) + ' units</div>' : '';
+            left.innerHTML = '<div class="cart-item-name">' + item.name + '</div><div class="cart-item-code">Item Code: ' + item.code + '</div>' + availableQtyText + pendingQtyText;
             
             var priceDiv = document.createElement('div');
             priceDiv.style.textAlign = 'right';
@@ -488,8 +494,8 @@
         .then(function(data) {
           if (data.success) {
             alert('Purchase Order created successfully!\\nPO Code: ' + data.po_code + '\\n\\nEmail has been sent to the supplier.');
-            // Redirect to purchase orders page
-            window.location.href = '{% url "purchase_orders" %}';
+            // Redirect to item requests page
+            window.location.href = '{% url "item_requests" %}';
           } else {
             alert('Error: ' + (data.error || 'Unknown error'));
           }

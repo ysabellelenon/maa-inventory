@@ -8,12 +8,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Q, F, DecimalField, Count, Max
 from django.db.models.functions import Coalesce
 from decimal import Decimal
-from .forms import RegistrationForm, LoginForm, SupplierForm, ItemForm, SupplierItemForm
+import json
+from .forms import RegistrationForm, LoginForm, SupplierForm, ItemForm, SupplierItemForm, PriceDiscussionForm
 from .models import (
     Item, ItemVariation, StockBalance, InventoryLocation,
     Supplier, SupplierCategory, SupplierItem, SupplierOrder, SupplierOrderItem,
     Request, RequestItem, Branch, Brand, ValidPunchID, UserProfile, Role,
     IntegrationFoodics, ImportJob, SystemSettings, ItemPhoto, PortalToken,
+    SupplierPriceDiscussion,
 )
 
 
@@ -33,6 +35,11 @@ def send_invoice_email(supplier_order, request):
     supplier_email = supplier_order.supplier.email
     if not supplier_email:
         raise ValueError(f"Supplier {supplier_order.supplier.name} has no email address")
+    
+    # Get requester email (the user who created the order) for CC
+    requester_email = None
+    if supplier_order.created_by and supplier_order.created_by.email:
+        requester_email = supplier_order.created_by.email
     
     # Get the portal token for this order
     portal_token = supplier_order.portal_tokens.first()
@@ -204,11 +211,291 @@ MAA Inventory Team
 """
     
     # Create email message
+    email_recipients = [supplier_email]
+    email_cc = []
+    
+    # Add requester to CC if they have an email
+    if requester_email:
+        email_cc.append(requester_email)
+    
     email = EmailMultiAlternatives(
         subject=subject,
         body=text_body,
         from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[supplier_email],
+        to=email_recipients,
+        cc=email_cc if email_cc else None,
+    )
+    
+    # Attach HTML version
+    email.attach_alternative(html_body, "text/html")
+    
+    # Send email
+    email.send(fail_silently=False)
+
+
+def send_receiving_note_email(cancelled_order, new_order, note, request):
+    """
+    Send single email when order is cancelled and recreated
+    Includes cancellation notice, warehouse note, and link to new invoice
+    
+    Args:
+        cancelled_order: The cancelled SupplierOrder instance
+        new_order: The new SupplierOrder instance
+        note: The note text from warehouse staff
+        request: HttpRequest object to build absolute URLs
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.conf import settings
+    from django.utils import timezone
+    from django.urls import reverse
+    
+    # Get supplier email
+    supplier_email = cancelled_order.supplier.email
+    if not supplier_email:
+        raise ValueError(f"Supplier {cancelled_order.supplier.name} has no email address")
+    
+    # Get requester email (the user who created the order) for CC
+    requester_email = None
+    if cancelled_order.created_by and cancelled_order.created_by.email:
+        requester_email = cancelled_order.created_by.email
+    
+    # Get warehouse staff name who added the note
+    warehouse_staff_name = request.user.get_full_name() or request.user.username
+    if hasattr(request.user, 'profile') and request.user.profile.full_name:
+        warehouse_staff_name = request.user.profile.full_name
+    
+    # Get cancelled invoice URL
+    cancelled_portal_token = cancelled_order.portal_tokens.first()
+    if cancelled_portal_token:
+        cancelled_invoice_path = reverse('view_invoice_by_token', kwargs={'token': cancelled_portal_token.token})
+        cancelled_invoice_url = request.build_absolute_uri(cancelled_invoice_path)
+    else:
+        cancelled_invoice_path = reverse('view_invoice', kwargs={'order_id': cancelled_order.id})
+        cancelled_invoice_url = request.build_absolute_uri(cancelled_invoice_path)
+    
+    # Get new invoice URL
+    new_portal_token = new_order.portal_tokens.first()
+    if new_portal_token:
+        new_invoice_path = reverse('view_invoice_by_token', kwargs={'token': new_portal_token.token})
+        new_invoice_url = request.build_absolute_uri(new_invoice_path)
+    else:
+        new_invoice_path = reverse('view_invoice', kwargs={'order_id': new_order.id})
+        new_invoice_url = request.build_absolute_uri(new_invoice_path)
+    
+    # Calculate order total for email
+    from decimal import Decimal
+    order_items = new_order.items.all()
+    subtotal = Decimal('0.00')
+    item_count = 0
+    for order_item in order_items:
+        line_total = order_item.qty_ordered * order_item.price_per_unit
+        subtotal += line_total
+        item_count += 1
+    
+    # Create email subject
+    subject = f'Purchase Order {new_order.po_code} - Order Cancelled & Recreated - MAA Inventory'
+    
+    # Plain text body
+    text_body = f"""
+Dear {cancelled_order.supplier.name},
+
+We have cancelled Purchase Order {cancelled_order.po_code} and created a new order {new_order.po_code} due to the following warehouse note:
+
+{note}
+
+IMPORTANT: Please review and confirm the new purchase order below.
+
+New Purchase Order: {new_order.po_code}
+Order Date: {cancelled_order.created_at.strftime('%B %d, %Y')}
+Items: {item_count}
+Total Amount: OMR {subtotal:,.2f}
+Noted By: {warehouse_staff_name}
+Date: {timezone.now().strftime('%B %d, %Y at %I:%M %p')}
+
+Please review both invoices:
+- Cancelled Invoice: {cancelled_invoice_url}
+- New Invoice: {new_invoice_url}
+
+Note: The previous order {cancelled_order.po_code} has been cancelled.
+
+Please contact us if you have any questions or concerns.
+
+Best regards,
+MAA Inventory Team
+"""
+    
+    # HTML body
+    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #101828;
+            margin: 0;
+            padding: 0;
+            background-color: #F9FAFB;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }}
+        .header {{
+            border-bottom: 3px solid #F59E0B;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }}
+        h1 {{
+            color: #F59E0B;
+            font-size: 24px;
+            margin: 0 0 10px 0;
+        }}
+        .po-number {{
+            font-size: 18px;
+            color: #475467;
+            margin: 0;
+        }}
+        .note-box {{
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }}
+        .note-box p {{
+            margin: 0;
+            color: #92400E;
+            font-weight: 500;
+        }}
+        .details {{
+            background: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }}
+        .details-row {{
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #E5E7EB;
+        }}
+        .details-row:last-child {{
+            border-bottom: none;
+        }}
+        .label {{
+            color: #6B7280;
+            font-weight: 500;
+        }}
+        .value {{
+            color: #101828;
+            font-weight: 600;
+        }}
+        .button {{
+            display: inline-block;
+            background-color: #D9BD7D;
+            color: white;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 10px 5px;
+            text-align: center;
+        }}
+        .button:hover {{
+            background-color: #C7AB6B;
+        }}
+        .footer {{
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            color: #6B7280;
+            font-size: 14px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Order Cancelled & Recreated</h1>
+            <p class="po-number">Old PO: {cancelled_order.po_code} → New PO: {new_order.po_code}</p>
+        </div>
+        
+        <p>Dear {cancelled_order.supplier.name},</p>
+        
+        <p>We have cancelled Purchase Order <strong>{cancelled_order.po_code}</strong> and created a new order <strong>{new_order.po_code}</strong> due to the following warehouse note:</p>
+        
+        <div class="note-box">
+            <p>{note}</p>
+        </div>
+        
+        <p style="font-weight: 600; color: #DC2626; margin: 20px 0;">IMPORTANT: Please review and confirm the new purchase order below.</p>
+        
+        <div class="details">
+            <div class="details-row">
+                <span class="label">New Purchase Order:</span>
+                <span class="value">{new_order.po_code}</span>
+            </div>
+            <div class="details-row">
+                <span class="label">Order Date:</span>
+                <span class="value">{cancelled_order.created_at.strftime('%B %d, %Y')}</span>
+            </div>
+            <div class="details-row">
+                <span class="label">Items:</span>
+                <span class="value">{item_count}</span>
+            </div>
+            <div class="details-row">
+                <span class="label">Total Amount:</span>
+                <span class="value">OMR {subtotal:,.2f}</span>
+            </div>
+            <div class="details-row">
+                <span class="label">Noted By:</span>
+                <span class="value">{warehouse_staff_name}</span>
+            </div>
+            <div class="details-row">
+                <span class="label">Date:</span>
+                <span class="value">{timezone.now().strftime('%B %d, %Y at %I:%M %p')}</span>
+            </div>
+            <div class="details-row" style="border-top: 2px solid #E5E7EB; margin-top: 8px; padding-top: 12px;">
+                <span class="label" style="color: #DC2626;">Cancelled PO:</span>
+                <span class="value" style="color: #DC2626; text-decoration: line-through;">{cancelled_order.po_code}</span>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{cancelled_invoice_url}" class="button" style="background-color: #DC2626; font-size: 16px; padding: 16px 32px; margin-right: 12px;">View Cancelled Invoice</a>
+            <a href="{new_invoice_url}" class="button" style="background-color: #D9BD7D; font-size: 16px; padding: 16px 32px;">View New Invoice</a>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Note:</strong> The previous order {cancelled_order.po_code} has been cancelled.</p>
+            <p>Please review both invoices and contact us if you have any questions or concerns.</p>
+            <p>Best regards,<br>MAA Inventory Team</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+    
+    # Create email message
+    email_recipients = [supplier_email]
+    email_cc = []
+    
+    # Add requester to CC if they have an email
+    if requester_email:
+        email_cc.append(requester_email)
+    
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=email_recipients,
+        cc=email_cc if email_cc else None,
     )
     
     # Attach HTML version
@@ -219,25 +506,35 @@ MAA Inventory Team
 
 
 def user_login(request):
-    """Handle user login"""
+    """Handle user login using email instead of username"""
     if request.user.is_authenticated:
         return redirect('dashboard')
     
     if request.method == 'POST':
-        form = LoginForm(request, data=request.POST)
+        form = LoginForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get('username')
+            email = form.cleaned_data.get('email')
             password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                messages.success(request, f'Welcome back, {user.username}!')
-                next_url = request.GET.get('next', 'dashboard')
-                return redirect(next_url)
-            else:
-                messages.error(request, 'Invalid username or password.')
+            
+            # Find user by email
+            try:
+                user = User.objects.get(email=email)
+                # Authenticate using username (Django's authenticate requires username)
+                user = authenticate(username=user.username, password=password)
+                if user is not None:
+                    login(request, user)
+                    # Get full name from profile if available
+                    user_profile = getattr(user, 'profile', None)
+                    display_name = user_profile.full_name if user_profile and user_profile.full_name else user.username
+                    messages.success(request, f'Welcome back, {display_name}!')
+                    next_url = request.GET.get('next', 'dashboard')
+                    return redirect(next_url)
+                else:
+                    messages.error(request, 'Invalid email or password.')
+            except User.DoesNotExist:
+                messages.error(request, 'Invalid email or password.')
         else:
-            messages.error(request, 'Invalid username or password.')
+            messages.error(request, 'Invalid email or password.')
     else:
         form = LoginForm()
     
@@ -453,7 +750,7 @@ def dashboard(request):
             {"label": "Need Ordering", "key": "stat-need-ordering", "value": items_need_ordering_count, "note": "Items"},
             {"label": "Active Orders", "key": "stat-active-orders", "value": active_orders, "note": "POs"},
             {"label": "Total Items", "key": "stat-total-items", "value": total_items, "note": "In system"},
-        ]
+    ]
 
     context = {
         "stats": stats,
@@ -500,6 +797,8 @@ def dashboard(request):
 @login_required
 def inventory(request):
     """Render inventory list page with dynamic data from database."""
+    from django.core.paginator import Paginator
+    
     # Get all active items
     items_queryset = Item.objects.filter(is_active=True).select_related('brand').prefetch_related('variations')
     
@@ -539,8 +838,14 @@ def inventory(request):
             "id": item.id,  # For edit links
         })
 
+    # Paginate items
+    paginator = Paginator(items, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        "items": items,
+        "items": page_obj,
+        "page_obj": page_obj,
     }
 
     return render(request, "maainventory/inventory.html", context)
@@ -631,7 +936,7 @@ def edit_item(request, code):
                     
                     if len(photos) > remaining_slots:
                         messages.warning(request, f'Only {remaining_slots} photo(s) were saved. Maximum 5 photos per item.')
-            else:
+                else:
                     messages.warning(request, 'Maximum 5 photos already exist for this item. Please remove some photos before adding more.')
             
             messages.success(request, f'Item "{item.name}" updated successfully.')
@@ -756,6 +1061,8 @@ def delete_item_photo(request, photo_id):
 @login_required
 def requests(request):
     """Render requests page with dynamic data from database."""
+    from django.core.paginator import Paginator
+    
     # Get all requests, ordered by most recent
     requests_queryset = Request.objects.select_related(
         'branch', 'branch__brand', 'requested_by', 'approved_by'
@@ -778,8 +1085,14 @@ def requests(request):
             "id": req.id,  # For detail links
         })
 
+    # Paginate requests
+    paginator = Paginator(requests_list, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        "items": requests_list,
+        "items": page_obj,
+        "page_obj": page_obj,
     }
 
     return render(request, "maainventory/requests.html", context)
@@ -787,8 +1100,8 @@ def requests(request):
 
 @login_required
 def new_request(request):
-    """Render 'New Stock Request' page with branches, suppliers, and items."""
-    from .models import Branch, Supplier, SupplierItem, SupplierStock
+    """Render 'New Stock Order' page with branches, suppliers, and items."""
+    from .models import Branch, Supplier, SupplierItem, SupplierStock, SupplierOrder, SupplierOrderItem, PortalToken
     import json
     from django.utils import timezone
     from datetime import datetime
@@ -810,26 +1123,35 @@ def new_request(request):
             branch = get_object_or_404(Branch, id=branch_id, is_active=True)
             supplier = get_object_or_404(Supplier, id=supplier_id, is_active=True)
             
-            # Generate PO code (PO-YYYY-####)
+            # Generate PO code (PO-YYYY######)
             current_year = datetime.now().year
             last_order = SupplierOrder.objects.filter(
-                po_code__startswith=f'PO-{current_year}-'
+                po_code__startswith=f'PO-{current_year}'
             ).order_by('-po_code').first()
             
             if last_order:
-                last_num = int(last_order.po_code.split('-')[-1])
+                # Extract number from PO code
+                # Handle both formats: PO-2026-0001 (old) and PO-20260001 (new)
+                po_code_str = last_order.po_code
+                if '-' in po_code_str and po_code_str.count('-') == 2:
+                    # Old format: PO-2026-0001
+                    last_num = int(po_code_str.split('-')[-1])
+                else:
+                    # New format: PO-20260001 (last 6 digits)
+                    last_6_digits = po_code_str[-6:] if len(po_code_str) >= 6 else po_code_str
+                    last_num = int(last_6_digits)
                 new_num = last_num + 1
             else:
                 new_num = 1
             
-            po_code = f'PO-{current_year}-{new_num:04d}'
+            po_code = f'PO-{current_year}{new_num:06d}'
             
             # Create Supplier Order
             supplier_order = SupplierOrder.objects.create(
                 po_code=po_code,
                 supplier=supplier,
                 created_by=request.user,
-                status=SupplierOrder.StatusType.SENT  # Set to SENT since email is sent immediately
+                status='Sent'  # Set to SENT since email is sent immediately
             )
             
             # Generate secure token for supplier access
@@ -943,8 +1265,26 @@ def new_request(request):
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
     
     # GET request - show the form
-    # Get all active branches
-    branches = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
+    # Group branches by brand, with Warehouse first
+    brands_branches = []
+    all_brands = list(Brand.objects.all())
+    
+    # Sort brands: Warehouse first, then alphabetically
+    def brand_sort_key(brand):
+        if brand.name.lower() == 'warehouse':
+            return (0, brand.name.lower())
+        return (1, brand.name.lower())
+    
+    sorted_brands = sorted(all_brands, key=brand_sort_key)
+    
+    for brand in sorted_brands:
+        branches = brand.branches.filter(is_active=True).order_by('name')
+        if branches.exists():
+            brands_branches.append({
+                "id": brand.id,
+                "name": brand.name,
+                "branches": [{"id": b.id, "name": b.name} for b in branches]
+            })
     
     # Get all active suppliers with their items
     suppliers = Supplier.objects.filter(is_active=True).select_related('category').prefetch_related(
@@ -973,6 +1313,26 @@ def new_request(request):
             "branches": list(branch_ids),  # List of branch IDs that use this supplier's items
         })
     
+    # Calculate pending quantities from purchase orders
+    from .models import SupplierOrder, SupplierOrderItem
+    pending_orders = SupplierOrder.objects.exclude(
+        status__in=['Received', 'Cancelled']
+    ).select_related('supplier')
+    
+    # Create a dictionary to store pending quantities by (supplier_id, item_id)
+    pending_quantities = {}
+    for order in pending_orders:
+        order_items = SupplierOrderItem.objects.filter(
+            supplier_order=order
+        ).select_related('item')
+        
+        for order_item in order_items:
+            key = (order.supplier.id, order_item.item.id)
+            pending_qty = order_item.qty_ordered - order_item.qty_received
+            if key not in pending_quantities:
+                pending_quantities[key] = Decimal('0.00')
+            pending_quantities[key] += pending_qty
+    
     # Get all items with their suppliers and branches - ONLY from Supplier Stock
     items_list = []
     
@@ -992,6 +1352,10 @@ def new_request(request):
         
         # Get branches that use this item
         item_branches = item.branches.filter(is_active=True).values_list('id', flat=True)
+        
+        # Get pending quantity for this supplier/item combination
+        pending_key = (supplier.id, item.id)
+        pending_qty = float(pending_quantities.get(pending_key, Decimal('0.00')))
         
         # Get price per unit from SupplierItem or Item
         price_per_unit = None
@@ -1014,10 +1378,11 @@ def new_request(request):
             "branches": list(item_branches),  # List of branch IDs that use this item
             "price_per_unit": price_per_unit,
             "available_quantity": float(stock_item.quantity),  # Show available quantity
+            "pending_quantity": pending_qty,  # Show pending quantity
         })
 
     context = {
-        "branches": branches,
+        "brands_branches": brands_branches,
         "suppliers": suppliers_list,
         "items": items_list,
     }
@@ -1298,6 +1663,8 @@ def add_supplier(request):
 @login_required
 def suppliers(request):
     """Render suppliers page with dynamic data from database."""
+    from django.core.paginator import Paginator
+    
     # Check if user is Procurement Manager to show add button
     user_profile = getattr(request.user, 'profile', None)
     user_role = user_profile.role.name if user_profile and user_profile.role else None
@@ -1369,13 +1736,50 @@ def suppliers(request):
             "id": supplier.id,
         })
 
+    # Paginate suppliers
+    paginator = Paginator(suppliers_list, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
     # Get all active categories for dropdown
     categories = SupplierCategory.objects.filter(is_active=True).order_by('name')
     
+    # Get supplier items for price discussion modal (grouped by supplier)
+    # Get ALL suppliers (not just paginated) for the dropdown
+    all_suppliers = Supplier.objects.filter(is_active=True).order_by('name')
+    supplier_items_by_supplier = {}
+    
+    for supplier in all_suppliers:
+        items = SupplierItem.objects.filter(
+            supplier=supplier,
+            is_active=True
+        ).select_related('item', 'variation', 'base_unit').order_by('item__item_code')
+        
+        supplier_items_by_supplier[supplier.id] = [
+            {
+                'id': item.id,
+                'item_code': item.item.item_code,
+                'item_name': item.item.name,
+                'variation': item.variation.variation_name if item.variation else None,
+                'current_price': float(item.price_per_unit),
+                'base_unit': item.base_unit.abbreviation if item.base_unit else item.item.base_unit
+            }
+            for item in items
+        ]
+    
+    # Also create a list of all suppliers for the dropdown
+    all_suppliers_list = [
+        {'id': s.id, 'name': s.name}
+        for s in all_suppliers
+    ]
+    
     context = {
-        "items": suppliers_list,
+        "items": page_obj,
+        "page_obj": page_obj,
         "is_procurement": is_procurement,
         "categories": categories,
+        "supplier_items_json": json.dumps(supplier_items_by_supplier),
+        "all_suppliers": all_suppliers_list,
     }
 
     return render(request, "maainventory/suppliers.html", context)
@@ -1633,6 +2037,8 @@ def punch_id_delete(request, punch_id_id):
 @login_required
 def purchase_orders(request):
     """Render purchase orders page with all submitted supplier orders"""
+    from django.core.paginator import Paginator
+    
     # Check if user is warehouse staff
     user_profile = getattr(request.user, 'profile', None)
     user_role = user_profile.role.name if user_profile and user_profile.role else None
@@ -1673,8 +2079,14 @@ def purchase_orders(request):
             "email_sent_at": order.email_sent_at.strftime("%Y-%m-%d %H:%M") if order.email_sent_at else None,
         })
     
+    # Paginate orders
+    paginator = Paginator(orders_list, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        "orders": orders_list,
+        "orders": page_obj,
+        "page_obj": page_obj,
         "is_warehouse_staff": is_warehouse_staff,
     }
     
@@ -1694,9 +2106,18 @@ def mark_order_received(request, order_id):
         return JsonResponse({'success': False, 'error': 'Only warehouse staff can mark orders as received'}, status=403)
     
     try:
+        import json
         from django.db import transaction
         from .models import SupplierOrder, SupplierOrderItem, StockBalance, StockLedger, InventoryLocation
         from django.utils import timezone
+        
+        # Get note from request body if provided
+        note = ''
+        try:
+            data = json.loads(request.body)
+            note = data.get('note', '').strip()
+        except (json.JSONDecodeError, AttributeError):
+            pass
         
         order = get_object_or_404(SupplierOrder, id=order_id)
         
@@ -1729,6 +2150,10 @@ def mark_order_received(request, order_id):
                 stock_balance.save()
                 
                 # Create ledger entry for audit trail
+                ledger_notes = f'Received from PO {order.po_code} - Supplier: {order.supplier.name}'
+                if note:
+                    ledger_notes += f'\nWarehouse Note: {note}'
+                
                 StockLedger.objects.create(
                     item=order_item.item,
                     variation=order_item.variation,
@@ -1737,7 +2162,7 @@ def mark_order_received(request, order_id):
                     reason='DELIVERY_RECEIVED',
                     reference_type='SUPPLIER_ORDER',
                     reference_id=str(order.id),
-                    notes=f'Received from PO {order.po_code} - Supplier: {order.supplier.name}',
+                    notes=ledger_notes,
                     created_by=request.user
                 )
                 
@@ -1748,13 +2173,138 @@ def mark_order_received(request, order_id):
             # Update order status to Received
             order.status = 'Received'
             order.save()
-            
+        
+        # Send email if note is provided
+        if note:
+            try:
+                send_receiving_note_email(order, note, request)
+            except Exception as email_error:
+                # Log error but don't fail the order processing
+                print(f"Error sending receiving note email: {email_error}")
+        
         messages.success(request, f'Purchase order {order.po_code} marked as received. All items have been added to inventory.')
         return JsonResponse({
             'success': True,
             'message': f'Purchase order {order.po_code} marked as received successfully!'
         })
         
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def send_receiving_note(request, order_id):
+    """Send receiving note email to supplier and order creator (Warehouse Staff only)
+    This will cancel the current order and create a new one with the same information"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+    
+    # Check if user is warehouse staff
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    if not (user_role and 'Warehouse' in user_role):
+        return JsonResponse({'success': False, 'error': 'Only warehouse staff can send receiving notes'}, status=403)
+    
+    try:
+        import json
+        from django.db import transaction
+        from django.utils import timezone
+        from datetime import datetime, timedelta
+        import secrets
+        
+        # Get note from request body
+        data = json.loads(request.body)
+        note = data.get('note', '').strip()
+        
+        if not note:
+            return JsonResponse({'success': False, 'error': 'Note is required'}, status=400)
+        
+        old_order = get_object_or_404(SupplierOrder, id=order_id)
+        
+        # Check if order is already cancelled or received
+        if old_order.status == 'Cancelled':
+            return JsonResponse({'success': False, 'error': 'Order is already cancelled'}, status=400)
+        if old_order.status == 'Received':
+            return JsonResponse({'success': False, 'error': 'Cannot cancel a received order'}, status=400)
+        
+        with transaction.atomic():
+            # Step 1: Cancel the current order
+            old_po_code = old_order.po_code
+            old_order.status = 'Cancelled'
+            old_order.save()
+            
+            # Step 2: Create a new order with the same information
+            current_year = datetime.now().year
+            last_order = SupplierOrder.objects.filter(
+                po_code__startswith=f'PO-{current_year}'
+            ).order_by('-po_code').first()
+            
+            if last_order:
+                # Extract number from PO code
+                # Handle both formats: PO-2026-0001 (old) and PO-20260001 (new)
+                po_code_str = last_order.po_code
+                if '-' in po_code_str and po_code_str.count('-') == 2:
+                    # Old format: PO-2026-0001
+                    last_num = int(po_code_str.split('-')[-1])
+                else:
+                    # New format: PO-20260001 (last 6 digits)
+                    last_6_digits = po_code_str[-6:] if len(po_code_str) >= 6 else po_code_str
+                    last_num = int(last_6_digits)
+                new_num = last_num + 1
+            else:
+                new_num = 1
+            
+            new_po_code = f'PO-{current_year}{new_num:06d}'
+            
+            # Create new supplier order
+            new_order = SupplierOrder.objects.create(
+                po_code=new_po_code,
+                supplier=old_order.supplier,
+                created_by=old_order.created_by,
+                status='Sent',
+                requested_delivery_date=old_order.requested_delivery_date,
+                hold_at_supplier=old_order.hold_at_supplier,
+            )
+            
+            # Copy all order items to the new order
+            for old_item in old_order.items.all():
+                SupplierOrderItem.objects.create(
+                    supplier_order=new_order,
+                    item=old_item.item,
+                    variation=old_item.variation,
+                    qty_ordered=old_item.qty_ordered,
+                    price_per_unit=old_item.price_per_unit,
+                    expected_delivery_date=old_item.expected_delivery_date,
+                )
+            
+            # Generate secure token for new order
+            token_string = secrets.token_urlsafe(32)
+            expires_at = timezone.now() + timedelta(days=3650)  # 10 years
+            
+            PortalToken.objects.create(
+                token=token_string,
+                supplier=new_order.supplier,
+                supplier_order=new_order,
+                expires_at=expires_at
+            )
+            
+            # Step 3: Send single email with cancellation notice and new invoice link
+            try:
+                send_receiving_note_email(old_order, new_order, note, request)
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Order cancelled and recreated. Old PO: {old_po_code}, New PO: {new_po_code}'
+                })
+            except Exception as email_error:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Error sending email: {str(email_error)}'
+                }, status=500)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -1979,13 +2529,550 @@ def submit_invoice_signature(request, order_id=None, token=None):
             portal_token.save()
         
         # Update order status to SIGNED
-        order.status = SupplierOrder.StatusType.SIGNED
+        order.status = 'Signed'
         order.save()
         
         return JsonResponse({
             'success': True,
             'message': 'Signature submitted successfully',
             'order_id': order.id
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def reports(request):
+    """Comprehensive reports page with all report types"""
+    from datetime import datetime, timedelta
+    from decimal import Decimal
+    from django.db.models import Avg, Min, Max, Count
+    from .models import (
+        Supplier, SupplierOrder, SupplierOrderItem, SupplierSpendMonthly,
+        Item, StockBalance, InventoryLocation, StockLedger,
+        Request, RequestItem, Branch, Brand,
+        ItemRequest, ItemRequestItem, SupplierStock,
+        ItemConsumptionDaily, SupplierCategory, SupplierItem,
+        SupplierPriceDiscussion
+    )
+    
+    # Get date range from query params (default to last 30 days)
+    today = datetime.now().date()
+    days_back = int(request.GET.get('days', 30))
+    start_date = today - timedelta(days=days_back)
+    
+    # ========================================================================
+    # 1. FINANCIAL & SPENDING REPORTS
+    # ========================================================================
+    
+    # Supplier Spending Report
+    supplier_spending = []
+    suppliers = Supplier.objects.filter(is_active=True).select_related('category')
+    
+    for supplier in suppliers:
+        # Get orders in date range
+        orders = SupplierOrder.objects.filter(
+            supplier=supplier,
+            created_at__date__gte=start_date
+        )
+        
+        # Calculate total spent
+        total_spent = Decimal('0.00')
+        order_count = 0
+        for order in orders:
+            order_items = SupplierOrderItem.objects.filter(supplier_order=order)
+            for item in order_items:
+                total_spent += item.qty_ordered * item.price_per_unit
+            if order_items.exists():
+                order_count += 1
+        
+        if total_spent > 0:
+            supplier_spending.append({
+                'supplier_name': supplier.name,
+                'category': supplier.category.name if supplier.category else 'Uncategorized',
+                'total_spent': float(total_spent),
+                'order_count': order_count,
+                'avg_order_value': float(total_spent / order_count) if order_count > 0 else 0
+            })
+    
+    # Sort by total spent descending
+    supplier_spending.sort(key=lambda x: x['total_spent'], reverse=True)
+    
+    # Purchase Order Financial Summary
+    po_summary = {
+        'total_orders': SupplierOrder.objects.filter(created_at__date__gte=start_date).count(),
+        'total_value': Decimal('0.00'),
+        'by_status': {},
+        'avg_order_value': Decimal('0.00')
+    }
+    
+    all_orders = SupplierOrder.objects.filter(created_at__date__gte=start_date)
+    status_counts = {}
+    for order in all_orders:
+        status = order.get_status_display()
+        status_counts[status] = status_counts.get(status, 0) + 1
+        
+        order_items = SupplierOrderItem.objects.filter(supplier_order=order)
+        order_value = sum(item.qty_ordered * item.price_per_unit for item in order_items)
+        po_summary['total_value'] += order_value
+    
+    po_summary['by_status'] = status_counts
+    if po_summary['total_orders'] > 0:
+        po_summary['avg_order_value'] = po_summary['total_value'] / po_summary['total_orders']
+    
+    # ========================================================================
+    # 2. INVENTORY REPORTS
+    # ========================================================================
+    
+    # Stock Level Report
+    stock_levels = []
+    warehouse_locations = InventoryLocation.objects.filter(type='WAREHOUSE')
+    
+    for location in warehouse_locations:
+        stock_balances = StockBalance.objects.filter(
+            location=location,
+            item__is_active=True
+        ).select_related('item', 'variation', 'item__brand')
+        
+        location_total_value = Decimal('0.00')
+        low_stock_count = 0
+        
+        for balance in stock_balances:
+            item_value = balance.qty_on_hand * (balance.item.price_per_unit or Decimal('0'))
+            location_total_value += item_value
+            
+            # Check if low stock
+            if balance.qty_on_hand < balance.item.min_stock_qty:
+                low_stock_count += 1
+        
+        stock_levels.append({
+            'location_name': location.name,
+            'total_items': stock_balances.count(),
+            'low_stock_count': low_stock_count,
+            'total_value': float(location_total_value)
+        })
+    
+    # Low Stock Items
+    low_stock_items = []
+    all_stock = StockBalance.objects.filter(
+        item__is_active=True,
+        location__type='WAREHOUSE'
+    ).select_related('item', 'variation', 'location')
+    
+    for stock in all_stock:
+        if stock.qty_on_hand < stock.item.min_stock_qty:
+            shortage = stock.item.min_stock_qty - stock.qty_on_hand
+            low_stock_items.append({
+                'item_code': stock.item.item_code,
+                'item_name': stock.item.name,
+                'variation': stock.variation.variation_name if stock.variation else None,
+                'location': stock.location.name,
+                'current_stock': float(stock.qty_on_hand),
+                'min_stock': float(stock.item.min_stock_qty),
+                'shortage': float(shortage),
+                'base_unit': stock.item.base_unit
+            })
+    
+    # Stock Movement Report
+    stock_movements = StockLedger.objects.filter(
+        created_at__date__gte=start_date
+    ).select_related('item', 'variation', 'from_location', 'to_location', 'created_by')[:100]
+    
+    movement_summary = {
+        'total_movements': StockLedger.objects.filter(created_at__date__gte=start_date).count(),
+        'by_reason': {},
+        'incoming': Decimal('0.00'),
+        'outgoing': Decimal('0.00')
+    }
+    
+    for movement in StockLedger.objects.filter(created_at__date__gte=start_date):
+        reason = movement.get_reason_display()
+        movement_summary['by_reason'][reason] = movement_summary['by_reason'].get(reason, 0) + 1
+        
+        if movement.qty_change > 0:
+            movement_summary['incoming'] += movement.qty_change
+        else:
+            movement_summary['outgoing'] += abs(movement.qty_change)
+    
+    # ========================================================================
+    # 3. OPERATIONAL REPORTS
+    # ========================================================================
+    
+    # Request Performance Report
+    requests_data = Request.objects.filter(
+        created_at__date__gte=start_date
+    ).select_related('branch', 'branch__brand', 'requested_by', 'approved_by')
+    
+    request_summary = {
+        'total_requests': requests_data.count(),
+        'by_status': {},
+        'by_branch': {},
+        'avg_fulfillment_days': None,
+        'approval_rate': None
+    }
+    
+    fulfillment_times = []
+    approved_count = 0
+    rejected_count = 0
+    
+    for req in requests_data:
+        status = req.get_status_display()
+        request_summary['by_status'][status] = request_summary['by_status'].get(status, 0) + 1
+        
+        branch_name = req.branch.name
+        request_summary['by_branch'][branch_name] = request_summary['by_branch'].get(branch_name, 0) + 1
+        
+        if req.status == 'Approved':
+            approved_count += 1
+        elif req.status == 'Rejected':
+            rejected_count += 1
+        
+        # Calculate fulfillment time for completed requests
+        if req.status == 'Completed' and req.approved_at:
+            days = (req.updated_at.date() - req.approved_at.date()).days
+            if days >= 0:
+                fulfillment_times.append(days)
+    
+    if fulfillment_times:
+        request_summary['avg_fulfillment_days'] = sum(fulfillment_times) / len(fulfillment_times)
+    
+    total_reviewed = approved_count + rejected_count
+    if total_reviewed > 0:
+        request_summary['approval_rate'] = (approved_count / total_reviewed) * 100
+    
+    # Most Requested Items
+    requested_items = RequestItem.objects.filter(
+        request__created_at__date__gte=start_date
+    ).values('item__item_code', 'item__name').annotate(
+        total_requested=Sum('qty_requested'),
+        request_count=Count('request', distinct=True)
+    ).order_by('-total_requested')[:20]
+    
+    # Purchase Order Status Report
+    po_status_report = {
+        'total_orders': SupplierOrder.objects.filter(created_at__date__gte=start_date).count(),
+        'by_status': {},
+        'by_supplier': {},
+        'avg_delivery_days': None
+    }
+    
+    delivery_times = []
+    for order in SupplierOrder.objects.filter(created_at__date__gte=start_date).select_related('supplier'):
+        status = order.get_status_display()
+        po_status_report['by_status'][status] = po_status_report['by_status'].get(status, 0) + 1
+        
+        supplier_name = order.supplier.name
+        po_status_report['by_supplier'][supplier_name] = po_status_report['by_supplier'].get(supplier_name, 0) + 1
+    
+    # Item Request Report
+    item_requests_data = ItemRequest.objects.filter(
+        created_at__date__gte=start_date
+    ).select_related('supplier', 'created_by')
+    
+    item_request_summary = {
+        'total_requests': item_requests_data.count(),
+        'by_status': {},
+        'by_supplier': {},
+        'avg_delivery_days_min': None,
+        'avg_delivery_days_max': None
+    }
+    
+    delivery_days_min_list = []
+    delivery_days_max_list = []
+    
+    for ir in item_requests_data:
+        status = ir.get_status_display()
+        item_request_summary['by_status'][status] = item_request_summary['by_status'].get(status, 0) + 1
+        
+        supplier_name = ir.supplier.name
+        item_request_summary['by_supplier'][supplier_name] = item_request_summary['by_supplier'].get(supplier_name, 0) + 1
+        
+        if ir.delivery_days_min:
+            delivery_days_min_list.append(ir.delivery_days_min)
+        if ir.delivery_days_max:
+            delivery_days_max_list.append(ir.delivery_days_max)
+    
+    if delivery_days_min_list:
+        item_request_summary['avg_delivery_days_min'] = sum(delivery_days_min_list) / len(delivery_days_min_list)
+    if delivery_days_max_list:
+        item_request_summary['avg_delivery_days_max'] = sum(delivery_days_max_list) / len(delivery_days_max_list)
+    
+    # ========================================================================
+    # 4. ANALYTICS REPORTS
+    # ========================================================================
+    
+    # Item Consumption Report (from Foodics)
+    consumption_data = ItemConsumptionDaily.objects.filter(
+        date__gte=start_date
+    ).select_related('item', 'branch', 'branch__brand', 'variation')
+    
+    consumption_summary = {
+        'total_records': consumption_data.count(),
+        'total_consumed': Decimal('0.00'),
+        'by_branch': {},
+        'by_item': {},
+        'top_items': []
+    }
+    
+    for record in consumption_data:
+        consumption_summary['total_consumed'] += record.qty_consumed
+        
+        branch_name = record.branch.name
+        consumption_summary['by_branch'][branch_name] = consumption_summary['by_branch'].get(branch_name, Decimal('0')) + record.qty_consumed
+        
+        item_code = record.item.item_code
+        consumption_summary['by_item'][item_code] = consumption_summary['by_item'].get(item_code, Decimal('0')) + record.qty_consumed
+    
+    # Get top consumed items
+    top_consumed = sorted(
+        consumption_summary['by_item'].items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:10]
+    
+    for item_code, qty in top_consumed:
+        item = Item.objects.filter(item_code=item_code).first()
+        if item:
+            consumption_summary['top_items'].append({
+                'item_code': item_code,
+                'item_name': item.name,
+                'total_consumed': float(qty),
+                'base_unit': item.base_unit
+            })
+    
+    # Supplier Performance Report
+    supplier_performance = []
+    for supplier in suppliers:
+        orders = SupplierOrder.objects.filter(supplier=supplier, created_at__date__gte=start_date)
+        
+        if orders.exists():
+            total_orders = orders.count()
+            received_orders = orders.filter(status='Received').count()
+            on_time_count = 0  # Would need delivery date tracking for accurate calculation
+            
+            item_requests = ItemRequest.objects.filter(
+                supplier=supplier,
+                created_at__date__gte=start_date
+            )
+            
+            supplier_performance.append({
+                'supplier_name': supplier.name,
+                'total_orders': total_orders,
+                'received_orders': received_orders,
+                'completion_rate': (received_orders / total_orders * 100) if total_orders > 0 else 0,
+                'item_requests': item_requests.count(),
+                'avg_response_days': None  # Would need tracking for accurate calculation
+            })
+    
+    # ========================================================================
+    # 5. PRICE DISCUSSION REPORTS
+    # ========================================================================
+    
+    # Latest Price Discussions
+    price_discussions_list = []
+    price_discussions_qs = SupplierPriceDiscussion.objects.filter(
+        discussed_date__date__gte=start_date
+    ).select_related('supplier_item', 'supplier_item__supplier', 'supplier_item__item', 'discussed_by').order_by('-discussed_date')[:50]
+    
+    for discussion in price_discussions_qs:
+        # Calculate price difference: from old_price to discussed_price
+        if discussion.old_price:
+            price_diff = discussion.discussed_price - discussion.old_price
+        else:
+            # Fallback: compare with current price if old_price wasn't recorded
+            price_diff = discussion.discussed_price - discussion.supplier_item.price_per_unit
+        
+        price_discussions_list.append({
+            'discussion': discussion,
+            'old_price': float(discussion.old_price) if discussion.old_price else None,
+            'new_price': float(discussion.discussed_price),
+            'price_difference': float(price_diff)
+        })
+    
+    # Price discussions by supplier
+    discussions_by_supplier = {}
+    for discussion in SupplierPriceDiscussion.objects.filter(
+        discussed_date__date__gte=start_date
+    ).select_related('supplier_item__supplier'):
+        supplier_name = discussion.supplier_item.supplier.name
+        if supplier_name not in discussions_by_supplier:
+            discussions_by_supplier[supplier_name] = 0
+        discussions_by_supplier[supplier_name] += 1
+    
+    # Price change trends - get discussions grouped by supplier_item
+    price_trends = []
+    supplier_items_with_discussions = SupplierItem.objects.filter(
+        price_discussions__discussed_date__date__gte=start_date
+    ).distinct().select_related('supplier', 'item', 'variation')
+    
+    for supplier_item in supplier_items_with_discussions:
+        discussions = SupplierPriceDiscussion.objects.filter(
+            supplier_item=supplier_item,
+            discussed_date__date__gte=start_date
+        ).order_by('discussed_date')
+        
+        if discussions.exists():
+            # Get price history
+            price_history = []
+            for disc in discussions:
+                price_history.append({
+                    'date': disc.discussed_date.date(),
+                    'price': float(disc.discussed_price),
+                    'discussed_by': disc.discussed_by.profile.full_name if hasattr(disc.discussed_by, 'profile') and disc.discussed_by.profile.full_name else disc.discussed_by.username,
+                    'notes': disc.notes or ''
+                })
+            
+            # Calculate price change
+            first_price = price_history[0]['price']
+            last_price = price_history[-1]['price']
+            price_change = last_price - first_price
+            price_change_percent = ((price_change / first_price) * 100) if first_price > 0 else 0
+            
+            # Format price history for JSON serialization
+            price_history_json = []
+            for disc in discussions:
+                price_history_json.append({
+                    'date': disc.discussed_date.date().isoformat(),
+                    'price': float(disc.discussed_price),
+                    'discussed_by': disc.discussed_by.profile.full_name if hasattr(disc.discussed_by, 'profile') and disc.discussed_by.profile.full_name else disc.discussed_by.username,
+                    'notes': disc.notes or ''
+                })
+            
+            price_trends.append({
+                'supplier_name': supplier_item.supplier.name,
+                'item_code': supplier_item.item.item_code,
+                'item_name': supplier_item.item.name,
+                'variation': supplier_item.variation.variation_name if supplier_item.variation else None,
+                'current_price': float(supplier_item.price_per_unit),
+                'latest_discussed_price': last_price,
+                'first_price': first_price,
+                'price_change': price_change,
+                'price_change_percent': price_change_percent,
+                'discussion_count': discussions.count(),
+                'latest_discussion_date': discussions.last().discussed_date.date(),
+                'price_history': price_history_json
+            })
+    
+    # Sort by latest discussion date
+    price_trends.sort(key=lambda x: x['latest_discussion_date'], reverse=True)
+    
+    context = {
+        'start_date': start_date,
+        'end_date': today,
+        'days_back': days_back,
+        
+        # Financial Reports
+        'supplier_spending': supplier_spending[:20],  # Top 20
+        'po_summary': {
+            'total_orders': po_summary['total_orders'],
+            'total_value': float(po_summary['total_value']),
+            'avg_order_value': float(po_summary['avg_order_value']),
+            'by_status': po_summary['by_status']
+        },
+        
+        # Inventory Reports
+        'stock_levels': stock_levels,
+        'low_stock_items': low_stock_items[:50],  # Top 50
+        'stock_movements': list(stock_movements),
+        'movement_summary': {
+            'total_movements': movement_summary['total_movements'],
+            'by_reason': movement_summary['by_reason'],
+            'incoming': float(movement_summary['incoming']),
+            'outgoing': float(movement_summary['outgoing'])
+        },
+        
+        # Operational Reports
+        'request_summary': request_summary,
+        'requested_items': list(requested_items),
+        'po_status_report': po_status_report,
+        'item_request_summary': item_request_summary,
+        
+        # Analytics Reports
+        'consumption_summary': {
+            'total_records': consumption_summary['total_records'],
+            'total_consumed': float(consumption_summary['total_consumed']),
+            'by_branch': {k: float(v) for k, v in consumption_summary['by_branch'].items()},
+            'top_items': consumption_summary['top_items']
+        },
+        'supplier_performance': supplier_performance[:20],  # Top 20
+        
+        # Price Discussion Reports
+        'price_discussions': price_discussions_list,
+        'discussions_by_supplier': discussions_by_supplier,
+        'price_trends': price_trends[:30],  # Top 30
+        'price_trends_json': json.dumps([{
+            'label': f"{t['item_code']} - {t['item_name']}",
+            'supplier': t['supplier_name'],
+            'history': t['price_history']
+        } for t in price_trends[:10]])
+    }
+    
+    return render(request, "maainventory/reports.html", context)
+
+
+@login_required
+@csrf_exempt
+def add_price_discussion(request):
+    """API endpoint to add a price discussion"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST method allowed'}, status=405)
+    
+    try:
+        import json
+        from django.utils import timezone
+        from datetime import datetime
+        
+        data = json.loads(request.body)
+        supplier_item_id = data.get('supplier_item_id')
+        discussed_price = data.get('discussed_price')
+        discussed_date_str = data.get('discussed_date')
+        notes = data.get('notes', '')
+        
+        if not supplier_item_id or not discussed_price:
+            return JsonResponse({'success': False, 'error': 'Missing required fields'}, status=400)
+        
+        supplier_item = get_object_or_404(SupplierItem, id=supplier_item_id)
+        
+        # Parse date
+        if discussed_date_str:
+            try:
+                discussed_date = datetime.fromisoformat(discussed_date_str.replace('Z', '+00:00'))
+            except:
+                discussed_date = timezone.now()
+        else:
+            discussed_date = timezone.now()
+        
+        # Capture the old price BEFORE updating
+        old_price = supplier_item.price_per_unit
+        new_price = Decimal(str(discussed_price))
+        
+        # Create price discussion with old price recorded
+        discussion = SupplierPriceDiscussion.objects.create(
+            supplier_item=supplier_item,
+            old_price=old_price,
+            discussed_price=new_price,
+            discussed_date=discussed_date,
+            discussed_by=request.user,
+            notes=notes
+        )
+        
+        # Update the supplier item's price to match the discussed price
+        supplier_item.price_per_unit = new_price
+        supplier_item.save()
+        
+        # Also update the Item's price_per_unit if it exists
+        if supplier_item.item:
+            supplier_item.item.price_per_unit = new_price
+            supplier_item.item.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Price discussion added and price updated successfully',
+            'discussion_id': discussion.id,
+            'new_price': str(supplier_item.price_per_unit)
         })
         
     except json.JSONDecodeError:

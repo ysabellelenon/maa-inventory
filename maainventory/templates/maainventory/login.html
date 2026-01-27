@@ -37,11 +37,11 @@
         {% endif %}
 
         <div class="form-group">
-          <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
-          {{ form.username }}
-          {% if form.username.errors %}
+          <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+          {{ form.email }}
+          {% if form.email.errors %}
             <div class="field-errors">
-              {% for error in form.username.errors %}
+              {% for error in form.email.errors %}
                 <span class="error-text">{{ error }}</span>
               {% endfor %}
             </div>

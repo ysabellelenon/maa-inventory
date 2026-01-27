@@ -105,7 +105,7 @@ def api_items_for_supplier(request):
 @login_required
 def request_item(request):
     """Create a new item request (no invoice, just notification to supplier)"""
-    from .models import Branch, Supplier, SupplierItem, ItemRequest, ItemRequestItem
+    from .models import Branch, Brand, Supplier, SupplierItem, ItemRequest, ItemRequestItem
     import json
     from django.utils import timezone
     from datetime import datetime, timedelta
@@ -188,11 +188,29 @@ def request_item(request):
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
     
     # GET request - render the form
-    # Show all active branches - suppliers and items will be filtered per branch selection
-    branches = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
+    # Group branches by brand, with Warehouse first
+    brands_branches = []
+    all_brands = list(Brand.objects.all())
+    
+    # Sort brands: Warehouse first, then alphabetically
+    def brand_sort_key(brand):
+        if brand.name.lower() == 'warehouse':
+            return (0, brand.name.lower())
+        return (1, brand.name.lower())
+    
+    sorted_brands = sorted(all_brands, key=brand_sort_key)
+    
+    for brand in sorted_brands:
+        branches = brand.branches.filter(is_active=True).order_by('name')
+        if branches.exists():
+            brands_branches.append({
+                "id": brand.id,
+                "name": brand.name,
+                "branches": [{"id": b.id, "name": b.name} for b in branches]
+            })
     
     context = {
-        'branches': branches,
+        'brands_branches': brands_branches,
     }
     
     return render(request, 'maainventory/request_item.html', context)
@@ -283,6 +301,7 @@ MAA Inventory Management
 def item_requests(request):
     """Display all item requests"""
     from .models import ItemRequest
+    from django.core.paginator import Paginator
     
     # Check if user is warehouse staff - deny access
     user_profile = getattr(request.user, 'profile', None)
@@ -291,9 +310,19 @@ def item_requests(request):
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('dashboard')
     
+    from django.db.models import Case, When, IntegerField
+    
+    # Custom ordering: Notified first, MovedToStock last, then by created_at
     requests_queryset = ItemRequest.objects.select_related(
         'supplier', 'created_by'
-    ).prefetch_related('items__item').order_by('-created_at')
+    ).prefetch_related('items__item').annotate(
+        status_order=Case(
+            When(status='Notified', then=1),
+            When(status='MovedToStock', then=3),
+            default=2,
+            output_field=IntegerField()
+        )
+    ).order_by('status_order', '-created_at')
     
     requests_list = []
     for req in requests_queryset:
@@ -318,8 +347,14 @@ def item_requests(request):
             "item_names": ", ".join(item_names),
         })
     
+    # Paginate requests
+    paginator = Paginator(requests_list, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        "requests": requests_list,
+        "requests": page_obj,
+        "page_obj": page_obj,
     }
     
     return render(request, "maainventory/item_requests.html", context)
@@ -411,8 +446,10 @@ def confirm_item_stock(request, request_id):
 @login_required
 def supplier_stock(request):
     """Display all items in supplier stock with filtering and totals"""
-    from .models import SupplierStock, Supplier, Item
+    from .models import SupplierStock, Supplier, Item, SupplierOrderItem, SupplierOrder
     from django.db.models import Sum, Q
+    from django.core.paginator import Paginator
+    from decimal import Decimal
     
     # Check if user is warehouse staff - deny access
     user_profile = getattr(request.user, 'profile', None)
@@ -438,6 +475,26 @@ def supplier_stock(request):
     
     stock_items = stock_items.order_by('supplier__name', 'item__name', '-confirmed_at')
     
+    # Calculate pending quantities from purchase orders
+    # Get all pending order items (not received or cancelled)
+    pending_orders = SupplierOrder.objects.exclude(
+        status__in=['Received', 'Cancelled']
+    ).select_related('supplier')
+    
+    # Create a dictionary to store pending quantities by (supplier_id, item_id)
+    pending_quantities = {}
+    for order in pending_orders:
+        order_items = SupplierOrderItem.objects.filter(
+            supplier_order=order
+        ).select_related('item')
+        
+        for order_item in order_items:
+            key = (order.supplier.id, order_item.item.id)
+            pending_qty = order_item.qty_ordered - order_item.qty_received
+            if key not in pending_quantities:
+                pending_quantities[key] = Decimal('0.00')
+            pending_quantities[key] += pending_qty
+    
     # Calculate totals
     # Total per supplier
     supplier_totals = {}
@@ -448,7 +505,18 @@ def supplier_stock(request):
     
     stock_list = []
     for stock in stock_items:
-        is_low = stock.quantity < stock.item.min_stock_qty
+        # Get pending quantity for this supplier/item combination
+        pending_key = (stock.supplier.id, stock.item.id)
+        pending_qty = float(pending_quantities.get(pending_key, Decimal('0.00')))
+        
+        # The quantity in SupplierStock is already reduced when orders are placed
+        # So we show the current stock quantity as-is (which is already net of pending orders)
+        # Pending shows what's on order
+        current_qty = float(stock.quantity)
+        
+        # Check if low stock based on current quantity
+        is_low = current_qty < stock.item.min_stock_qty
+        
         stock_data = {
             "id": stock.id,
             "supplier": stock.supplier.name,
@@ -456,7 +524,8 @@ def supplier_stock(request):
             "item_code": stock.item.item_code,
             "item_name": stock.item.name,
             "item_id": stock.item.id,
-            "quantity": stock.quantity,
+            "quantity": current_qty,  # Current available quantity (already net of pending orders)
+            "pending_quantity": pending_qty,  # What's on order
             "min_stock_qty": stock.item.min_stock_qty,
             "is_low_stock": is_low,
             "status": "LOW" if is_low else "GOOD",
@@ -481,12 +550,18 @@ def supplier_stock(request):
             item_totals[item_key] = {"quantity": 0, "unit": stock.item.base_unit}
         item_totals[item_key]["quantity"] += qty
     
+    # Paginate stock items
+    paginator = Paginator(stock_list, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
     # Get all suppliers and items for filter dropdowns
     all_suppliers = Supplier.objects.filter(is_active=True).order_by('name')
     all_items = Item.objects.filter(is_active=True).order_by('name')
     
     context = {
-        "stock_items": stock_list,
+        "stock_items": page_obj,
+        "page_obj": page_obj,
         "supplier_totals": supplier_totals,
         "item_totals": item_totals,
         "grand_total": grand_total,

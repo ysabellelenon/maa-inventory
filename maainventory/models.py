@@ -357,6 +357,27 @@ class SupplierItem(models.Model):
         return f"{self.supplier.name} - {self.item.item_code}{var_str}"
 
 
+class SupplierPriceDiscussion(models.Model):
+    """Track price discussions with suppliers"""
+    supplier_item = models.ForeignKey(SupplierItem, on_delete=models.CASCADE, related_name='price_discussions')
+    old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)], help_text='Previous price before this discussion')
+    discussed_price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], help_text='Price discussed with supplier')
+    discussed_date = models.DateTimeField(help_text='Date of price discussion')
+    discussed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='price_discussions', help_text='User who had the discussion')
+    notes = models.TextField(null=True, blank=True, help_text='Notes about the price discussion')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'supplier_price_discussions'
+        ordering = ['-discussed_date', '-created_at']
+        verbose_name = 'Price Discussion'
+        verbose_name_plural = 'Price Discussions'
+    
+    def __str__(self):
+        return f"{self.supplier_item.supplier.name} - {self.supplier_item.item.item_code}: OMR {self.discussed_price} ({self.discussed_date.strftime('%Y-%m-%d')})"
+
+
 # ============================================================================
 # D. Requests (Branch → Procurement → Warehouse → Logistics)
 # ============================================================================
@@ -446,7 +467,7 @@ class SupplierOrder(models.Model):
         ON_HOLD = 'OnHold', 'On Hold'
         CANCELLED = 'Cancelled', 'Cancelled'
     
-    po_code = models.CharField(max_length=50, unique=True)  # PO-YYYY-####
+    po_code = models.CharField(max_length=50, unique=True)  # PO-YYYY######
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='orders')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_orders')
     status = models.CharField(max_length=20, choices=StatusType.choices, default=StatusType.DRAFT)

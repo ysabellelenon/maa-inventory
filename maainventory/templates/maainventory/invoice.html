@@ -27,6 +27,7 @@
             padding: 50px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
+            position: relative;
         }
         
         .header {
@@ -240,6 +241,27 @@
             color: #065F46;
         }
         
+        .cancelled-stamp {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80px;
+            font-weight: 900;
+            color: #DC2626;
+            opacity: 0.3;
+            letter-spacing: 15px;
+            text-transform: uppercase;
+            z-index: 1;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            border: 6px solid #DC2626;
+            padding: 30px 60px;
+            border-radius: 15px;
+            background: rgba(220, 38, 38, 0.05);
+        }
+        
         @media print {
             body {
                 padding: 0;
@@ -254,11 +276,18 @@
             .no-print {
                 display: none;
             }
+            
+            .cancelled-stamp {
+                opacity: 0.25;
+            }
         }
     </style>
 </head>
 <body>
     <div class="invoice-container">
+        {% if order.status == 'Cancelled' %}
+        <div class="cancelled-stamp">CANCELLED</div>
+        {% endif %}
         <!-- Header -->
         <div class="header">
             <div class="company-info">

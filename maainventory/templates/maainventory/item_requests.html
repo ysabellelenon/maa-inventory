@@ -191,6 +191,57 @@
         </tbody>
       </table>
       </div>
+      <div class="table-footer">
+        <div class="table-footer-left">
+          <label class="show-label">Show
+            <select class="page-size" aria-label="Results per page">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <span class="entries-info">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+          </span>
+        </div>
+        <div class="table-footer-right">
+          {% if page_obj.paginator.num_pages > 1 %}
+          <nav class="pagination" aria-label="Pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-prev" aria-label="Previous page">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </a>
+            {% else %}
+            <span class="page-prev" style="opacity: 0.5; cursor: not-allowed;">
+              <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+            </span>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="page-num active" aria-current="page">{{ num }}</span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+              {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+              {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+                <span class="page-dots">…</span>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-next" aria-label="Next page">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </a>
+            {% else %}
+            <span class="page-next" style="opacity: 0.5; cursor: not-allowed;">
+              <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+            </span>
+            {% endif %}
+          </nav>
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
 

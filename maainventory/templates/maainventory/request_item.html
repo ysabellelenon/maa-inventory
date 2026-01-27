@@ -36,7 +36,7 @@ body {
     <div style="display:flex;flex-direction:column;">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
-        <a href="{% url 'purchase_orders' %}">Purchase Orders</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'item_requests' %}">Item Requests</a><span class="sep" aria-hidden="true">&rsaquo;</span>
         <span class="active" aria-current="page">Request Item</span>
       </nav>
       <h2 style="margin-top:6px;">Request Item</h2>
@@ -51,8 +51,12 @@ body {
           <label class="field-label">Select Branch</label>
           <select id="branch-select" class="panel-input" aria-label="Select Branch">
             <option value="">Select branch</option>
-            {% for branch in branches %}
-            <option value="{{ branch.id }}">{{ branch.name }} ({{ branch.brand.name }})</option>
+            {% for brand_data in brands_branches %}
+            <optgroup label="{{ brand_data.name }}">
+              {% for branch in brand_data.branches %}
+              <option value="{{ branch.id }}">{{ branch.name }}</option>
+              {% endfor %}
+            </optgroup>
             {% endfor %}
           </select>
         </div>

@@ -98,10 +98,17 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .table-footer-left .page-size{padding:6px 8px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;}
 .table-footer-left .entries-info{color:#6b7280;font-size:13px;}
 .table-footer-right .pagination{display:flex;align-items:center;gap:8px;}
-.pagination button{background:#fff;border:1px solid #eef2f6;padding:6px 10px;border-radius:8px;cursor:pointer;color:#374151;}
-.pagination button img{width:12px;height:12px;display:block;}
-.pagination .page-num.active{border:1.5px solid #D9BD7D;color:#D9BD7D;font-weight:600;}
-.pagination .page-dots{padding:0 6px;color:#9ca3af;}
+.pagination button,
+.pagination a,
+.pagination span{background:#fff;border:1px solid #eef2f6;padding:6px 10px;border-radius:8px;cursor:pointer;color:#374151;text-decoration:none;display:inline-block;}
+.pagination button img,
+.pagination a img,
+.pagination span img{width:12px;height:12px;display:block;}
+.pagination .page-num.active,
+.pagination span.page-num.active{border:1.5px solid #D9BD7D;color:#D9BD7D;font-weight:600;}
+.pagination .page-dots{padding:0 6px;color:#9ca3af;border:none;background:transparent;}
+.pagination a:hover{background:#f9fafb;}
+.pagination span[style*="opacity"]{cursor:not-allowed !important;}
 .inventory-card .btn-filter{
   background:#ffffff;
   border:1px solid #e6e6e6;

@@ -1,0 +1,1244 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>Reports</h2>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <label for="days-select" style="font-size: 14px; color: var(--muted);">Date Range:</label>
+      <select id="days-select" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px;">
+        <option value="7" {% if days_back == 7 %}selected{% endif %}>Last 7 days</option>
+        <option value="30" {% if days_back == 30 %}selected{% endif %}>Last 30 days</option>
+        <option value="90" {% if days_back == 90 %}selected{% endif %}>Last 90 days</option>
+        <option value="180" {% if days_back == 180 %}selected{% endif %}>Last 6 months</option>
+        <option value="365" {% if days_back == 365 %}selected{% endif %}>Last year</option>
+      </select>
+    </div>
+  </div>
+  <p style="color: var(--muted); font-size: 14px; margin: 8px 0 0 0;">
+    Showing data from {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}
+  </p>
+</div>
+
+<!-- Report Tabs -->
+<div class="report-tabs">
+  <button class="tab-btn active" data-tab="financial">Financial & Spending</button>
+  <button class="tab-btn" data-tab="inventory">Inventory</button>
+  <button class="tab-btn" data-tab="operational">Operational</button>
+  <button class="tab-btn" data-tab="analytics">Analytics</button>
+  <button class="tab-btn" data-tab="price-discussions">Price Discussions</button>
+</div>
+
+<!-- Financial & Spending Reports -->
+<div id="financial" class="tab-content active">
+  <div class="report-section">
+    <h3>Supplier Spending Report</h3>
+    {% if supplier_spending %}
+    <div class="report-card" style="margin-bottom: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Top Suppliers by Spending</h4>
+      <div style="position: relative; height: 300px;">
+        <canvas id="supplierSpendingChart"></canvas>
+      </div>
+    </div>
+    {% endif %}
+    <div class="report-card">
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>Category</th>
+              <th>Total Spent</th>
+              <th>Orders</th>
+              <th>Avg Order Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for supplier in supplier_spending %}
+            <tr>
+              <td><strong>{{ supplier.supplier_name }}</strong></td>
+              <td>{{ supplier.category }}</td>
+              <td>OMR {{ supplier.total_spent|floatformat:2 }}</td>
+              <td>{{ supplier.order_count }}</td>
+              <td>OMR {{ supplier.avg_order_value|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--muted); padding: 40px;">No spending data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-section">
+    <h3>Purchase Order Financial Summary</h3>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ po_summary.total_orders }}</div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">OMR {{ po_summary.total_value|floatformat:2 }}</div>
+        <div class="stat-label">Total Value</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">OMR {{ po_summary.avg_order_value|floatformat:2 }}</div>
+        <div class="stat-label">Avg Order Value</div>
+      </div>
+    </div>
+    
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Orders by Status</h4>
+      {% if po_summary.by_status %}
+      <div style="position: relative; height: 300px; margin-bottom: 20px;">
+        <canvas id="poStatusChart"></canvas>
+      </div>
+      {% endif %}
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for status, count in po_summary.by_status.items %}
+            <tr>
+              <td>{{ status }}</td>
+              <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory Reports -->
+<div id="inventory" class="tab-content">
+  <div class="report-section">
+    <h3>Stock Level Report</h3>
+    {% if stock_levels %}
+    <div class="report-card" style="margin-bottom: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Stock Value by Location</h4>
+      <div style="position: relative; height: 300px;">
+        <canvas id="stockLevelChart"></canvas>
+      </div>
+    </div>
+    {% endif %}
+    <div class="report-card">
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Location</th>
+              <th>Total Items</th>
+              <th>Low Stock Items</th>
+              <th>Total Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for location in stock_levels %}
+            <tr>
+              <td><strong>{{ location.location_name }}</strong></td>
+              <td>{{ location.total_items }}</td>
+              <td>
+                {% if location.low_stock_count > 0 %}
+                  <span style="color: #ef4444; font-weight: 600;">{{ location.low_stock_count }}</span>
+                {% else %}
+                  <span style="color: #16a34a;">0</span>
+                {% endif %}
+              </td>
+              <td>OMR {{ location.total_value|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--muted); padding: 40px;">No stock data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-section">
+    <h3>Low Stock Items</h3>
+    <div class="report-card">
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Item Code</th>
+              <th>Item Name</th>
+              <th>Variation</th>
+              <th>Location</th>
+              <th>Current Stock</th>
+              <th>Min Stock</th>
+              <th>Shortage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in low_stock_items %}
+            <tr>
+              <td><strong>{{ item.item_code }}</strong></td>
+              <td>{{ item.item_name }}</td>
+              <td>{{ item.variation|default:"—" }}</td>
+              <td>{{ item.location }}</td>
+              <td style="color: #ef4444;">{{ item.current_stock|floatformat:0 }} {{ item.base_unit }}</td>
+              <td>{{ item.min_stock|floatformat:0 }} {{ item.base_unit }}</td>
+              <td style="color: #ef4444; font-weight: 600;">{{ item.shortage|floatformat:0 }} {{ item.base_unit }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--muted); padding: 40px;">No low stock items</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-section">
+    <h3>Stock Movement Summary</h3>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ movement_summary.total_movements }}</div>
+        <div class="stat-label">Total Movements</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ movement_summary.incoming|floatformat:0 }}</div>
+        <div class="stat-label">Total Incoming</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ movement_summary.outgoing|floatformat:0 }}</div>
+        <div class="stat-label">Total Outgoing</div>
+      </div>
+    </div>
+    
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Movements by Reason</h4>
+      {% if movement_summary.by_reason %}
+      <div style="position: relative; height: 300px; margin-bottom: 20px;">
+        <canvas id="movementReasonChart"></canvas>
+      </div>
+      {% endif %}
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Reason</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for reason, count in movement_summary.by_reason.items %}
+            <tr>
+              <td>{{ reason }}</td>
+              <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No movement data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Recent Stock Movements</h4>
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Item</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Quantity</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for movement in stock_movements %}
+            <tr>
+              <td>{{ movement.created_at|date:"M d, Y H:i" }}</td>
+              <td><strong>{{ movement.item.item_code }}</strong> - {{ movement.item.name }}</td>
+              <td>{{ movement.from_location.name|default:"—" }}</td>
+              <td>{{ movement.to_location.name|default:"—" }}</td>
+              <td style="color: {% if movement.qty_change > 0 %}#16a34a{% else %}#ef4444{% endif %};">
+                {% if movement.qty_change > 0 %}+{% endif %}{{ movement.qty_change|floatformat:0 }}
+              </td>
+              <td>{{ movement.get_reason_display }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--muted); padding: 40px;">No recent movements</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Operational Reports -->
+<div id="operational" class="tab-content">
+  <div class="report-section">
+    <h3>Request Performance Report</h3>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ request_summary.total_requests }}</div>
+        <div class="stat-label">Total Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">
+          {% if request_summary.avg_fulfillment_days %}
+            {{ request_summary.avg_fulfillment_days|floatformat:1 }} days
+          {% else %}
+            N/A
+          {% endif %}
+        </div>
+        <div class="stat-label">Avg Fulfillment Time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">
+          {% if request_summary.approval_rate %}
+            {{ request_summary.approval_rate|floatformat:1 }}%
+          {% else %}
+            N/A
+          {% endif %}
+        </div>
+        <div class="stat-label">Approval Rate</div>
+      </div>
+    </div>
+    
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Requests by Status</h4>
+      {% if request_summary.by_status %}
+      <div style="position: relative; height: 300px; margin-bottom: 20px;">
+        <canvas id="requestStatusChart"></canvas>
+      </div>
+      {% endif %}
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for status, count in request_summary.by_status.items %}
+            <tr>
+              <td>{{ status }}</td>
+              <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Requests by Branch</h4>
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Branch</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for branch, count in request_summary.by_branch.items %}
+            <tr>
+              <td>{{ branch }}</td>
+              <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-section">
+    <h3>Most Requested Items</h3>
+    <div class="report-card">
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Item Code</th>
+              <th>Item Name</th>
+              <th>Total Requested</th>
+              <th>Request Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in requested_items %}
+            <tr>
+              <td><strong>{{ item.item__item_code }}</strong></td>
+              <td>{{ item.item__name }}</td>
+              <td>{{ item.total_requested|floatformat:0 }}</td>
+              <td>{{ item.request_count }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--muted); padding: 40px;">No request data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-section">
+    <h3>Purchase Order Status Report</h3>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ po_status_report.total_orders }}</div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+    </div>
+    
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Orders by Status</h4>
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for status, count in po_status_report.by_status.items %}
+            <tr>
+              <td>{{ status }}</td>
+              <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Orders by Supplier</h4>
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for supplier, count in po_status_report.by_supplier.items %}
+            <tr>
+              <td>{{ supplier }}</td>
+              <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-section">
+    <h3>Item Request Report</h3>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ item_request_summary.total_requests }}</div>
+        <div class="stat-label">Total Item Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">
+          {% if item_request_summary.avg_delivery_days_min %}
+            {{ item_request_summary.avg_delivery_days_min|floatformat:0 }}-{{ item_request_summary.avg_delivery_days_max|floatformat:0 }} days
+          {% else %}
+            N/A
+          {% endif %}
+        </div>
+        <div class="stat-label">Avg Delivery Days</div>
+      </div>
+    </div>
+    
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Item Requests by Status</h4>
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for status, count in item_request_summary.by_status.items %}
+            <tr>
+              <td>{{ status }}</td>
+              <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Item Requests by Supplier</h4>
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for supplier, count in item_request_summary.by_supplier.items %}
+            <tr>
+              <td>{{ supplier }}</td>
+              <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Analytics Reports -->
+<div id="analytics" class="tab-content">
+  <div class="report-section">
+    <h3>Item Consumption Report</h3>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ consumption_summary.total_records }}</div>
+        <div class="stat-label">Total Records</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ consumption_summary.total_consumed|floatformat:0 }}</div>
+        <div class="stat-label">Total Consumed</div>
+      </div>
+    </div>
+    
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Consumption by Branch</h4>
+      {% if consumption_summary.by_branch %}
+      <div style="position: relative; height: 300px; margin-bottom: 20px;">
+        <canvas id="consumptionBranchChart"></canvas>
+      </div>
+      {% endif %}
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Branch</th>
+              <th>Total Consumed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for branch, qty in consumption_summary.by_branch.items %}
+            <tr>
+              <td><strong>{{ branch }}</strong></td>
+              <td>{{ qty|floatformat:0 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No consumption data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="report-card" style="margin-top: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Top Consumed Items</h4>
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Item Code</th>
+              <th>Item Name</th>
+              <th>Total Consumed</th>
+              <th>Unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in consumption_summary.top_items %}
+            <tr>
+              <td><strong>{{ item.item_code }}</strong></td>
+              <td>{{ item.item_name }}</td>
+              <td>{{ item.total_consumed|floatformat:0 }}</td>
+              <td>{{ item.base_unit }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--muted); padding: 40px;">No consumption data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-section">
+    <h3>Supplier Performance Report</h3>
+    {% if supplier_performance %}
+    <div class="report-card" style="margin-bottom: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Completion Rate by Supplier</h4>
+      <div style="position: relative; height: 400px;">
+        <canvas id="supplierPerformanceChart"></canvas>
+      </div>
+    </div>
+    {% endif %}
+    <div class="report-card">
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>Total Orders</th>
+              <th>Received Orders</th>
+              <th>Completion Rate</th>
+              <th>Item Requests</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for supplier in supplier_performance %}
+            <tr>
+              <td><strong>{{ supplier.supplier_name }}</strong></td>
+              <td>{{ supplier.total_orders }}</td>
+              <td>{{ supplier.received_orders }}</td>
+              <td>
+                <span style="color: {% if supplier.completion_rate >= 80 %}#16a34a{% elif supplier.completion_rate >= 50 %}#f59e0b{% else %}#ef4444{% endif %}; font-weight: 600;">
+                  {{ supplier.completion_rate|floatformat:1 }}%
+                </span>
+              </td>
+              <td>{{ supplier.item_requests }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--muted); padding: 40px;">No supplier performance data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Price Discussion Reports -->
+<div id="price-discussions" class="tab-content">
+  <div class="report-section">
+    <h3>Latest Price Discussions</h3>
+    <div class="report-card">
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th>Item</th>
+              <th>Old Price</th>
+              <th>New Price</th>
+              <th>Change</th>
+              <th>Discussed By</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in price_discussions %}
+            <tr>
+              <td>{{ item.discussion.discussed_date|date:"M d, Y" }}</td>
+              <td><strong>{{ item.discussion.supplier_item.supplier.name }}</strong></td>
+              <td>{{ item.discussion.supplier_item.item.item_code }} - {{ item.discussion.supplier_item.item.name }}</td>
+              <td>
+                {% if item.old_price %}
+                  OMR {{ item.old_price|floatformat:2 }}
+                {% else %}
+                  <span style="color: var(--muted);">—</span>
+                {% endif %}
+              </td>
+              <td><strong>OMR {{ item.new_price|floatformat:2 }}</strong></td>
+              <td style="color: {% if item.price_difference > 0 %}#ef4444{% elif item.price_difference < 0 %}#16a34a{% else %}var(--muted){% endif %}; font-weight: 600;">
+                {% if item.old_price %}
+                  {% if item.price_difference > 0 %}
+                    <span style="color: #ef4444;">↑ +OMR {{ item.price_difference|floatformat:2 }}</span>
+                  {% elif item.price_difference < 0 %}
+                    <span style="color: #16a34a;">↓ OMR {{ item.price_difference|floatformat:2 }}</span>
+                  {% else %}
+                    <span style="color: var(--muted);">No change</span>
+                  {% endif %}
+                {% else %}
+                  <span style="color: var(--muted);">—</span>
+                {% endif %}
+              </td>
+              <td>{{ item.discussion.discussed_by.profile.full_name|default:item.discussion.discussed_by.username }}</td>
+              <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ item.discussion.notes|default:'—' }}">
+                {{ item.discussion.notes|default:"—"|truncatewords:10 }}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--muted); padding: 40px;">No price discussions in this period</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-section">
+    <h3>Price Change Trends</h3>
+    {% if price_trends %}
+    <div class="report-card" style="margin-bottom: 20px;">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Price Changes Overview</h4>
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>Item</th>
+              <th>Current Price</th>
+              <th>Latest Discussed</th>
+              <th>Price Change</th>
+              <th>Change %</th>
+              <th>Discussions</th>
+              <th>Last Discussion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for trend in price_trends %}
+            <tr>
+              <td><strong>{{ trend.supplier_name }}</strong></td>
+              <td>{{ trend.item_code }} - {{ trend.item_name }}{% if trend.variation %} ({{ trend.variation }}){% endif %}</td>
+              <td>OMR {{ trend.current_price|floatformat:2 }}</td>
+              <td>OMR {{ trend.latest_discussed_price|floatformat:2 }}</td>
+              <td style="color: {% if trend.price_change > 0 %}#ef4444{% elif trend.price_change < 0 %}#16a34a{% else %}var(--muted){% endif %}; font-weight: 600;">
+                {% if trend.price_change > 0 %}+{% endif %}OMR {{ trend.price_change|floatformat:2 }}
+              </td>
+              <td style="color: {% if trend.price_change_percent > 0 %}#ef4444{% elif trend.price_change_percent < 0 %}#16a34a{% else %}var(--muted){% endif %}; font-weight: 600;">
+                {% if trend.price_change_percent > 0 %}+{% endif %}{{ trend.price_change_percent|floatformat:1 }}%
+              </td>
+              <td>{{ trend.discussion_count }}</td>
+              <td>{{ trend.latest_discussion_date|date:"M d, Y" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if price_trends %}
+    <div class="report-card">
+      <h4 style="margin: 0 0 16px 0; font-size: 16px;">Price Trends Chart</h4>
+      <div style="position: relative; height: 400px;">
+        <canvas id="priceTrendsChart"></canvas>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="report-section">
+    <h3>Discussions by Supplier</h3>
+    <div class="report-card">
+      <div class="table-container">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>Discussion Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for supplier, count in discussions_by_supplier.items %}
+            <tr>
+              <td><strong>{{ supplier }}</strong></td>
+              <td>{{ count }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" style="text-align: center; color: var(--muted); padding: 20px;">No discussions by supplier</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  // Chart data from Django template
+  const chartData = {
+    supplierSpending: [
+      {% for supplier in supplier_spending|slice:":10" %}
+      {
+        name: "{{ supplier.supplier_name }}",
+        value: {{ supplier.total_spent }}
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    poStatus: {
+      labels: [{% for status, count in po_summary.by_status.items %}"{{ status }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+      data: [{% for status, count in po_summary.by_status.items %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}]
+    },
+    stockLevels: {
+      labels: [{% for location in stock_levels %}"{{ location.location_name }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+      data: [{% for location in stock_levels %}{{ location.total_value }}{% if not forloop.last %},{% endif %}{% endfor %}]
+    },
+    movementReasons: {
+      labels: [{% for reason, count in movement_summary.by_reason.items %}"{{ reason }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+      data: [{% for reason, count in movement_summary.by_reason.items %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}]
+    },
+    requestStatus: {
+      labels: [{% for status, count in request_summary.by_status.items %}"{{ status }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+      data: [{% for status, count in request_summary.by_status.items %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}]
+    },
+    consumptionBranch: {
+      labels: [{% for branch, qty in consumption_summary.by_branch.items %}"{{ branch }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+      data: [{% for branch, qty in consumption_summary.by_branch.items %}{{ qty }}{% if not forloop.last %},{% endif %}{% endfor %}]
+    },
+    supplierPerformance: [
+      {% for supplier in supplier_performance|slice:":10" %}
+      {
+        name: "{{ supplier.supplier_name }}",
+        rate: {{ supplier.completion_rate }}
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    priceTrends: {{ price_trends_json|safe }}
+  };
+
+  // Chart.js configuration
+  Chart.defaults.color = '#374151';
+  Chart.defaults.borderColor = '#e5e7eb';
+  Chart.defaults.font.family = 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+  Chart.defaults.font.size = 12;
+
+  // Color palette
+  const colors = {
+    primary: '#D9BD7D',
+    secondary: '#F7E7D0',
+    success: '#16a34a',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    info: '#3b82f6',
+    palette: ['#D9BD7D', '#F7E7D0', '#16a34a', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
+  };
+
+  // Initialize charts
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching functionality
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const targetTab = this.getAttribute('data-tab');
+        
+        // Remove active class from all buttons and contents
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // Add active class to clicked button and corresponding content
+        this.classList.add('active');
+        document.getElementById(targetTab).classList.add('active');
+      });
+    });
+    
+    // Date range selector
+    const daysSelect = document.getElementById('days-select');
+    if (daysSelect) {
+      daysSelect.addEventListener('change', function() {
+        const days = this.value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('days', days);
+        window.location.href = url.toString();
+      });
+    }
+
+    // Supplier Spending Chart (Bar)
+    const supplierSpendingCtx = document.getElementById('supplierSpendingChart');
+    if (supplierSpendingCtx && chartData.supplierSpending.length > 0) {
+      new Chart(supplierSpendingCtx, {
+        type: 'bar',
+        data: {
+          labels: chartData.supplierSpending.map(s => s.name),
+          datasets: [{
+            label: 'Total Spent (OMR)',
+            data: chartData.supplierSpending.map(s => s.value),
+            backgroundColor: colors.primary,
+            borderColor: colors.primary,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return 'OMR ' + context.parsed.y.toFixed(2);
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return 'OMR ' + value.toFixed(2);
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // PO Status Chart (Pie)
+    const poStatusCtx = document.getElementById('poStatusChart');
+    if (poStatusCtx && chartData.poStatus.labels.length > 0) {
+      new Chart(poStatusCtx, {
+        type: 'pie',
+        data: {
+          labels: chartData.poStatus.labels,
+          datasets: [{
+            data: chartData.poStatus.data,
+            backgroundColor: colors.palette,
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return label + ': ' + value + ' (' + percentage + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Stock Level Chart (Bar)
+    const stockLevelCtx = document.getElementById('stockLevelChart');
+    if (stockLevelCtx && chartData.stockLevels.labels.length > 0) {
+      new Chart(stockLevelCtx, {
+        type: 'bar',
+        data: {
+          labels: chartData.stockLevels.labels,
+          datasets: [{
+            label: 'Stock Value (OMR)',
+            data: chartData.stockLevels.data,
+            backgroundColor: colors.success,
+            borderColor: colors.success,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return 'OMR ' + context.parsed.y.toFixed(2);
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return 'OMR ' + value.toFixed(2);
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Movement Reason Chart (Doughnut)
+    const movementReasonCtx = document.getElementById('movementReasonChart');
+    if (movementReasonCtx && chartData.movementReasons.labels.length > 0) {
+      new Chart(movementReasonCtx, {
+        type: 'doughnut',
+        data: {
+          labels: chartData.movementReasons.labels,
+          datasets: [{
+            data: chartData.movementReasons.data,
+            backgroundColor: colors.palette,
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right'
+            }
+          }
+        }
+      });
+    }
+
+    // Request Status Chart (Pie)
+    const requestStatusCtx = document.getElementById('requestStatusChart');
+    if (requestStatusCtx && chartData.requestStatus.labels.length > 0) {
+      new Chart(requestStatusCtx, {
+        type: 'pie',
+        data: {
+          labels: chartData.requestStatus.labels,
+          datasets: [{
+            data: chartData.requestStatus.data,
+            backgroundColor: colors.palette,
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return label + ': ' + value + ' (' + percentage + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Consumption Branch Chart (Bar)
+    const consumptionBranchCtx = document.getElementById('consumptionBranchChart');
+    if (consumptionBranchCtx && chartData.consumptionBranch.labels.length > 0) {
+      new Chart(consumptionBranchCtx, {
+        type: 'bar',
+        data: {
+          labels: chartData.consumptionBranch.labels,
+          datasets: [{
+            label: 'Total Consumed',
+            data: chartData.consumptionBranch.data,
+            backgroundColor: colors.info,
+            borderColor: colors.info,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    // Supplier Performance Chart (Bar)
+    const supplierPerformanceCtx = document.getElementById('supplierPerformanceChart');
+    if (supplierPerformanceCtx && chartData.supplierPerformance.length > 0) {
+      new Chart(supplierPerformanceCtx, {
+        type: 'bar',
+        data: {
+          labels: chartData.supplierPerformance.map(s => s.name),
+          datasets: [{
+            label: 'Completion Rate (%)',
+            data: chartData.supplierPerformance.map(s => s.rate),
+            backgroundColor: chartData.supplierPerformance.map(s => 
+              s.rate >= 80 ? colors.success : s.rate >= 50 ? colors.warning : colors.danger
+            ),
+            borderColor: chartData.supplierPerformance.map(s => 
+              s.rate >= 80 ? colors.success : s.rate >= 50 ? colors.warning : colors.danger
+            ),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.parsed.y.toFixed(1) + '%';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Price Trends Chart (Line)
+    const priceTrendsCtx = document.getElementById('priceTrendsChart');
+    if (priceTrendsCtx && chartData.priceTrends.length > 0) {
+      // Get the first item's price history for the chart
+      const firstTrend = chartData.priceTrends[0];
+      if (firstTrend && firstTrend.history && firstTrend.history.length > 0) {
+        const labels = firstTrend.history.map(h => {
+          const date = new Date(h.date);
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const prices = firstTrend.history.map(h => h.price);
+        
+        new Chart(priceTrendsCtx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: firstTrend.label + ' - ' + firstTrend.supplier,
+              data: prices,
+              borderColor: colors.primary,
+              backgroundColor: colors.secondary + '40',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top'
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return 'OMR ' + context.parsed.y.toFixed(2);
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                ticks: {
+                  callback: function(value) {
+                    return 'OMR ' + value.toFixed(2);
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+  });
+</script>
+{% endblock %}
