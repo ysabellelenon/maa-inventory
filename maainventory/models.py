@@ -691,11 +691,79 @@ class FoodicsBranchMapping(models.Model):
         return f"{self.branch.name} → Foodics ID: {self.foodics_branch_external_id}"
 
 
+class BranchPackagingItem(models.Model):
+    """Packaging types available at a branch (e.g. Box, Wrapper) - user defines these per branch"""
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='packaging_items')
+    name = models.CharField(max_length=100, help_text='e.g. Box, Wrapper, Bag')
+    display_order = models.IntegerField(default=0, help_text='Order in UI')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'branch_packaging_items'
+        unique_together = ['branch', 'name']
+        ordering = ['branch', 'display_order', 'name']
+    
+    def __str__(self):
+        return f"{self.branch.name}: {self.name}"
+
+
+class BranchPackagingRule(models.Model):
+    """Packaging consumption per product per branch (e.g. 1 Kucu Big Tasty = 1 box, 1 wrapper)"""
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='packaging_rules')
+    product_name = models.CharField(max_length=255, help_text='Product name as in sales file')
+    item = models.ForeignKey(
+        Item, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='packaging_rules', help_text='Linked inventory item if matched'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'branch_packaging_rules'
+        unique_together = ['branch', 'product_name']
+        ordering = ['branch', 'product_name']
+    
+    def __str__(self):
+        parts = [f"{ri.quantity_per_unit} {ri.packaging_item.name}" for ri in self.rule_items.all()]
+        return f"{self.branch.name}: 1 {self.product_name} = {', '.join(parts) or '—'}"
+
+
+class BranchPackagingRuleItem(models.Model):
+    """Per-product consumption of a packaging item (e.g. 1 box, 1 wrapper per unit)"""
+    rule = models.ForeignKey(
+        BranchPackagingRule, on_delete=models.CASCADE, related_name='rule_items'
+    )
+    packaging_item = models.ForeignKey(
+        BranchPackagingItem, on_delete=models.CASCADE, related_name='rule_items',
+        null=True, blank=True, help_text='Legacy: generic packaging type'
+    )
+    inventory_item = models.ForeignKey(
+        Item, on_delete=models.CASCADE, related_name='packaging_rule_items',
+        null=True, blank=True, help_text='Warehouse inventory item used as packaging'
+    )
+    quantity_per_unit = models.DecimalField(
+        max_digits=10, decimal_places=2, default=1,
+        validators=[MinValueValidator(0)],
+        help_text='Quantity consumed per 1 unit of product'
+    )
+    
+    class Meta:
+        db_table = 'branch_packaging_rule_items'
+    
+    def __str__(self):
+        if self.inventory_item:
+            return f"{self.rule.product_name}: {self.quantity_per_unit} {self.inventory_item.name}"
+        elif self.packaging_item:
+            return f"{self.rule.product_name}: {self.quantity_per_unit} {self.packaging_item.name}"
+        return f"{self.rule.product_name}: {self.quantity_per_unit} units"
+
+
 class ItemConsumptionDaily(models.Model):
-    """Computed daily consumption from Foodics sales"""
+    """Daily consumption at branch: Foodics sales or packaging CSV deduction"""
     class SourceType(models.TextChoices):
         FOODICS = 'FOODICS', 'Foodics'
-    
+        PACKAGING_CSV = 'PACKAGING_CSV', 'Packaging CSV'
+
     date = models.DateField()
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='consumption_records')
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='consumption_records')

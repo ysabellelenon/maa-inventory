@@ -13,9 +13,9 @@ from .forms import RegistrationForm, LoginForm, SupplierForm, ItemForm, Supplier
 from .models import (
     Item, ItemVariation, StockBalance, InventoryLocation,
     Supplier, SupplierCategory, SupplierItem, SupplierOrder, SupplierOrderItem,
-    Request, RequestItem, Branch, Brand, ValidPunchID, UserProfile, Role,
+    Request, RequestItem, RequestStatusHistory, Branch, Brand, ValidPunchID, UserProfile, Role,
     IntegrationFoodics, ImportJob, SystemSettings, ItemPhoto, PortalToken,
-    SupplierPriceDiscussion,
+    SupplierPriceDiscussion, BranchPackagingRule, BranchPackagingItem, BranchPackagingRuleItem,
 )
 
 
@@ -1060,13 +1060,22 @@ def delete_item_photo(request, photo_id):
 
 @login_required
 def requests(request):
-    """Render requests page with dynamic data from database."""
+    """Render requests page with dynamic data from database. Branch users see only requests for their branch(es)."""
     from django.core.paginator import Paginator
-    
+    from .context_processors import get_branch_user_info
+
     # Get all requests, ordered by most recent
     requests_queryset = Request.objects.select_related(
         'branch', 'branch__brand', 'requested_by', 'approved_by'
     ).prefetch_related('items__item').order_by('-created_at')
+
+    # Branch managers see only requests for their assigned branch(es); must have assignments
+    is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+    if is_branch_user:
+        if user_branch_ids:
+            requests_queryset = requests_queryset.filter(branch_id__in=user_branch_ids)
+        else:
+            requests_queryset = requests_queryset.none()  # No assignments = see nothing
     
     # Build requests list for template
     requests_list = []
@@ -1093,9 +1102,459 @@ def requests(request):
     context = {
         "items": page_obj,
         "page_obj": page_obj,
+        "can_create_request": _can_create_stock_request(request.user),
     }
-
     return render(request, "maainventory/requests.html", context)
+
+
+def _can_create_stock_request(user):
+    """Check if user can create stock requests (branch managers with branch assignment)."""
+    from .context_processors import get_branch_user_info
+    is_branch_user, user_branch_ids = get_branch_user_info(user)
+    return is_branch_user and len(user_branch_ids) > 0
+
+
+@login_required
+def create_stock_request(request):
+    """
+    Create a stock request (Request) for branch managers.
+    Branch managers select their branch and items from warehouse inventory to request.
+    """
+    from django.utils import timezone
+    from datetime import datetime
+    from .context_processors import get_branch_user_info
+
+    is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+    if not is_branch_user:
+        messages.error(request, 'You do not have permission to create stock requests. Branch managers only.')
+        return redirect('requests')
+    if not user_branch_ids:
+        messages.error(request, 'You must be assigned to a branch to create stock requests.')
+        return redirect('requests')
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            branch_id = data.get('branch_id')
+            items = data.get('items', [])  # List of {item_id, quantity}
+            notes = (data.get('notes') or '').strip()
+
+            if not branch_id or not items:
+                return JsonResponse({'success': False, 'error': 'Select a branch and add at least one item.'}, status=400)
+
+            branch_id = int(branch_id)
+            if branch_id not in user_branch_ids:
+                return JsonResponse({'success': False, 'error': 'You can only create requests for your assigned branch.'}, status=403)
+
+            branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+
+            # Filter to valid items with quantity > 0
+            valid_items = []
+            for item_data in items:
+                item_id = item_data.get('item_id')
+                qty = Decimal(str(item_data.get('quantity', 0)))
+                if item_id and qty > 0:
+                    valid_items.append((int(item_id), qty))
+
+            if not valid_items:
+                return JsonResponse({'success': False, 'error': 'Add at least one item with quantity greater than 0.'}, status=400)
+
+            # Generate request code: REQ-YYYY-NNNNNN (6 digits to differentiate from ItemRequest)
+            current_year = datetime.now().year
+            last_req = Request.objects.filter(
+                request_code__startswith=f'REQ-{current_year}-'
+            ).order_by('-request_code').first()
+
+            if last_req:
+                try:
+                    last_num = int(last_req.request_code.split('-')[-1])
+                except (ValueError, IndexError):
+                    last_num = 0
+                new_num = last_num + 1
+            else:
+                new_num = 1
+
+            request_code = f'REQ-{current_year}-{new_num:06d}'
+
+            from django.db import transaction
+            with transaction.atomic():
+                req = Request.objects.create(
+                    request_code=request_code,
+                    branch=branch,
+                    requested_by=request.user,
+                    status=Request.StatusType.PENDING,
+                    date_of_order=timezone.now(),
+                    notes=notes or None,
+                )
+
+                for item_id, qty in valid_items:
+                    item = get_object_or_404(Item, id=item_id, is_active=True)
+                    RequestItem.objects.create(
+                        request=req,
+                        item=item,
+                        qty_requested=qty,
+                    )
+
+            messages.success(request, f'Stock request {request_code} created successfully.')
+            return JsonResponse({
+                'success': True,
+                'request_code': request_code,
+                'redirect_url': '/requests/',
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+    # GET - show form (branch managers must have branch assignments)
+    user_branches = Branch.objects.filter(
+        id__in=user_branch_ids,
+        is_active=True
+    ).select_related('brand').order_by('brand__name', 'name')
+
+    brands_branches = []
+    for branch in user_branches:
+        brand_name = branch.brand.name
+        existing = next((g for g in brands_branches if g['name'] == brand_name), None)
+        if existing:
+            existing['branches'].append({'id': branch.id, 'name': branch.name})
+        else:
+            brands_branches.append({
+                'name': brand_name,
+                'branches': [{'id': branch.id, 'name': branch.name}],
+            })
+
+    # Items: active items with warehouse stock info
+    from django.db.models import Sum
+    warehouse_stock_qs = StockBalance.objects.filter(
+        location__type='WAREHOUSE',
+        item__is_active=True
+    ).values('item_id').annotate(total=Sum('qty_on_hand'))
+    warehouse_stock = {row['item_id']: row['total'] or Decimal('0') for row in warehouse_stock_qs}
+
+    items_list = []
+    for item in Item.objects.filter(is_active=True).select_related('brand').order_by('item_code'):
+        qty_available = warehouse_stock.get(item.id, Decimal('0'))
+        items_list.append({
+            'id': item.id,
+            'item_code': item.item_code,
+            'name': item.name,
+            'base_unit': str(item.base_unit) if item.base_unit else '',
+            'min_order_qty': float(item.min_stock_qty) if item.min_stock_qty else 0,
+            'qty_available': float(qty_available),
+        })
+
+    context = {
+        'brands_branches': brands_branches,
+        'items_list': items_list,
+    }
+    return render(request, 'maainventory/create_stock_request.html', context)
+
+
+@login_required
+def view_request(request, request_id):
+    """View stock request details (read-only). Branch users can only view requests for their branch(es)."""
+    from django.http import HttpResponseForbidden
+    from .context_processors import get_branch_user_info
+
+    req = get_object_or_404(
+        Request.objects.select_related('branch', 'branch__brand', 'requested_by', 'approved_by'),
+        id=request_id
+    )
+
+    # Branch managers can only view requests for their assigned branch(es)
+    is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+    if is_branch_user and (not user_branch_ids or req.branch_id not in user_branch_ids):
+        return HttpResponseForbidden('You do not have access to this request.')
+    request_items = RequestItem.objects.filter(
+        request=req
+    ).select_related('item', 'variation').order_by('id')
+
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    is_warehouse_staff = user_role and 'Warehouse' in user_role
+
+    # Warehouse can start fulfillment (deduct stock, set In Process) when status is Approved
+    can_start_fulfillment = req.status == 'Approved' and is_warehouse_staff
+
+    # Branch manager for this request's branch can mark as Delivered when status is In Process or Out for Delivery
+    is_branch_manager_for_this_branch = is_branch_user and user_branch_ids and req.branch_id in user_branch_ids
+    can_mark_delivered = req.status in ('InProcess', 'OutForDelivery') and is_branch_manager_for_this_branch
+
+    items_data = []
+    for ri in request_items:
+        qty_to_fulfill = ri.qty_approved if ri.qty_approved is not None and ri.qty_approved > 0 else ri.qty_requested
+        items_data.append({
+            'request_item': ri,
+            'item': ri.item,
+            'variation': ri.variation,
+            'qty_requested': ri.qty_requested,
+            'qty_approved': ri.qty_approved,
+            'qty_fulfilled': ri.qty_fulfilled,
+            'qty_to_fulfill': qty_to_fulfill,
+        })
+
+    approved_by_name = None
+    if req.approved_by:
+        approved_by_name = (getattr(req.approved_by.profile, 'full_name', None) or req.approved_by.get_full_name() or req.approved_by.username)
+
+    is_procurement = user_role and 'Procurement' in user_role
+    can_approve = is_procurement and req.status in ('Pending', 'UnderReview')
+
+    context = {
+        'req': req,
+        'items': items_data,
+        'requestor': req.requested_by.profile.full_name if hasattr(req.requested_by, 'profile') and req.requested_by.profile.full_name else (req.requested_by.get_full_name() or req.requested_by.username),
+        'approved_by_name': approved_by_name,
+        'is_warehouse_staff': is_warehouse_staff,
+        'can_start_fulfillment': can_start_fulfillment,
+        'can_mark_delivered': can_mark_delivered,
+        'can_approve': can_approve,
+    }
+    return render(request, 'maainventory/view_request.html', context)
+
+
+@login_required
+def approve_reject_request(request, request_id):
+    """
+    Approve or reject a stock request. Procurement managers only.
+    POST with action=approve or action=reject. For reject, rejected_reason is required.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    if not (user_role and 'Procurement' in user_role):
+        return JsonResponse({'success': False, 'error': 'Only procurement managers can approve or reject requests'}, status=403)
+
+    req = get_object_or_404(Request.objects.prefetch_related('items'), id=request_id)
+
+    if req.status not in ('Pending', 'UnderReview'):
+        return JsonResponse({
+            'success': False,
+            'error': f'Request must be Pending or Under Review to approve/reject. Current status: {req.get_status_display()}'
+        }, status=400)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = {}
+
+    action = (data.get('action') or '').strip().lower()
+    if action not in ('approve', 'reject'):
+        return JsonResponse({'success': False, 'error': 'Invalid action. Use approve or reject.'}, status=400)
+
+    from django.utils import timezone
+    from django.db import transaction
+
+    with transaction.atomic():
+        old_status = req.status
+        if action == 'approve':
+            req.status = Request.StatusType.APPROVED
+            req.approved_by = request.user
+            req.approved_at = timezone.now()
+            req.rejected_reason = None
+            # Set qty_approved = qty_requested for each item if not already set
+            for ri in req.items.all():
+                if ri.qty_approved is None or ri.qty_approved <= 0:
+                    ri.qty_approved = ri.qty_requested
+                    ri.save()
+        else:
+            rejected_reason = (data.get('rejected_reason') or '').strip()
+            if not rejected_reason:
+                return JsonResponse({'success': False, 'error': 'Rejection reason is required.'}, status=400)
+            req.status = Request.StatusType.REJECTED
+            req.approved_by = None
+            req.approved_at = None
+            req.rejected_reason = rejected_reason
+        req.save()
+
+        RequestStatusHistory.objects.create(
+            request=req,
+            old_status=old_status,
+            new_status=req.status,
+            changed_by=request.user,
+            notes=f'Rejection reason: {req.rejected_reason}' if action == 'reject' and req.rejected_reason else None
+        )
+
+    if action == 'approve':
+        messages.success(request, f'Request {req.request_code} approved.')
+    else:
+        messages.success(request, f'Request {req.request_code} rejected.')
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Request {req.request_code} {action}d.',
+        'redirect': request.build_absolute_uri(f'/requests/{req.id}/')
+    })
+
+
+@login_required
+def mark_request_in_process(request, request_id):
+    """
+    Warehouse: Start fulfillment — deduct from warehouse stock, set qty_fulfilled, set status to In Process.
+    Only warehouse staff. Request must be Approved.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    if not (user_role and 'Warehouse' in user_role):
+        return JsonResponse({'success': False, 'error': 'Only warehouse staff can start fulfillment (mark in process)'}, status=403)
+
+    from django.db import transaction
+    from django.utils import timezone
+    from .models import StockBalance, StockLedger, InventoryLocation
+
+    req = get_object_or_404(Request.objects.prefetch_related('items__item', 'items__variation'), id=request_id)
+
+    if req.status != 'Approved':
+        return JsonResponse({
+            'success': False,
+            'error': f'Request must be Approved to start fulfillment. Current status: {req.get_status_display()}'
+        }, status=400)
+
+    warehouse_location, _ = InventoryLocation.objects.get_or_create(
+        type='WAREHOUSE',
+        defaults={'name': 'Main Warehouse'}
+    )
+
+    request_items = list(RequestItem.objects.filter(request=req).select_related('item', 'variation'))
+
+    for ri in request_items:
+        qty_to_fulfill = ri.qty_approved if ri.qty_approved is not None and ri.qty_approved > 0 else ri.qty_requested
+        if qty_to_fulfill <= 0:
+            continue
+        try:
+            balance = StockBalance.objects.get(
+                item=ri.item,
+                variation=ri.variation,
+                location=warehouse_location
+            )
+            if balance.qty_on_hand < qty_to_fulfill:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Insufficient warehouse stock for {ri.item.name}. Available: {balance.qty_on_hand}, Required: {qty_to_fulfill}'
+                }, status=400)
+        except StockBalance.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': f'No warehouse stock for {ri.item.name}. Required: {qty_to_fulfill}'
+            }, status=400)
+
+    try:
+        with transaction.atomic():
+            for ri in request_items:
+                qty_to_fulfill = ri.qty_approved if ri.qty_approved is not None and ri.qty_approved > 0 else ri.qty_requested
+                if qty_to_fulfill <= 0:
+                    continue
+
+                balance = StockBalance.objects.get(
+                    item=ri.item,
+                    variation=ri.variation,
+                    location=warehouse_location
+                )
+                balance.qty_on_hand -= qty_to_fulfill
+                balance.save()
+
+                StockLedger.objects.create(
+                    item=ri.item,
+                    variation=ri.variation,
+                    from_location=warehouse_location,
+                    qty_change=-qty_to_fulfill,
+                    reason='REQUEST_FULFILLMENT',
+                    reference_type='REQUEST',
+                    reference_id=str(req.id),
+                    notes=f'Fulfilled request {req.request_code} to {req.branch.name}',
+                    created_by=request.user
+                )
+
+                ri.qty_fulfilled = qty_to_fulfill
+                ri.save()
+
+            old_status = req.status
+            req.status = Request.StatusType.IN_PROCESS
+            req.save()
+
+            RequestStatusHistory.objects.create(
+                request=req,
+                old_status=old_status,
+                new_status=req.status,
+                changed_by=request.user,
+                notes='Warehouse started fulfillment; inventory deducted from warehouse.'
+            )
+
+        messages.success(request, f'Request {req.request_code} is now In Process. Inventory deducted from warehouse.')
+        return JsonResponse({
+            'success': True,
+            'message': f'Request {req.request_code} is now In Process. Branch manager can mark as Delivered when items arrive.'
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def mark_request_delivered(request, request_id):
+    """
+    Mark request as delivered. Branch Manager only (for the branch that requested the items).
+    Does not deduct inventory — warehouse already did that when marking In Process.
+    When delivered, request items appear on the Branches page for that branch.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
+    from .context_processors import get_branch_user_info
+
+    is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+    if not is_branch_user or not user_branch_ids:
+        return JsonResponse({'success': False, 'error': 'Only the branch manager for this branch can mark the request as delivered'}, status=403)
+
+    req = get_object_or_404(Request.objects.prefetch_related('items__item', 'items__variation'), id=request_id)
+
+    if req.branch_id not in user_branch_ids:
+        return JsonResponse({'success': False, 'error': 'You can only mark as delivered for requests belonging to your branch'}, status=403)
+
+    if req.status in ('Delivered', 'Completed'):
+        return JsonResponse({'success': False, 'error': 'Request has already been delivered'})
+
+    if req.status not in ('InProcess', 'OutForDelivery'):
+        return JsonResponse({
+            'success': False,
+            'error': f'Request must be In Process or Out for Delivery to mark as delivered. Current status: {req.get_status_display()}'
+        }, status=400)
+
+    from django.db import transaction
+    from django.utils import timezone
+
+    try:
+        with transaction.atomic():
+            old_status = req.status
+            req.status = Request.StatusType.DELIVERED
+            req.save()
+
+            RequestStatusHistory.objects.create(
+                request=req,
+                old_status=old_status,
+                new_status=req.status,
+                changed_by=request.user,
+                notes='Branch manager confirmed delivery. Items will appear on the Branches page for this branch.'
+            )
+
+        messages.success(request, f'Request {req.request_code} marked as delivered. Items are now shown for branch "{req.branch.name}" on the Branches page.')
+        return JsonResponse({
+            'success': True,
+            'message': f'Request {req.request_code} marked as delivered. Items appear on the Branches page for {req.branch.name}.',
+            'branches_url': request.build_absolute_uri('/branches/')
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 @login_required
@@ -2559,10 +3018,46 @@ def reports(request):
         SupplierPriceDiscussion
     )
     
-    # Get date range from query params (default to last 30 days)
+    # Get date range from query params
+    # - If start/end are provided (MM/DD/YYYY), use them
+    # - Otherwise fall back to "days" (last N days)
     today = datetime.now().date()
-    days_back = int(request.GET.get('days', 30))
-    start_date = today - timedelta(days=days_back)
+
+    def _parse_date(value: str):
+        if not value:
+            return None
+        value = value.strip()
+        try:
+            return datetime.strptime(value, "%m/%d/%Y").date()
+        except Exception:
+            pass
+        try:
+            # HTML date input format
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except Exception:
+            return None
+
+    start_str = request.GET.get('start_date')
+    end_str = request.GET.get('end_date')
+    start_date = _parse_date(start_str)
+    end_date = _parse_date(end_str)
+
+    if start_date and end_date:
+        if start_date > end_date:
+            start_date, end_date = end_date, start_date
+        # derive days_back for UI display
+        days_back = (end_date - start_date).days if end_date and start_date else 30
+    else:
+        end_date = today
+        try:
+            days_back = int(request.GET.get('days', 30))
+        except Exception:
+            days_back = 30
+        start_date = end_date - timedelta(days=days_back)
+
+    created_date_range = (start_date, end_date)
+    discussed_date_range = (start_date, end_date)
+    consumption_date_range = (start_date, end_date)
     
     # ========================================================================
     # 1. FINANCIAL & SPENDING REPORTS
@@ -2576,7 +3071,7 @@ def reports(request):
         # Get orders in date range
         orders = SupplierOrder.objects.filter(
             supplier=supplier,
-            created_at__date__gte=start_date
+            created_at__date__range=created_date_range
         )
         
         # Calculate total spent
@@ -2603,13 +3098,13 @@ def reports(request):
     
     # Purchase Order Financial Summary
     po_summary = {
-        'total_orders': SupplierOrder.objects.filter(created_at__date__gte=start_date).count(),
+        'total_orders': SupplierOrder.objects.filter(created_at__date__range=created_date_range).count(),
         'total_value': Decimal('0.00'),
         'by_status': {},
         'avg_order_value': Decimal('0.00')
     }
     
-    all_orders = SupplierOrder.objects.filter(created_at__date__gte=start_date)
+    all_orders = SupplierOrder.objects.filter(created_at__date__range=created_date_range)
     status_counts = {}
     for order in all_orders:
         status = order.get_status_display()
@@ -2678,17 +3173,17 @@ def reports(request):
     
     # Stock Movement Report
     stock_movements = StockLedger.objects.filter(
-        created_at__date__gte=start_date
+        created_at__date__range=created_date_range
     ).select_related('item', 'variation', 'from_location', 'to_location', 'created_by')[:100]
     
     movement_summary = {
-        'total_movements': StockLedger.objects.filter(created_at__date__gte=start_date).count(),
+        'total_movements': StockLedger.objects.filter(created_at__date__range=created_date_range).count(),
         'by_reason': {},
         'incoming': Decimal('0.00'),
         'outgoing': Decimal('0.00')
     }
     
-    for movement in StockLedger.objects.filter(created_at__date__gte=start_date):
+    for movement in StockLedger.objects.filter(created_at__date__range=created_date_range):
         reason = movement.get_reason_display()
         movement_summary['by_reason'][reason] = movement_summary['by_reason'].get(reason, 0) + 1
         
@@ -2703,7 +3198,7 @@ def reports(request):
     
     # Request Performance Report
     requests_data = Request.objects.filter(
-        created_at__date__gte=start_date
+        created_at__date__range=created_date_range
     ).select_related('branch', 'branch__brand', 'requested_by', 'approved_by')
     
     request_summary = {
@@ -2745,7 +3240,7 @@ def reports(request):
     
     # Most Requested Items
     requested_items = RequestItem.objects.filter(
-        request__created_at__date__gte=start_date
+        request__created_at__date__range=created_date_range
     ).values('item__item_code', 'item__name').annotate(
         total_requested=Sum('qty_requested'),
         request_count=Count('request', distinct=True)
@@ -2753,14 +3248,14 @@ def reports(request):
     
     # Purchase Order Status Report
     po_status_report = {
-        'total_orders': SupplierOrder.objects.filter(created_at__date__gte=start_date).count(),
+        'total_orders': SupplierOrder.objects.filter(created_at__date__range=created_date_range).count(),
         'by_status': {},
         'by_supplier': {},
         'avg_delivery_days': None
     }
     
     delivery_times = []
-    for order in SupplierOrder.objects.filter(created_at__date__gte=start_date).select_related('supplier'):
+    for order in SupplierOrder.objects.filter(created_at__date__range=created_date_range).select_related('supplier'):
         status = order.get_status_display()
         po_status_report['by_status'][status] = po_status_report['by_status'].get(status, 0) + 1
         
@@ -2769,7 +3264,7 @@ def reports(request):
     
     # Item Request Report
     item_requests_data = ItemRequest.objects.filter(
-        created_at__date__gte=start_date
+        created_at__date__range=created_date_range
     ).select_related('supplier', 'created_by')
     
     item_request_summary = {
@@ -2806,7 +3301,7 @@ def reports(request):
     
     # Item Consumption Report (from Foodics)
     consumption_data = ItemConsumptionDaily.objects.filter(
-        date__gte=start_date
+        date__range=consumption_date_range
     ).select_related('item', 'branch', 'branch__brand', 'variation')
     
     consumption_summary = {
@@ -2846,7 +3341,7 @@ def reports(request):
     # Supplier Performance Report
     supplier_performance = []
     for supplier in suppliers:
-        orders = SupplierOrder.objects.filter(supplier=supplier, created_at__date__gte=start_date)
+        orders = SupplierOrder.objects.filter(supplier=supplier, created_at__date__range=created_date_range)
         
         if orders.exists():
             total_orders = orders.count()
@@ -2855,7 +3350,7 @@ def reports(request):
             
             item_requests = ItemRequest.objects.filter(
                 supplier=supplier,
-                created_at__date__gte=start_date
+                created_at__date__range=created_date_range
             )
             
             supplier_performance.append({
@@ -2874,7 +3369,7 @@ def reports(request):
     # Latest Price Discussions
     price_discussions_list = []
     price_discussions_qs = SupplierPriceDiscussion.objects.filter(
-        discussed_date__date__gte=start_date
+        discussed_date__date__range=discussed_date_range
     ).select_related('supplier_item', 'supplier_item__supplier', 'supplier_item__item', 'discussed_by').order_by('-discussed_date')[:50]
     
     for discussion in price_discussions_qs:
@@ -2895,7 +3390,7 @@ def reports(request):
     # Price discussions by supplier
     discussions_by_supplier = {}
     for discussion in SupplierPriceDiscussion.objects.filter(
-        discussed_date__date__gte=start_date
+        discussed_date__date__range=discussed_date_range
     ).select_related('supplier_item__supplier'):
         supplier_name = discussion.supplier_item.supplier.name
         if supplier_name not in discussions_by_supplier:
@@ -2905,13 +3400,13 @@ def reports(request):
     # Price change trends - get discussions grouped by supplier_item
     price_trends = []
     supplier_items_with_discussions = SupplierItem.objects.filter(
-        price_discussions__discussed_date__date__gte=start_date
+        price_discussions__discussed_date__date__range=discussed_date_range
     ).distinct().select_related('supplier', 'item', 'variation')
     
     for supplier_item in supplier_items_with_discussions:
         discussions = SupplierPriceDiscussion.objects.filter(
             supplier_item=supplier_item,
-            discussed_date__date__gte=start_date
+            discussed_date__date__range=discussed_date_range
         ).order_by('discussed_date')
         
         if discussions.exists():
@@ -2961,8 +3456,11 @@ def reports(request):
     
     context = {
         'start_date': start_date,
-        'end_date': today,
+        'end_date': end_date,
         'days_back': days_back,
+        # used by <input type="date">
+        'start_date_input': start_date.isoformat() if start_date else "",
+        'end_date_input': end_date.isoformat() if end_date else "",
         
         # Financial Reports
         'supplier_spending': supplier_spending[:20],  # Top 20
@@ -3079,3 +3577,649 @@ def add_price_discussion(request):
         return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ============================================================================
+# Branches & Packaging Consumption
+# ============================================================================
+
+@login_required
+def manage_branch_assignments(request):
+    """
+    Procurement managers can assign branch managers to branches.
+    Lists branch managers and their assigned branches; allows adding/removing assignments.
+    """
+    from django.http import HttpResponseForbidden
+    from .models import BranchUser
+
+    user_profile = getattr(request.user, 'profile', None)
+    role_name = (user_profile.role.name if user_profile and user_profile.role else '').lower()
+    is_procurement = 'procurement' in role_name
+    is_it = 'it' in role_name
+    if not (is_procurement or is_it):
+        return HttpResponseForbidden('Only Procurement Managers and IT can manage branch assignments.')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add':
+            user_id = request.POST.get('user_id')
+            branch_ids = request.POST.getlist('branch_ids')
+            if user_id:
+                if not branch_ids:
+                    messages.warning(request, 'Please select at least one branch.')
+                else:
+                    from django.contrib.auth.models import User
+                    user = get_object_or_404(User, id=user_id)
+                    added = []
+                    for branch_id in branch_ids:
+                        branch = Branch.objects.filter(id=branch_id, is_active=True).first()
+                        if branch:
+                            _, created = BranchUser.objects.get_or_create(user=user, branch=branch)
+                            if created:
+                                added.append(branch.name)
+                    if added:
+                        names = ', '.join(added)
+                        messages.success(request, f'Assigned {user.get_full_name() or user.username} to: {names}.')
+        elif action == 'remove':
+            assignment_id = request.POST.get('assignment_id')
+            if assignment_id:
+                assignment = get_object_or_404(BranchUser, id=assignment_id)
+                user_name = assignment.user.get_full_name() or assignment.user.username
+                branch_name = assignment.branch.name
+                assignment.delete()
+                messages.success(request, f'Removed {user_name} from {branch_name}.')
+        return redirect('manage_branch_assignments')
+
+    # Get users with Branch Manager role (role name contains "branch" and not "procurement")
+    branch_manager_role_ids = list(
+        Role.objects.filter(name__icontains='branch')
+        .exclude(name__icontains='procurement')
+        .values_list('id', flat=True)
+    )
+    branch_managers = UserProfile.objects.filter(
+        role_id__in=branch_manager_role_ids
+    ).select_related('user', 'role').order_by('user__username')
+
+    # Get all current assignments for branch managers
+    branch_manager_user_ids = [bm.user_id for bm in branch_managers]
+    assignments = BranchUser.objects.select_related(
+        'user', 'branch', 'branch__brand'
+    ).filter(user_id__in=branch_manager_user_ids).order_by('user__username', 'branch__name')
+
+    # Group assignments by user - build list of (branch_manager, assignments) for template
+    assignments_by_user = {a.user_id: [] for a in assignments}
+    for a in assignments:
+        assignments_by_user[a.user_id].append(a)
+
+    manager_rows = []
+    for bm in branch_managers:
+        manager_rows.append({
+            'branch_manager': bm,
+            'assignments': assignments_by_user.get(bm.user_id, []),
+        })
+
+    # All active branches for the add form, grouped by brand
+    all_branches = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
+    branch_groups = {}
+    for branch in all_branches:
+        brand_name = branch.brand.name
+        if brand_name not in branch_groups:
+            branch_groups[brand_name] = []
+        branch_groups[brand_name].append(branch)
+
+    context = {
+        'branch_managers': branch_managers,
+        'manager_rows': manager_rows,
+        'all_branches': all_branches,
+        'branch_groups': branch_groups,
+    }
+    return render(request, 'maainventory/manage_branch_assignments.html', context)
+
+
+@login_required
+def branches(request):
+    """
+    Render branches page: items delivered to each branch; quantity shown is available at branch
+    (delivered minus consumption from packaging CSV / other consumption).
+    """
+    from .context_processors import get_branch_user_info
+    from .models import ItemConsumptionDaily
+
+    all_branches = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
+
+    is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+    if is_branch_user:
+        if user_branch_ids:
+            all_branches = all_branches.filter(id__in=user_branch_ids)
+        else:
+            all_branches = all_branches.none()
+
+    # Delivered per branch+item (from fulfilled requests)
+    delivered_by_branch_item = {}
+    for row in RequestItem.objects.filter(
+        request__branch__is_active=True,
+        request__status__in=['Delivered', 'Completed'],
+        qty_fulfilled__gt=0
+    ).values('request__branch_id', 'item_id').annotate(total=Sum('qty_fulfilled')):
+        key = (row['request__branch_id'], row['item_id'])
+        delivered_by_branch_item[key] = row['total']
+
+    # Consumed per branch+item (packaging CSV, Foodics, etc.)
+    consumed_by_branch_item = {}
+    for row in ItemConsumptionDaily.objects.filter(branch__is_active=True).values('branch_id', 'item_id').annotate(total=Sum('qty_consumed')):
+        key = (row['branch_id'], row['item_id'])
+        consumed_by_branch_item[key] = row['total']
+
+    branch_data = []
+    for branch in all_branches:
+        item_ids = [iid for (bid, iid) in delivered_by_branch_item.keys() if bid == branch.id]
+        items_with_qty = []
+        if item_ids:
+            for item in Item.objects.filter(id__in=item_ids, is_active=True).order_by('item_code'):
+                delivered = delivered_by_branch_item.get((branch.id, item.id)) or 0
+                consumed = consumed_by_branch_item.get((branch.id, item.id)) or 0
+                available = max(Decimal('0'), Decimal(str(delivered)) - Decimal(str(consumed)))
+                items_with_qty.append({
+                    'item_code': item.item_code,
+                    'name': item.name,
+                    'base_unit': item.base_unit,
+                    'min_order_qty': item.min_order_qty,
+                    'qty_delivered': float(delivered),
+                    'qty_available': float(available),
+                })
+
+        branch_data.append({
+            'id': branch.id,
+            'name': branch.name,
+            'brand': branch.brand.name,
+            'address': branch.address or '',
+            'items': items_with_qty,
+        })
+
+    context = {
+        'branch_data': branch_data,
+    }
+    return render(request, 'maainventory/branches.html', context)
+
+
+@login_required
+def branches_configure(request):
+    """Packaging configuration: procurement only. Branch managers do not see this; they use 'Upload CSV to deduct' on the Branches page."""
+    from django.http import HttpResponseForbidden
+    from .context_processors import get_branch_user_info
+
+    # Only procurement managers can configure packaging rules
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    if not (user_role and 'Procurement' in user_role):
+        return HttpResponseForbidden('Only procurement managers can configure packaging rules.')
+
+    all_branches = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
+    branch_groups = {}
+    for branch in all_branches:
+        brand_name = branch.brand.name
+        if brand_name not in branch_groups:
+            branch_groups[brand_name] = []
+        branch_groups[brand_name].append({
+            'id': branch.id,
+            'name': branch.name,
+            'address': branch.address or '',
+            'rules_count': branch.packaging_rules.count(),
+        })
+    context = {
+        'branch_groups': branch_groups,
+    }
+    return render(request, 'maainventory/branches_configure.html', context)
+
+
+@login_required
+def branch_packaging(request, branch_id):
+    """
+    Packaging configuration: Procurement managers can configure which warehouse inventory items
+    are used as packaging for each product. Upload CSV to get products, then map to inventory items.
+    """
+    from django.http import HttpResponseForbidden
+    from .context_processors import get_branch_user_info
+
+    # Procurement: define rules only (any branch). Branch managers: define rules + process CSV/deduct for their branch only.
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    is_procurement = user_role and 'Procurement' in user_role
+    is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+    
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    
+    # Branch users can only access their own branch; procurement can access all (for defining rules)
+    if not is_procurement:
+        if is_branch_user and (not user_branch_ids or branch.id not in user_branch_ids):
+            return HttpResponseForbidden('You do not have access to this branch.')
+    
+    # Only branch managers for this branch can process CSV / deduct; procurement cannot
+    can_process_packaging_csv = is_branch_user and user_branch_ids and branch.id in user_branch_ids
+    
+    rules = branch.packaging_rules.prefetch_related(
+        'rule_items__packaging_item',
+        'rule_items__inventory_item'
+    ).select_related('item').order_by('product_name')
+    
+    # Items available for this branch = items delivered to this branch (same as /branches/ page)
+    branch_item_ids = list(
+        RequestItem.objects.filter(
+            request__branch_id=branch.id,
+            request__status__in=['Delivered', 'Completed'],
+            qty_fulfilled__gt=0
+        ).values_list('item_id', flat=True).distinct()
+    )
+    warehouse_items = Item.objects.filter(id__in=branch_item_ids, is_active=True).order_by('name') if branch_item_ids else Item.objects.none()
+    
+    # Legacy: packaging_items (generic names like Box, Wrapper)
+    packaging_items = branch.packaging_items.order_by('display_order', 'name')
+
+    # Check if we have products from a recent upload (define-rules step)
+    draft_key = f'branch_packaging_draft_{branch_id}'
+    draft_products = request.session.get(draft_key)
+
+    context = {
+        'branch': branch,
+        'rules': rules,
+        'packaging_items': packaging_items,
+        'warehouse_items': warehouse_items,
+        'draft_products': draft_products,
+        'is_procurement': is_procurement,
+        'can_process_packaging_csv': can_process_packaging_csv,
+    }
+    return render(request, 'maainventory/branch_packaging.html', context)
+
+
+def _parse_products_file(uploaded_file):
+    """
+    Parse CSV or Excel file to extract product list.
+    Required column: Product. Optional: Quantity, Sales, Popularity, Popularity Category.
+    Returns list of dicts: [{'product_name': str, 'qty': str, 'sales': str, 'popularity': str, 'popularity_category': str}, ...]
+    """
+    import csv
+    import io
+    from openpyxl import load_workbook
+
+    rows = []
+    filename = (uploaded_file.name or '').lower()
+
+    if filename.endswith('.csv'):
+        content = uploaded_file.read().decode('utf-8-sig', errors='replace')
+        reader = csv.DictReader(io.StringIO(content))
+        for row in reader:
+            rows.append(dict(row))
+    elif filename.endswith('.xlsx'):
+        wb = load_workbook(uploaded_file, read_only=True, data_only=True)
+        ws = wb.active
+        # Normalize headers: strip whitespace so "Product", "Quantity" match even with extra spaces/tabs
+        headers = [str(cell.value).strip() if cell.value else '' for cell in ws[1]]
+        for row in ws.iter_rows(min_row=2):
+            vals = [cell.value for cell in row]
+            rows.append(dict(zip(headers, vals)))
+        wb.close()
+    else:
+        raise ValueError('File must be CSV or Excel (.csv, .xlsx)')
+
+    def find_col(row, candidates):
+        # Match by normalized key (strip, lower) so "Product", "Quantity" work regardless of casing/spaces
+        keys = [(k, (k or '').strip().lower()) for k in row.keys() if k]
+        for c in candidates:
+            cnorm = c.strip().lower()
+            for k, knorm in keys:
+                if knorm == cnorm:
+                    return k
+        return None
+
+    result = []
+    seen_products = set()
+    for row in rows:
+        product_col = find_col(row, ['Product', 'product', 'Product Name', 'product_name'])
+        if not product_col:
+            continue
+        product_name = (row.get(product_col) or '').strip()
+        if not product_name or product_name in seen_products:
+            continue
+        seen_products.add(product_name)
+
+        qty_col = find_col(row, ['Quantity', 'quantity', 'Qty', 'qty'])
+        sales_col = find_col(row, ['Sales', 'sales'])
+        pop_col = find_col(row, ['Popularity', 'popularity'])
+        pop_cat_col = find_col(row, ['Popularity Category', 'popularity_category', 'PopularityCategory'])
+
+        result.append({
+            'product_name': product_name,
+            'qty': str(row.get(qty_col, '') or ''),
+            'sales': str(row.get(sales_col, '') or ''),
+            'popularity': str(row.get(pop_col, '') or ''),
+            'popularity_category': str(row.get(pop_cat_col, '') or ''),
+        })
+    return result
+
+
+@login_required
+def branch_upload_packaging(request, branch_id):
+    """Parse CSV/Excel to extract products, store in session, redirect to define rules form. Procurement managers and branch users can access."""
+    from django.http import HttpResponseForbidden
+    from .context_processors import get_branch_user_info
+
+    if request.method != 'POST':
+        return redirect('branch_packaging', branch_id=branch_id)
+    
+    # Allow procurement managers to access any branch
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    is_procurement = user_role and 'Procurement' in user_role
+    
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    
+    if not is_procurement:
+        is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+        if is_branch_user and (not user_branch_ids or branch.id not in user_branch_ids):
+            return HttpResponseForbidden('You do not have access to this branch.')
+    uploaded_file = request.FILES.get('packaging_file')
+    if not uploaded_file:
+        messages.error(request, 'Please select a CSV or Excel file to upload.')
+        return redirect('branch_packaging', branch_id=branch_id)
+    try:
+        products = _parse_products_file(uploaded_file)
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect('branch_packaging', branch_id=branch_id)
+    except Exception as e:
+        messages.error(request, f'Error reading file: {e}')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    if not products:
+        messages.warning(request, 'No valid products found in the file. Ensure a "Product" column exists.')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    # Store products in session for the define-rules form
+    draft_key = f'branch_packaging_draft_{branch_id}'
+    request.session[draft_key] = products
+    request.session.modified = True
+
+    messages.success(request, f'Found {len(products)} products. Define packaging rules below (select packaging items per product).')
+    return redirect('branch_packaging', branch_id=branch_id)
+
+
+@login_required
+def branch_add_packaging_item(request, branch_id):
+    """Add a packaging item (Box, Wrapper, etc.) to the branch. Procurement managers and branch users can access."""
+    from django.http import HttpResponseForbidden
+    from .context_processors import get_branch_user_info
+
+    if request.method != 'POST':
+        return redirect('branch_packaging', branch_id=branch_id)
+    
+    # Allow procurement managers to access any branch
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    is_procurement = user_role and 'Procurement' in user_role
+    
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    
+    if not is_procurement:
+        is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+        if is_branch_user and (not user_branch_ids or branch.id not in user_branch_ids):
+            return HttpResponseForbidden('You do not have access to this branch.')
+    name = (request.POST.get('packaging_name') or '').strip()
+    if not name:
+        messages.error(request, 'Please enter a packaging item name.')
+        return redirect('branch_packaging', branch_id=branch_id)
+    if BranchPackagingItem.objects.filter(branch=branch, name__iexact=name).exists():
+        messages.warning(request, f'"{name}" already exists for this branch.')
+        return redirect('branch_packaging', branch_id=branch_id)
+    max_order = branch.packaging_items.aggregate(m=Max('display_order'))['m'] or 0
+    BranchPackagingItem.objects.create(branch=branch, name=name, display_order=max_order + 1)
+    messages.success(request, f'Added "{name}" to branch packaging items.')
+    return redirect('branch_packaging', branch_id=branch_id)
+
+
+@login_required
+def branch_save_packaging_rules(request, branch_id):
+    """
+    Save packaging rules from the define-rules form. 
+    Maps products to warehouse inventory items (e.g., Mini Kucu Bucket = 1 Burger Box).
+    Procurement managers and branch users can configure.
+    """
+    from django.http import HttpResponseForbidden
+    from .context_processors import get_branch_user_info
+
+    if request.method != 'POST':
+        return redirect('branch_packaging', branch_id=branch_id)
+    
+    # Allow procurement managers to access any branch
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    is_procurement = user_role and 'Procurement' in user_role
+    
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    
+    if not is_procurement:
+        is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+        if is_branch_user and (not user_branch_ids or branch.id not in user_branch_ids):
+            return HttpResponseForbidden('You do not have access to this branch.')
+
+    draft_key = f'branch_packaging_draft_{branch_id}'
+    draft_products = request.session.get(draft_key)
+    if not draft_products:
+        messages.error(request, 'Session expired. Please upload your file again.')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    # Same as branch_packaging: only items delivered to this branch (shown on /branches/)
+    branch_item_ids = list(
+        RequestItem.objects.filter(
+            request__branch_id=branch.id,
+            request__status__in=['Delivered', 'Completed'],
+            qty_fulfilled__gt=0
+        ).values_list('item_id', flat=True).distinct()
+    )
+    warehouse_items = list(Item.objects.filter(id__in=branch_item_ids, is_active=True).order_by('name')) if branch_item_ids else []
+    all_items = {item.name.strip().lower(): item for item in Item.objects.filter(is_active=True)}
+    created_count = 0
+    updated_count = 0
+
+    for i, p in enumerate(draft_products):
+        product_name = p['product_name']
+        item = all_items.get(product_name.lower())
+        rule, created_flag = BranchPackagingRule.objects.update_or_create(
+            branch=branch,
+            product_name=product_name,
+            defaults={'item': item},
+        )
+        if created_flag:
+            created_count += 1
+        else:
+            updated_count += 1
+
+        # Clear existing rule items and rebuild from form
+        rule.rule_items.all().delete()
+        
+        # Save rules mapping to warehouse inventory items
+        for wh_item in warehouse_items:
+            use_key = f'item_use_{i}_{wh_item.id}'
+            qty_key = f'item_qty_{i}_{wh_item.id}'
+            if request.POST.get(use_key):
+                try:
+                    qty = Decimal(str(request.POST.get(qty_key, 1) or 1))
+                except (ValueError, TypeError):
+                    qty = Decimal('1')
+                if qty <= 0:
+                    qty = Decimal('1')
+                BranchPackagingRuleItem.objects.create(
+                    rule=rule,
+                    inventory_item=wh_item,
+                    quantity_per_unit=qty,
+                )
+
+    # Clear draft from session
+    if draft_key in request.session:
+        del request.session[draft_key]
+        request.session.modified = True
+
+    messages.success(request, f'Packaging rules saved: {created_count} new, {updated_count} updated.')
+    return redirect('branch_packaging', branch_id=branch_id)
+
+
+@login_required
+def branch_cancel_packaging_draft(request, branch_id):
+    """Cancel the define-rules step and clear draft from session. Procurement managers and branch users can access."""
+    from django.http import HttpResponseForbidden
+    from .context_processors import get_branch_user_info
+
+    if request.method != 'POST':
+        return redirect('branch_packaging', branch_id=branch_id)
+    
+    # Allow procurement managers to access any branch
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    is_procurement = user_role and 'Procurement' in user_role
+    
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    
+    if not is_procurement:
+        is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+        if is_branch_user and (not user_branch_ids or branch.id not in user_branch_ids):
+            return HttpResponseForbidden('You do not have access to this branch.')
+    
+    draft_key = f'branch_packaging_draft_{branch_id}'
+    if draft_key in request.session:
+        del request.session[draft_key]
+        request.session.modified = True
+    messages.info(request, 'Draft cancelled. Upload a new file to define rules.')
+    return redirect('branch_packaging', branch_id=branch_id)
+
+
+@login_required
+def branch_process_packaging_csv(request, branch_id):
+    """
+    Process CSV with Product + Quantity, match to packaging rules, and deduct from this branch's
+    available items (items delivered to the branch, shown on /branches/). Does NOT touch warehouse.
+    Branch managers only, for their own branch.
+    """
+    from django.http import HttpResponseForbidden
+    from django.db import transaction
+    from django.utils import timezone
+    from .context_processors import get_branch_user_info
+    from .models import ItemConsumptionDaily
+
+    if request.method != 'POST':
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    is_branch_user, user_branch_ids = get_branch_user_info(request.user)
+    if not is_branch_user or not user_branch_ids or branch_id not in user_branch_ids:
+        messages.error(request, 'Only the branch manager for this branch can process packaging CSV.')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+
+    uploaded_file = request.FILES.get('csv_file')
+    if not uploaded_file:
+        messages.error(request, 'Please select a CSV or Excel file to upload.')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    try:
+        products_data = _parse_products_file(uploaded_file)
+    except Exception as e:
+        messages.error(request, f'Error reading file: {e}')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    if not products_data:
+        messages.warning(request, 'No valid products found in the file.')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    # Build deduction plan: which items and how much to deduct at this branch
+    deduction_plan = {}
+    unmatched_products = []
+
+    for product_data in products_data:
+        product_name = product_data.get('product_name', '').strip()
+        try:
+            product_qty = Decimal(str(product_data.get('qty', 0) or 0))
+        except Exception:
+            product_qty = Decimal('0')
+        if product_qty <= 0:
+            continue
+
+        rule = BranchPackagingRule.objects.filter(
+            branch=branch,
+            product_name__iexact=product_name
+        ).prefetch_related('rule_items__inventory_item').first()
+
+        if not rule or not rule.rule_items.exists():
+            unmatched_products.append(product_name)
+            continue
+
+        for rule_item in rule.rule_items.all():
+            if not rule_item.inventory_item:
+                continue
+            item = rule_item.inventory_item
+            qty_needed = product_qty * rule_item.quantity_per_unit
+            if item.id not in deduction_plan:
+                deduction_plan[item.id] = {'item': item, 'total_qty': Decimal('0')}
+            deduction_plan[item.id]['total_qty'] += qty_needed
+
+    if unmatched_products:
+        messages.warning(request, f'No packaging rules found for: {", ".join(unmatched_products[:5])}{"..." if len(unmatched_products) > 5 else ""}. Configure rules for these products first.')
+
+    if not deduction_plan:
+        messages.warning(request, 'No packaging items to deduct from the uploaded file.')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    # Delivered to this branch (same as /branches/ page)
+    delivered = {
+        r['item_id']: r['total']
+        for r in RequestItem.objects.filter(
+            request__branch_id=branch.id,
+            request__status__in=['Delivered', 'Completed'],
+            qty_fulfilled__gt=0
+        ).values('item_id').annotate(total=Sum('qty_fulfilled'))
+    }
+    # Already consumed at this branch (all sources)
+    consumed = {
+        r['item_id']: r['total']
+        for r in ItemConsumptionDaily.objects.filter(branch=branch).values('item_id').annotate(total=Sum('qty_consumed'))
+    }
+
+    insufficient = []
+    for item_id, plan in deduction_plan.items():
+        item = plan['item']
+        qty_needed = plan['total_qty']
+        total_delivered = delivered.get(item_id) or Decimal('0')
+        total_consumed = consumed.get(item_id) or Decimal('0')
+        available = total_delivered - total_consumed
+        if available < qty_needed:
+            insufficient.append(f'{item.name} (need {qty_needed}, available at branch {available})')
+
+    if insufficient:
+        messages.error(request, f'Insufficient quantity at your branch: {"; ".join(insufficient[:3])}{"..." if len(insufficient) > 3 else ""}')
+        return redirect('branch_packaging', branch_id=branch_id)
+
+    today = timezone.now().date()
+    source = ItemConsumptionDaily.SourceType.PACKAGING_CSV
+
+    try:
+        with transaction.atomic():
+            for item_id, plan in deduction_plan.items():
+                item = plan['item']
+                qty_to_deduct = plan['total_qty']
+                rec, created = ItemConsumptionDaily.objects.get_or_create(
+                    date=today,
+                    branch=branch,
+                    item=item,
+                    variation=None,
+                    source=source,
+                    defaults={'qty_consumed': qty_to_deduct}
+                )
+                if not created:
+                    rec.qty_consumed += qty_to_deduct
+                    rec.save(update_fields=['qty_consumed'])
+
+        messages.success(request, f'Deducted from your branch ({branch.name}): {len(deduction_plan)} item types. Quantities on the Branches page have been updated.')
+        return redirect('branch_packaging', branch_id=branch_id)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f'Error processing packaging: {str(e)}')
+        return redirect('branch_packaging', branch_id=branch_id)

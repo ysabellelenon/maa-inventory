@@ -1,0 +1,80 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/branches.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page-header branches-header">
+    <div class="branches-header-left">
+      <h2>Branches</h2>
+      <p class="page-subtitle">Items delivered to each branch. When a branch manager marks a request as Delivered, its items appear here under that branch.</p>
+    </div>
+    {% if is_procurement_user %}
+    <a href="{% url 'branches_configure' %}" class="btn-configure">Configure Packaging</a>
+    {% endif %}
+  </div>
+
+  <div class="branches-container branches-items-view">
+    {% for branch in branch_data %}
+    <div class="branch-group branch-items-group">
+      <div class="branch-items-header">
+        <h3 class="branch-group-title">{{ branch.brand }} — {{ branch.name }}</h3>
+        {% if branch.address %}
+        <p class="branch-address">{{ branch.address }}</p>
+        {% endif %}
+      </div>
+      {% if is_branch_user and branch.id in user_branch_ids %}
+      <div class="branch-actions" style="margin-bottom: 12px;">
+        <a href="{% url 'branch_packaging' branch.id %}" class="btn-configure" style="display: inline-block; text-decoration: none;">Upload CSV/Excel to deduct packaging</a>
+      </div>
+      {% endif %}
+      {% if branch.items %}
+      <div class="table-wrapper">
+        <table class="packaging-table branch-items-table">
+          <thead>
+            <tr>
+              <th>Item Code</th>
+              <th>Item Name</th>
+              <th>Unit</th>
+              <th>MIN</th>
+              <th>Qty Available</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in branch.items %}
+            <tr class="{% if item.min_order_qty != None and item.qty_available != None and item.qty_available <= item.min_order_qty %}branch-item-low{% endif %}">
+              <td>{{ item.item_code }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.base_unit }}</td>
+              <td>{{ item.min_order_qty|default:"—" }}</td>
+              <td>{% if item.qty_available != None %}{{ item.qty_available|floatformat:0 }}{% else %}—{% endif %}</td>
+              <td class="branch-status-cell">
+                {% if item.min_order_qty != None and item.qty_available != None %}
+                  {% if item.qty_available <= item.min_order_qty %}
+                    <span class="branch-status-low">LOW</span>
+                  {% else %}
+                    <span class="branch-status-good">Good</span>
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="no-items">No items delivered to this branch yet. Items appear here after: Branch Manager requests → Procurement approves → Warehouse marks In Process → Branch Manager marks request as Delivered.</p>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="branches-empty">
+      <p>No branches found.</p>
+    </div>
+    {% endfor %}
+  </div>
+{% endblock %}

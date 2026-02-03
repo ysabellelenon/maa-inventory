@@ -1,0 +1,150 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/branches.css' %}">
+{% endblock %}
+
+{% block content %}
+  {% if can_process_packaging_csv %}
+  {# Branch manager: only the deduction upload, no configure packaging #}
+  <div class="page-header branch-packaging-header">
+    <a href="{% url 'branches' %}" class="back-link">← Back to Branches</a>
+    <h2>{{ branch.name }} — Deduct packaging</h2>
+    <p class="page-subtitle">Upload a CSV or Excel file with <strong>Product</strong> and <strong>Quantity</strong> columns. Deduction uses items available to your branch (defined by procurement).</p>
+  </div>
+
+  {% if rules %}
+  <div class="packaging-process-section">
+    <div class="upload-card" style="background: #F0F9FF; border: 2px solid #3B82F6;">
+      <h4>Upload CSV/Excel to deduct packaging from warehouse</h4>
+      <p class="upload-hint">
+        Your file must have <strong>Product</strong> and <strong>Quantity</strong> columns. The system will match products to packaging rules (set by procurement) and deduct the corresponding items from warehouse inventory for <strong>{{ branch.name }}</strong>.
+      </p>
+      <form method="post" action="{% url 'branch_process_packaging_csv' branch_id=branch.id %}" enctype="multipart/form-data" class="upload-form">
+        {% csrf_token %}
+        <div class="upload-row">
+          <input type="file" name="csv_file" accept=".csv,.xlsx" required class="file-input" aria-label="Select CSV or Excel file" />
+          <button type="submit" class="btn-upload" style="background: #3B82F6;">Process & deduct from warehouse</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="upload-card" style="max-width: 560px;">
+    <p class="no-rules">Packaging rules for this branch are not defined yet. Ask procurement to configure packaging rules first; then you can upload a CSV/Excel file here to deduct items.</p>
+  </div>
+  {% endif %}
+
+  {% else %}
+  {# Procurement: full configure packaging (define rules only), no deduction #}
+  <div class="page-header branch-packaging-header">
+    <a href="{% url 'branches_configure' %}" class="back-link">← Back to Configure Packaging</a>
+    <h2>{{ branch.name }} — Packaging Configuration</h2>
+    <p class="page-subtitle">
+      <strong>Step 1:</strong> Upload CSV with products to define rules. <strong>Step 2:</strong> Map each product to warehouse inventory items (e.g., 1 Mini Kucu Bucket = 1 Burger Box).
+    </p>
+  </div>
+
+  {% if draft_products %}
+  <div class="packaging-define-section">
+    <div class="define-card">
+      <h4>Step 2: Map Products to Warehouse Inventory Items</h4>
+      <p class="define-hint">For each product, select items available for this branch (same as on the <a href="{% url 'branches' %}">Branches</a> page) and set quantity per unit (e.g., 1 Mini Kucu Bucket = 1 Burger Box).</p>
+      {% if warehouse_items %}
+      <form method="post" action="{% url 'branch_save_packaging_rules' branch_id=branch.id %}" class="define-form">
+        {% csrf_token %}
+        <div class="table-wrapper" style="max-height: 600px; overflow-y: auto;">
+          <table class="packaging-table define-table">
+            <thead style="position: sticky; top: 0; background: white; z-index: 10;">
+              <tr>
+                <th>Product</th>
+                {% for item in warehouse_items %}
+                <th style="font-size: 12px;">{{ item.name }}<br><span style="font-size: 11px; color: #6B7280;">({{ item.item_code }})</span></th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in draft_products %}
+              <tr>
+                <td><strong>{{ p.product_name }}</strong></td>
+                {% for item in warehouse_items %}
+                <td class="pkg-cell">
+                  <label class="pkg-checkbox-label">
+                    <input type="checkbox" name="item_use_{{ forloop.parentloop.counter0 }}_{{ item.id }}" value="1" class="pkg-checkbox" />
+                    <span class="pkg-qty-wrap">
+                      <input type="number" name="item_qty_{{ forloop.parentloop.counter0 }}_{{ item.id }}" value="1" min="0" step="0.01" class="rule-input pkg-qty" placeholder="Qty" />
+                    </span>
+                  </label>
+                </td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="define-actions">
+          <button type="submit" class="btn-save">Save Packaging Rules</button>
+          <button type="submit" form="cancel-draft-form" class="btn-cancel">Cancel</button>
+        </div>
+      </form>
+      <form id="cancel-draft-form" method="post" action="{% url 'branch_cancel_packaging_draft' branch_id=branch.id %}" style="display:none;">
+        {% csrf_token %}
+      </form>
+      {% else %}
+      <p class="define-no-items">No items are available for this branch yet. Items appear on the <a href="{% url 'branches' %}">Branches</a> page after requests are delivered. Deliver some items to this branch first, then return here to define packaging rules.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="packaging-upload-section">
+    <div class="upload-card">
+      <h4>Step 1: Upload CSV/Excel to Define Products</h4>
+      <p class="upload-hint">
+        Your file only needs a <strong>Product</strong> column. You will then map each product to warehouse inventory items.
+      </p>
+      <form method="post" action="{% url 'branch_upload_packaging' branch_id=branch.id %}" enctype="multipart/form-data" class="upload-form">
+        {% csrf_token %}
+        <div class="upload-row">
+          <input type="file" name="packaging_file" accept=".csv,.xlsx" required class="file-input" aria-label="Select CSV or Excel file" />
+          <button type="submit" class="btn-upload">Upload & Define Rules</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="packaging-rules-section">
+    <h4>Current Packaging Rules (Product → Warehouse Items)</h4>
+    {% if rules %}
+    <div class="table-wrapper">
+      <table class="packaging-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Packaging Formula</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rule in rules %}
+          <tr>
+            <td><strong>{{ rule.product_name }}</strong>{% if rule.item %} <span class="linked-badge" style="font-size: 11px; background: #E0E7FF; color: #3730A3; padding: 2px 6px; border-radius: 4px;">linked</span>{% endif %}</td>
+            <td>
+              1 {{ rule.product_name }} = 
+              {% for ri in rule.rule_items.all %}
+                {{ ri.quantity_per_unit }} × {% if ri.inventory_item %}{{ ri.inventory_item.name }} ({{ ri.inventory_item.item_code }}){% elif ri.packaging_item %}{{ ri.packaging_item.name }}{% else %}—{% endif %}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                <span style="color: #6B7280;">Not configured</span>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="no-rules">No packaging rules yet. Upload a CSV file above to define products, then map to warehouse items.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+{% endblock %}

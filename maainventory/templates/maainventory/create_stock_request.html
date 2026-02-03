@@ -1,0 +1,195 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+<style>
+body { overflow-y: auto !important; overflow-x: hidden; height: auto !important; }
+.content { height: auto !important; overflow: visible !important; min-height: calc(100vh - 64px); padding-bottom: 40px; }
+.inventory-container { height: auto !important; overflow: visible !important; min-height: auto; }
+.request-layout { min-height: 600px; }
+.request-right { max-height: calc(100vh - 300px); overflow: auto; }
+.panel-input, .panel-textarea { width: 100%; padding: 10px 12px; border: 1px solid #E5E7EB; border-radius: 6px; font-size: 14px; }
+.panel-border { background: var(--card-bg); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #E5E7EB; }
+.field-label { display: block; font-weight: 500; color: #374151; margin-bottom: 8px; font-size: 14px; }
+.item-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #F3F4F6; }
+.item-row:hover { background: #F9FAFB; }
+.item-row:last-child { border-bottom: none; }
+.item-qty-input { width: 80px; padding: 8px 10px; border: 1px solid #E5E7EB; border-radius: 6px; text-align: right; }
+.stock-available { font-size: 12px; color: #6B7280; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <div style="display:flex;flex-direction:column;">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'requests' %}">Stock Requests</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <span class="active" aria-current="page">New Stock Request</span>
+      </nav>
+      <h2 style="margin-top:6px;">New Stock Request</h2>
+      <p style="color:#6b7280;font-size:14px;margin-top:4px;">Request items from warehouse for your branch. Flow: Branch Manager requests → Procurement approves → Warehouse fulfills → Delivered.</p>
+    </div>
+  </div>
+
+  <div class="inventory-container" style="margin-bottom: 40px;">
+    <div class="request-layout" style="display:flex;gap:18px;align-items:stretch;">
+      <div class="request-left" style="flex:0 0 360px;min-width:320px;">
+        <div class="panel-border">
+          <label class="field-label">Select Branch</label>
+          <select id="branch-select" class="panel-input" aria-label="Select Branch">
+            <option value="">Select your branch</option>
+            {% for brand_data in brands_branches %}
+            <optgroup label="{{ brand_data.name }}">
+              {% for branch in brand_data.branches %}
+              <option value="{{ branch.id }}">{{ branch.name }}</option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="panel-border">
+          <label class="field-label">Notes (Optional)</label>
+          <textarea id="request-notes" class="panel-textarea" placeholder="Additional notes for this request..." style="min-height:80px;"></textarea>
+        </div>
+      </div>
+
+      <div class="request-right panel-border" style="flex:1;min-width:0;padding:18px;display:flex;flex-direction:column;">
+        <div style="margin-bottom:12px;">
+          <input id="item-search" class="panel-input" placeholder="Search items by name or code..." aria-label="Search items" style="margin-bottom:8px;" />
+        </div>
+        <div style="flex:1;overflow-y:auto;margin-bottom:12px;max-height:400px;">
+          <div id="items-list" style="display:flex;flex-direction:column;gap:0;">
+            {% for item in items_list %}
+            <div class="item-row" data-item-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-code="{{ item.item_code|lower }}">
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;color:#111827;">{{ item.item_code }} — {{ item.name }}</div>
+                <div class="stock-available">Available in warehouse: {{ item.qty_available|floatformat:0 }}{% if item.base_unit %} {{ item.base_unit }}{% endif %}</div>
+              </div>
+              <div>
+                <input type="number" class="item-qty-input" data-item-id="{{ item.id }}" min="0" step="0.01" placeholder="0" value="" aria-label="Quantity for {{ item.name }}" />
+              </div>
+            </div>
+            {% empty %}
+            <div style="padding:40px;text-align:center;color:#6B7280;">No items available.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);padding-top:12px;flex-shrink:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span style="font-weight:600;">Total items: <span id="total-items">0</span></span>
+          </div>
+          <button id="submit-request" class="btn-new-request" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--focus,#D9BD7D);color:white;border:none;border-radius:8px;font-weight:500;cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            Submit Request
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var branchSelect = document.getElementById('branch-select');
+    var itemSearch = document.getElementById('item-search');
+    var itemsList = document.getElementById('items-list');
+    var submitBtn = document.getElementById('submit-request');
+    var totalItemsSpan = document.getElementById('total-items');
+
+    function getCart() {
+      var cart = {};
+      var inputs = itemsList.querySelectorAll('.item-qty-input');
+      inputs.forEach(function(inp) {
+        var qty = parseFloat(inp.value) || 0;
+        if (qty > 0) {
+          cart[inp.getAttribute('data-item-id')] = qty;
+        }
+      });
+      return cart;
+    }
+
+    function updateTotal() {
+      var cart = getCart();
+      var total = Object.keys(cart).length;
+      totalItemsSpan.textContent = total;
+      submitBtn.disabled = total === 0;
+    }
+
+    itemsList.addEventListener('input', function(e) {
+      if (e.target.classList.contains('item-qty-input')) {
+        updateTotal();
+      }
+    });
+
+    itemSearch.addEventListener('input', function() {
+      var q = (this.value || '').toLowerCase().trim();
+      var rows = itemsList.querySelectorAll('.item-row');
+      rows.forEach(function(row) {
+        var name = row.getAttribute('data-name') || '';
+        var code = row.getAttribute('data-code') || '';
+        var show = !q || name.indexOf(q) !== -1 || code.indexOf(q) !== -1;
+        row.style.display = show ? '' : 'none';
+      });
+    });
+
+    submitBtn.addEventListener('click', function() {
+      var branchId = branchSelect.value;
+      if (!branchId) {
+        alert('Please select your branch.');
+        return;
+      }
+
+      var cart = getCart();
+      if (Object.keys(cart).length === 0) {
+        alert('Please add at least one item with quantity greater than 0.');
+        return;
+      }
+
+      var items = Object.keys(cart).map(function(id) {
+        return { item_id: parseInt(id, 10), quantity: cart[id] };
+      });
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Submitting...</span>';
+
+      fetch('{% url "create_stock_request" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': (function() {
+            var v = document.cookie.split('; ').find(function(c) { return c.startsWith('csrftoken='); });
+            return v ? v.split('=')[1] : '';
+          })(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          branch_id: parseInt(branchId, 10),
+          items: items,
+          notes: document.getElementById('request-notes').value.trim()
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          alert('Request created successfully: ' + data.request_code);
+          window.location.href = data.redirect_url || '/requests/';
+        } else {
+          alert('Error: ' + (data.error || 'Unknown error'));
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Submit Request';
+        }
+      })
+      .catch(function(err) {
+        alert('Error submitting request');
+        console.error(err);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Submit Request';
+      });
+    });
+
+    updateTotal();
+  })();
+  </script>
+{% endblock %}

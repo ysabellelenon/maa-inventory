@@ -1,0 +1,369 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+<link rel="stylesheet" href="{% static 'css/requests.css' %}">
+<style>
+body.view-request-page-open .content {
+  height: auto !important;
+  overflow: visible !important;
+  min-height: calc(100vh - 64px);
+  padding-bottom: 40px;
+}
+body.view-request-page-open .inventory-container {
+  height: auto !important;
+  overflow: visible !important;
+  min-height: auto;
+}
+body.view-request-page-open {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.info-card {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.info-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #101828;
+  border-bottom: 2px solid #D9BD7D;
+  padding-bottom: 8px;
+}
+.info-row {
+  display: flex;
+  padding: 12px 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+.info-row:last-child {
+  border-bottom: none;
+}
+.info-label {
+  font-weight: 500;
+  color: #6B7280;
+  width: 200px;
+  flex-shrink: 0;
+}
+.info-value {
+  color: #101828;
+  flex: 1;
+}
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 24px;
+}
+.items-table th {
+  background: #F9FAFB;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #E5E7EB;
+}
+.items-table td {
+  padding: 12px;
+  border-bottom: 1px solid #F3F4F6;
+}
+.items-table tr:hover {
+  background: #F9FAFB;
+}
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status-pending { background: #FEF3C7; color: #92400E; }
+.status-underreview { background: #DBEAFE; color: #1E40AF; }
+.status-approved { background: #D1FAE5; color: #065F46; }
+.status-rejected { background: #FEE2E2; color: #991B1B; }
+.status-inprocess { background: #E0E7FF; color: #3730A3; }
+.status-outfordelivery { background: #FEF3C7; color: #92400E; }
+.status-delivered { background: #D1FAE5; color: #065F46; }
+.status-completed { background: #D1FAE5; color: #065F46; }
+.warehouse-note {
+  background: #EFF6FF;
+  border: 1px solid #93C5FD;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: #1E40AF;
+}
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('view-request-page-open');
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <div style="display:flex;flex-direction:column;">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'requests' %}">Stock Requests</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <span class="active" aria-current="page">{{ req.request_code }}</span>
+      </nav>
+      <h2 style="margin-top:6px;">Request: {{ req.request_code }}</h2>
+      <h3 class="item-submeta">
+        <strong>Status:</strong>
+        <span class="status-badge status-{{ req.status|lower }}">{{ req.get_status_display }}</span>
+        &nbsp;•&nbsp;
+        <strong>Branch:</strong> {{ req.branch.name }}
+        &nbsp;•&nbsp;
+        <strong>Date:</strong> {{ req.date_of_order|date:"F d, Y" }}
+      </h3>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      {% if can_approve %}
+      <button id="approve-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #10B981; color: white; border-radius: 8px; font-weight: 500; border: none; cursor: pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        Approve
+      </button>
+      <button id="reject-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #EF4444; color: white; border-radius: 8px; font-weight: 500; border: none; cursor: pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        Reject
+      </button>
+      {% endif %}
+      {% if can_start_fulfillment %}
+      <button id="mark-in-process-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; border: none; cursor: pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Start Fulfillment (In Process)
+      </button>
+      {% endif %}
+      {% if can_mark_delivered %}
+      <button id="mark-delivered-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; border: none; cursor: pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        Mark as Delivered
+      </button>
+      {% endif %}
+      <a href="{% url 'requests' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #F9FAFB; color: #101828; text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid #E5E7EB;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        Back to Requests
+      </a>
+    </div>
+  </div>
+
+  <div class="inventory-container">
+    <div class="inventory-card">
+      {% if can_start_fulfillment %}
+      <div class="warehouse-note">
+        <strong>Warehouse:</strong> Click &quot;Start Fulfillment (In Process)&quot; to deduct items from warehouse stock and set this request to In Process. The branch manager for <strong>{{ req.branch.name }}</strong> will then mark it as Delivered when items arrive; delivered items will appear on the <a href="{% url 'branches' %}">Branches</a> page for this branch.
+      </div>
+      {% endif %}
+      {% if can_mark_delivered %}
+      <div class="warehouse-note">
+        <strong>Branch manager:</strong> Confirm that items have been delivered to <strong>{{ req.branch.name }}</strong>. Once you mark as Delivered, these items will appear on the <a href="{% url 'branches' %}">Branches</a> page for your branch.
+      </div>
+      {% endif %}
+
+      <!-- Request Information -->
+      <div class="info-card">
+        <h3>Request Information</h3>
+        <div class="info-row">
+          <div class="info-label">Request Code</div>
+          <div class="info-value"><strong>{{ req.request_code }}</strong></div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Status</div>
+          <div class="info-value">
+            <span class="status-badge status-{{ req.status|lower }}">{{ req.get_status_display }}</span>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Branch</div>
+          <div class="info-value">{{ req.branch.name }}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Requested By</div>
+          <div class="info-value">{{ requestor }}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Order Date</div>
+          <div class="info-value">{{ req.date_of_order|date:"F d, Y, g:i A" }}</div>
+        </div>
+        {% if req.approved_by and approved_by_name %}
+        <div class="info-row">
+          <div class="info-label">Approved By</div>
+          <div class="info-value">{{ approved_by_name }}</div>
+        </div>
+        {% endif %}
+        {% if req.approved_at %}
+        <div class="info-row">
+          <div class="info-label">Approved At</div>
+          <div class="info-value">{{ req.approved_at|date:"F d, Y, g:i A" }}</div>
+        </div>
+        {% endif %}
+        <div class="info-row">
+          <div class="info-label">Last Updated</div>
+          <div class="info-value">{{ req.updated_at|date:"F d, Y, g:i A" }}</div>
+        </div>
+      </div>
+
+      <!-- Request Items -->
+      <div class="info-card">
+        <h3>Request Items ({{ items|length }})</h3>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Item Code</th>
+              <th>Item Name</th>
+              <th>Variation</th>
+              <th style="text-align: right;">Requested</th>
+              <th style="text-align: right;">Approved</th>
+              <th style="text-align: right;">Fulfilled</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in items %}
+            <tr>
+              <td><strong>{{ row.item.item_code }}</strong></td>
+              <td>{{ row.item.name }}</td>
+              <td>{% if row.variation %}{{ row.variation.variation_name }}{% else %}—{% endif %}</td>
+              <td style="text-align: right;">{{ row.qty_requested }}</td>
+              <td style="text-align: right;">{{ row.qty_approved|default:"—" }}</td>
+              <td style="text-align: right;">{{ row.qty_fulfilled|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 40px; color: #6B7280;">
+                No items in this request.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if can_approve %}
+  <script>
+    (function() {
+      function getCookie(name) {
+        var value = '; ' + document.cookie;
+        var parts = value.split('; ' + name + '=');
+        return parts.length === 2 ? parts.pop().split(';').shift() : '';
+      }
+      function postAction(action, rejectedReason) {
+        var body = { action: action };
+        if (action === 'reject' && rejectedReason) body.rejected_reason = rejectedReason;
+        return fetch('{% url "approve_reject_request" req.id %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }).then(function(r) { return r.json(); });
+      }
+      document.getElementById('approve-btn').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span>Processing...</span>';
+        postAction('approve').then(function(data) {
+          if (data.success) { window.location.reload(); }
+          else { alert('Error: ' + (data.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Approve'; }
+        }).catch(function(err) { alert('Error processing request'); btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Approve'; });
+      });
+      document.getElementById('reject-btn').addEventListener('click', function() {
+        var reason = prompt('Please enter the reason for rejection:');
+        if (reason === null) return;
+        reason = (reason || '').trim();
+        if (!reason) { alert('Rejection reason is required.'); return; }
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span>Processing...</span>';
+        postAction('reject', reason).then(function(data) {
+          if (data.success) { window.location.reload(); }
+          else { alert('Error: ' + (data.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> Reject'; }
+        }).catch(function(err) { alert('Error processing request'); btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> Reject'; });
+      });
+    })();
+  </script>
+  {% endif %}
+
+  {% if can_start_fulfillment %}
+  <script>
+    (function() {
+      function getCookie(name) {
+        var value = '; ' + document.cookie;
+        var parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+      var btn = document.getElementById('mark-in-process-btn');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          if (!confirm('Start fulfillment? This will deduct items from warehouse stock and set the request to In Process. The branch manager can then mark as Delivered when items arrive.')) {
+            return;
+          }
+          btn.disabled = true;
+          var originalHtml = btn.innerHTML;
+          btn.innerHTML = '<span>Processing...</span>';
+          fetch('{% url "mark_request_in_process" req.id %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.success) { alert(data.message || 'Request is now In Process.'); window.location.reload(); }
+            else { alert('Error: ' + (data.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = originalHtml; }
+          })
+          .catch(function(err) { alert('Error processing request'); btn.disabled = false; btn.innerHTML = originalHtml; });
+        });
+      }
+    })();
+  </script>
+  {% endif %}
+
+  {% if can_mark_delivered %}
+  <script>
+    (function() {
+      function getCookie(name) {
+        var value = '; ' + document.cookie;
+        var parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+      var btn = document.getElementById('mark-delivered-btn');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          if (!confirm('Confirm that items have been delivered to your branch? They will then appear on the Branches page for {{ req.branch.name }}.')) {
+            return;
+          }
+          btn.disabled = true;
+          var originalHtml = btn.innerHTML;
+          btn.innerHTML = '<span>Processing...</span>';
+          fetch('{% url "mark_request_delivered" req.id %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.success) {
+              alert(data.message || 'Request marked as delivered. Items are now on the Branches page.');
+              window.location.reload();
+            } else {
+              alert('Error: ' + (data.error || 'Unknown error'));
+              btn.disabled = false;
+              btn.innerHTML = originalHtml;
+            }
+          })
+          .catch(function(err) {
+            alert('Error processing request');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+          });
+        });
+      }
+    })();
+  </script>
+  {% endif %}
+{% endblock %}

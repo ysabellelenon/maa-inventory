@@ -1,0 +1,187 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+<style>
+/* Fix: Content cut off - allow page to scroll */
+body.branch-assignments-page .content {
+  height: auto !important;
+  overflow: visible !important;
+  min-height: calc(100vh - 64px);
+  padding-bottom: 40px;
+}
+body.branch-assignments-page .inventory-container {
+  height: auto !important;
+  overflow: visible !important;
+  min-height: auto;
+}
+body.branch-assignments-page {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.assignments-card { background: var(--card-bg); border-radius: 12px; padding: 28px; margin-bottom: 24px; border: 1px solid #E5E7EB; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.assignments-card h3 { margin: 0 0 20px 0; font-size: 17px; font-weight: 600; color: #101828; }
+.add-form-layout { display: grid; grid-template-columns: 280px 1fr; gap: 28px; align-items: start; }
+@media (max-width: 900px) { .add-form-layout { grid-template-columns: 1fr; } }
+.add-form-left { display: flex; flex-direction: column; gap: 16px; }
+.add-form-left .form-group { display: flex; flex-direction: column; gap: 8px; }
+.add-form-left label { font-weight: 500; font-size: 13px; color: #374151; letter-spacing: 0.01em; }
+.add-form-left select { padding: 12px 14px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 14px; background: #fff; min-width: 100%; }
+.add-form-left select:focus { outline: none; border-color: #D9BD7D; box-shadow: 0 0 0 3px rgba(217,189,125,0.15); }
+.add-form-right { background: #F9FAFB; border-radius: 10px; padding: 20px; border: 1px solid #E5E7EB; }
+.add-form-right .section-label { font-weight: 600; font-size: 13px; color: #374151; margin-bottom: 16px; display: block; }
+.branch-group { margin-bottom: 20px; }
+.branch-group:last-child { margin-bottom: 0; }
+.branch-group-title { font-weight: 600; font-size: 12px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #E5E7EB; }
+.branch-group-list { display: flex; flex-direction: column; gap: 2px; }
+.branch-option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+.branch-option:hover { background: #fff; }
+.branch-option input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #D9BD7D; }
+.branch-option span { font-size: 14px; color: #374151; }
+.branches-scroll { max-height: 280px; overflow-y: auto; padding-right: 4px; }
+.branches-scroll::-webkit-scrollbar { width: 6px; }
+.branches-scroll::-webkit-scrollbar-track { background: #F3F4F6; border-radius: 3px; }
+.branches-scroll::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+.select-all-row { padding: 10px 12px; margin-bottom: 12px; border-radius: 6px; background: #fff; border: 1px dashed #E5E7EB; }
+.select-all-row label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; font-size: 13px; color: #374151; margin: 0; }
+.btn-add { padding: 12px 24px; background: #D9BD7D; color: #1a1a1a; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+.btn-add:hover { background: #c9ad6d; }
+.assignments-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.assignments-table th { background: #F9FAFB; padding: 14px 16px; text-align: left; font-weight: 600; font-size: 13px; color: #374151; border-bottom: 2px solid #E5E7EB; }
+.assignments-table td { padding: 14px 16px; border-bottom: 1px solid #F3F4F6; font-size: 14px; }
+.assignments-table tr:hover { background: #FAFAFA; }
+.btn-remove { padding: 6px 12px; font-size: 12px; background: transparent; color: #991B1B; border: 1px solid #FECACA; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+.btn-remove:hover { background: #FEE2E2; }
+.no-assignments { color: #6B7280; padding: 24px; text-align: center; font-size: 14px; }
+.branch-tag { display: inline-block; padding: 5px 12px; background: #EFF6FF; color: #1E40AF; border-radius: 6px; font-size: 12px; margin-right: 6px; margin-bottom: 6px; font-weight: 500; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header inventory-header">
+    <div>
+      <h2>Manage Branch Assignments</h2>
+      <p style="color:#6b7280;font-size:14px;margin-top:4px;">Assign branch managers to branches. Branch managers will only see their assigned branch(es).</p>
+    </div>
+  </div>
+
+  <div class="inventory-container">
+    <div class="assignments-card">
+      <h3>Add Assignment</h3>
+      <form method="post" id="add-form" onsubmit="var c=document.querySelectorAll('.branch-checkbox:checked'); if(!c.length){alert('Please select at least one branch.'); return false;} return true;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add" />
+        <div class="add-form-layout">
+          <div class="add-form-left">
+            <div class="form-group">
+              <label for="user_id">Branch Manager</label>
+              <select name="user_id" id="user_id" required>
+                <option value="">Select branch manager</option>
+                {% for bm in branch_managers %}
+                <option value="{{ bm.user.id }}">{{ bm.full_name }} ({{ bm.user.username }})</option>
+                {% empty %}
+                <option value="">No branch managers found</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="btn-add" id="add-btn">Add Assignment</button>
+          </div>
+          <div class="add-form-right">
+            <span class="section-label">Select branches (one or more)</span>
+            <div class="branches-scroll">
+              <div class="select-all-row">
+                <label>
+                  <input type="checkbox" id="select-all-branches" />
+                  <span>Select all branches</span>
+                </label>
+              </div>
+              {% for brand_name, branches in branch_groups.items %}
+              <div class="branch-group">
+                <div class="branch-group-title">{{ brand_name }}</div>
+                <div class="branch-group-list">
+                  {% for branch in branches %}
+                  <label class="branch-option">
+                    <input type="checkbox" name="branch_ids" value="{{ branch.id }}" class="branch-checkbox" />
+                    <span>{{ branch.name }}</span>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+              {% empty %}
+              <span class="no-assignments">No branches found</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <h3 style="margin-top: 24px;">Current Assignments</h3>
+      {% if manager_rows %}
+      <table class="assignments-table">
+        <thead>
+          <tr>
+            <th>Branch Manager</th>
+            <th>Assigned Branches</th>
+            <th style="width: 100px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in manager_rows %}
+          <tr>
+            <td>
+              <strong>{{ row.branch_manager.full_name }}</strong><br>
+              <span style="font-size: 12px; color: #6B7280;">{{ row.branch_manager.user.username }} — {{ row.branch_manager.role.name }}</span>
+            </td>
+            <td>
+              {% for a in row.assignments %}
+              <span class="branch-tag">{{ a.branch.brand.name }} — {{ a.branch.name }}</span>
+              {% empty %}
+              <span class="no-assignments" style="padding: 0;">No branches assigned</span>
+              {% endfor %}
+            </td>
+            <td>
+              {% for a in row.assignments %}
+              <form method="post" style="display: inline; margin-right: 4px;" onsubmit="return confirm('Remove {{ row.branch_manager.full_name }} from {{ a.branch.name }}?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="remove" />
+                <input type="hidden" name="assignment_id" value="{{ a.id }}" />
+                <button type="submit" class="btn-remove">Remove</button>
+              </form>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="no-assignments">No branch managers found. Users need the Branch Manager role to appear here.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var selectAll = document.getElementById('select-all-branches');
+    var checkboxes = document.querySelectorAll('.branch-checkbox');
+    var addBtn = document.getElementById('add-btn');
+    if (selectAll && checkboxes.length) {
+      selectAll.addEventListener('change', function() {
+        checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+      });
+      checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          var checked = document.querySelectorAll('.branch-checkbox:checked').length;
+          selectAll.checked = checked === checkboxes.length;
+          selectAll.indeterminate = checked > 0 && checked < checkboxes.length;
+        });
+      });
+    }
+  })();
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.classList.add('branch-assignments-page');
+    });
+  </script>
+{% endblock %}

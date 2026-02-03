@@ -9,15 +9,19 @@
 <div class="page-header">
   <div style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Reports</h2>
-    <div style="display: flex; gap: 12px; align-items: center;">
-      <label for="days-select" style="font-size: 14px; color: var(--muted);">Date Range:</label>
-      <select id="days-select" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px;">
-        <option value="7" {% if days_back == 7 %}selected{% endif %}>Last 7 days</option>
-        <option value="30" {% if days_back == 30 %}selected{% endif %}>Last 30 days</option>
-        <option value="90" {% if days_back == 90 %}selected{% endif %}>Last 90 days</option>
-        <option value="180" {% if days_back == 180 %}selected{% endif %}>Last 6 months</option>
-        <option value="365" {% if days_back == 365 %}selected{% endif %}>Last year</option>
-      </select>
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label for="start-date" style="font-size: 14px; color: var(--muted);">Start:</label>
+        <input id="start-date" type="date" value="{{ start_date_input }}" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px;">
+        <label for="end-date" style="font-size: 14px; color: var(--muted);">End:</label>
+        <input id="end-date" type="date" value="{{ end_date_input }}" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px;">
+        <button id="apply-date-range" style="padding: 8px 14px; background: var(--focus); color: white; border: 1px solid var(--focus); border-radius: 8px; cursor: pointer; font-weight: 500;">
+          Apply
+        </button>
+        <button id="clear-date-range" style="padding: 8px 14px; background: white; color: var(--text); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500;">
+          Clear
+        </button>
+      </div>
     </div>
   </div>
   <p style="color: var(--muted); font-size: 14px; margin: 8px 0 0 0;">
@@ -787,6 +791,12 @@
     {% if price_trends %}
     <div class="report-card">
       <h4 style="margin: 0 0 16px 0; font-size: 16px;">Price Trends Chart</h4>
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom: 12px;">
+        <label for="priceTrendSelect" style="font-size: 14px; color: var(--muted);">Select item:</label>
+        <select id="priceTrendSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; background: var(--card-bg); color: var(--text); max-width: 100%;">
+          {# options inserted by JS from chartData.priceTrends #}
+        </select>
+      </div>
       <div style="position: relative; height: 400px;">
         <canvas id="priceTrendsChart"></canvas>
       </div>
@@ -902,14 +912,45 @@
         document.getElementById(targetTab).classList.add('active');
       });
     });
-    
-    // Date range selector
-    const daysSelect = document.getElementById('days-select');
-    if (daysSelect) {
-      daysSelect.addEventListener('change', function() {
-        const days = this.value;
+
+    // Custom date range (supports YYYY-MM-DD from date picker; backend also accepts MM/DD/YYYY)
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const applyDateBtn = document.getElementById('apply-date-range');
+    const clearDateBtn = document.getElementById('clear-date-range');
+
+    function isValidDateInput(value) {
+      if (!value) return false;
+      // Accept YYYY-MM-DD (from <input type="date">)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return true;
+      // Also accept MM/DD/YYYY if user types/pastes it (backend accepts it)
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return true;
+      return false;
+    }
+
+    if (applyDateBtn) {
+      applyDateBtn.addEventListener('click', function() {
+        const startVal = (startDateInput && startDateInput.value || '').trim();
+        const endVal = (endDateInput && endDateInput.value || '').trim();
+
+        if (!isValidDateInput(startVal) || !isValidDateInput(endVal)) {
+          alert('Please enter valid dates (pick from calendar or type YYYY-MM-DD, or paste MM/DD/YYYY).');
+          return;
+        }
+
         const url = new URL(window.location.href);
-        url.searchParams.set('days', days);
+        url.searchParams.set('start_date', startVal);
+        url.searchParams.set('end_date', endVal);
+        url.searchParams.delete('days');
+        window.location.href = url.toString();
+      });
+    }
+
+    if (clearDateBtn) {
+      clearDateBtn.addEventListener('click', function() {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('start_date');
+        url.searchParams.delete('end_date');
         window.location.href = url.toString();
       });
     }
@@ -1186,21 +1227,30 @@
     // Price Trends Chart (Line)
     const priceTrendsCtx = document.getElementById('priceTrendsChart');
     if (priceTrendsCtx && chartData.priceTrends.length > 0) {
-      // Get the first item's price history for the chart
-      const firstTrend = chartData.priceTrends[0];
-      if (firstTrend && firstTrend.history && firstTrend.history.length > 0) {
-        const labels = firstTrend.history.map(h => {
+      const trendSelect = document.getElementById('priceTrendSelect');
+      let priceTrendsChartInstance = null;
+
+      function renderPriceTrend(index) {
+        const trend = chartData.priceTrends[index];
+        if (!trend || !trend.history || trend.history.length === 0) return;
+
+        const labels = trend.history.map(h => {
           const date = new Date(h.date);
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         });
-        const prices = firstTrend.history.map(h => h.price);
-        
-        new Chart(priceTrendsCtx, {
+        const prices = trend.history.map(h => h.price);
+
+        if (priceTrendsChartInstance) {
+          priceTrendsChartInstance.destroy();
+          priceTrendsChartInstance = null;
+        }
+
+        priceTrendsChartInstance = new Chart(priceTrendsCtx, {
           type: 'line',
           data: {
             labels: labels,
             datasets: [{
-              label: firstTrend.label + ' - ' + firstTrend.supplier,
+              label: trend.label + ' - ' + trend.supplier,
               data: prices,
               borderColor: colors.primary,
               backgroundColor: colors.secondary + '40',
@@ -1230,7 +1280,7 @@
                 beginAtZero: false,
                 ticks: {
                   callback: function(value) {
-                    return 'OMR ' + value.toFixed(2);
+                    return 'OMR ' + Number(value).toFixed(2);
                   }
                 }
               }
@@ -1238,6 +1288,25 @@
           }
         });
       }
+
+      if (trendSelect) {
+        // Populate dropdown options
+        trendSelect.innerHTML = '';
+        chartData.priceTrends.forEach((t, idx) => {
+          const opt = document.createElement('option');
+          opt.value = String(idx);
+          opt.textContent = t.label + ' — ' + t.supplier;
+          trendSelect.appendChild(opt);
+        });
+
+        trendSelect.addEventListener('change', function() {
+          const idx = parseInt(this.value, 10);
+          renderPriceTrend(Number.isFinite(idx) ? idx : 0);
+        });
+      }
+
+      // Default render: first trend
+      renderPriceTrend(0);
     }
   });
 </script>

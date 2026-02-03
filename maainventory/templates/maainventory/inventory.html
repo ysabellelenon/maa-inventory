@@ -51,7 +51,7 @@
         </thead>
         <tbody>
           {% for item in items %}
-            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}">
+            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}" style="cursor: pointer;" title="Click to open item">
               <td class="col-check"><input type="checkbox" aria-label="select {{ item.code }}" /></td>
               <td class="col-code">
                 <div class="item-meta">

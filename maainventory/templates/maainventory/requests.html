@@ -8,6 +8,12 @@
 {% block content %}
   <div class="page-header inventory-header">
     <h2>Stock Requests</h2>
+    {% if can_create_request %}
+    <a href="{% url 'create_stock_request' %}" class="btn-new-request" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--focus,#D9BD7D);color:white;text-decoration:none;border-radius:8px;font-weight:500;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      New Request
+    </a>
+    {% endif %}
   </div>
 
   <div class="inventory-container">
@@ -52,14 +58,18 @@
         </thead>
         <tbody>
           {% for item in items %}
-            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}">
-              <td class="col-check"><input type="checkbox" class="row-select" aria-label="select request #{{ forloop.counter }}" /></td>
-              <td class="col-expand">
+            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}" style="cursor: pointer;" onclick="window.location.href='{% url 'view_request' item.id %}'" onmouseover="this.style.backgroundColor='#F9FAFB'" onmouseout="this.style.backgroundColor=''">
+              <td class="col-check" onclick="event.stopPropagation();"><input type="checkbox" class="row-select" aria-label="select request #{{ forloop.counter }}" /></td>
+              <td class="col-expand" onclick="event.stopPropagation();">
                 <button class="expand" aria-hidden="true">
                   <img class="expand-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
                 </button>
               </td>
-              <td class="col-code">#{{ forloop.counter }}</td>
+              <td class="col-code">
+                <a href="{% url 'view_request' item.id %}" onclick="event.stopPropagation();" style="color: var(--focus); text-decoration: none; font-weight: 600;">
+                  {{ item.code }}
+                </a>
+              </td>
               <td class="col-requestor">{{ item.requestor|default:"—" }}</td>
               <td class="col-branch">{{ item.branch|default:"—" }}</td>
               <td class="col-name">
@@ -90,13 +100,13 @@
                   <span class="status-pill">{{ item.status }}</span>
                 {% endif %}
               </td>
-              <td class="col-action">
+              <td class="col-action" onclick="event.stopPropagation();">
                 <div class="action-btn-container">
                   <button class="action-btn" aria-label="More actions"
-                          data-code="{{ item.id|default:forloop.counter }}"
+                          data-id="{{ item.id }}"
+                          data-code="{{ item.code }}"
                           data-name="{{ item.name|default:'—' }}"
-                          data-supplier="{{ item.requestor|default:'—' }}"
-                          data-image="">
+                          data-status="{{ item.status }}">
                     <img src="{% static 'icons/more.svg' %}" alt="More" class="action-icon" />
                   </button>
                 </div>
@@ -210,21 +220,40 @@
   })();
 </script>
 
-<!-- Action menu (same behavior as Inventory) -->
+<!-- Action menu: Approve/Reject for Procurement on Pending/Under Review, else View -->
 <div class="overlay" hidden></div>
-<div class="action-menu" hidden role="menu" aria-hidden="true">
-  <button class="action-menu-item" data-action="edit">Edit</button>
-  <button class="action-menu-item" data-action="adjust">Adjust</button>
-</div>
+<div class="action-menu" hidden role="menu" aria-hidden="true"></div>
 
 <script>
   (function () {
     var actionMenu = document.querySelector('.action-menu');
     var currentActionButton = null;
+    var isProcurement = {{ is_procurement_user|yesno:"true,false" }};
     if (!actionMenu) return;
+
+    function getCookie(name) {
+      var value = '; ' + document.cookie;
+      var parts = value.split('; ' + name + '=');
+      return parts.length === 2 ? parts.pop().split(';').shift() : '';
+    }
+
+    function buildMenuItems(btn) {
+      var status = btn.getAttribute('data-status') || '';
+      var requestId = btn.getAttribute('data-id') || '';
+      var canApprove = isProcurement && (status === 'Pending' || status === 'Under Review');
+      var items = [];
+      if (canApprove) {
+        items.push('<button class="action-menu-item action-approve" data-action="approve">Approve</button>');
+        items.push('<button class="action-menu-item action-reject" data-action="reject">Reject</button>');
+      } else {
+        items.push('<button class="action-menu-item" data-action="view">View</button>');
+      }
+      return items.join('');
+    }
 
     function showActionMenu(button) {
       currentActionButton = button;
+      actionMenu.innerHTML = buildMenuItems(button);
       var rect = button.getBoundingClientRect();
       actionMenu.removeAttribute('hidden');
       actionMenu.setAttribute('aria-hidden', 'false');
@@ -246,10 +275,43 @@
       currentActionButton = null;
     }
 
+    function doApprove(requestId) {
+      fetch('/requests/' + requestId + '/approve-reject/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) { window.location.reload(); }
+        else { alert('Error: ' + (data.error || 'Unknown error')); }
+      })
+      .catch(function(err) { alert('Error processing request'); console.error(err); });
+    }
+
+    function doReject(requestId) {
+      var reason = prompt('Please enter the reason for rejection:');
+      if (reason === null) return;
+      reason = (reason || '').trim();
+      if (!reason) { alert('Rejection reason is required.'); return; }
+      fetch('/requests/' + requestId + '/approve-reject/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', rejected_reason: reason })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) { window.location.reload(); }
+        else { alert('Error: ' + (data.error || 'Unknown error')); }
+      })
+      .catch(function(err) { alert('Error processing request'); console.error(err); });
+    }
+
     document.addEventListener('click', function (e) {
       var manageBtn = e.target.closest && e.target.closest('.action-btn');
       if (manageBtn) {
         e.preventDefault();
+        e.stopPropagation();
         if (actionMenu && actionMenu.getAttribute('aria-hidden') === 'false' && currentActionButton === manageBtn) {
           hideActionMenu();
         } else {
@@ -257,31 +319,18 @@
         }
         return;
       }
+    }, true);
 
+    document.addEventListener('click', function (e) {
       var menuItem = e.target.closest && e.target.closest('.action-menu-item');
       if (menuItem && currentActionButton) {
         e.preventDefault();
         var action = menuItem.getAttribute('data-action');
-        var btn = currentActionButton;
-        var data = {
-          code: btn.getAttribute('data-code') || '—',
-          name: btn.getAttribute('data-name') || '—',
-          supplier: btn.getAttribute('data-supplier') || '—',
-          image: btn.getAttribute('data-image') || ''
-        };
+        var requestId = currentActionButton.getAttribute('data-id');
         hideActionMenu();
-        var path = window.location.pathname;
-        var base = '/';
-        if (path.indexOf('/requests') !== -1) base = '/requests/';
-        else if (path.indexOf('/suppliers') !== -1) base = '/suppliers/';
-        else base = '/inventory/';
-
-        if (action === 'adjust') {
-          // fallback: navigate to adjust page if no panel exists
-          window.location.href = base + 'adjust/' + encodeURIComponent(data.code) + '/';
-        } else if (action === 'edit') {
-          window.location.href = base + 'edit/' + encodeURIComponent(data.code) + '/';
-        }
+        if (action === 'approve') { doApprove(requestId); }
+        else if (action === 'reject') { doReject(requestId); }
+        else if (action === 'view') { window.location.href = '/requests/' + requestId + '/'; }
         return;
       }
 

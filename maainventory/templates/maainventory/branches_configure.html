@@ -1,0 +1,40 @@
+{% extends "maainventory/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/branches.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page-header branches-header">
+    <a href="{% url 'branches' %}" class="back-link">← Back to Branches</a>
+    <h2>Configure Packaging</h2>
+    <p class="page-subtitle">Select a branch to upload CSV/Excel and define packaging consumption rules.</p>
+  </div>
+
+  <div class="branches-container">
+    {% for brand_name, branch_list in branch_groups.items %}
+    <div class="branch-group">
+      <h3 class="branch-group-title">{{ brand_name }}</h3>
+      <div class="branch-cards">
+        {% for b in branch_list %}
+        <a href="{% url 'branch_packaging' b.id %}" class="branch-card">
+          <div class="branch-card-header">
+            <span class="branch-name">{{ b.name }}</span>
+            <span class="branch-rules-badge">{{ b.rules_count }} rule{{ b.rules_count|pluralize }}</span>
+          </div>
+          {% if b.address %}
+          <p class="branch-address">{{ b.address }}</p>
+          {% endif %}
+          <span class="branch-card-link">Configure packaging →</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="branches-empty">
+      <p>No branches found.</p>
+    </div>
+    {% endfor %}
+  </div>
+{% endblock %}
