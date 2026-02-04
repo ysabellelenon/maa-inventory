@@ -375,6 +375,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   top:20px;
   right:-700px;
   width:680px;
+  max-width:calc(100vw - 40px);
   height:calc(100% - 40px);
   background:var(--card-bg);
   border-radius:12px;
@@ -553,7 +554,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .content{height:calc(100vh - 64px);overflow:hidden;}
 .inventory-container{height:100%;display:flex;flex-direction:column;overflow:hidden;}
 .request-layout{flex:1;display:flex;gap:18px;align-items:stretch;overflow:hidden;}
-.request-left{flex:0 0 360px;min-width:320px;overflow:visible;padding-right:6px;}
+.request-left{flex:0 0 360px;min-width:0;max-width:100%;overflow:visible;padding-right:6px;}
 .request-right{flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;overflow:auto;}
 
 .request-right{
@@ -1012,4 +1013,38 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 /* As a safety-net, hide any accidental horizontal overflow within the inventory container */
 .inventory-container {
   overflow-x: hidden;
+}
+
+/* Responsive: smaller screens */
+@media (max-width: 1024px) {
+  .request-left { flex: 0 0 300px; }
+  .request-right { min-width: 0; }
+  .inventory-container aside { flex-basis: 100%; max-width: 100%; }
+  .table-search-input { width: 200px; max-width: 100%; }
+  .inventory-card .table-actions-left { flex-wrap: wrap; }
+}
+@media (max-width: 768px) {
+  .request-layout { flex-direction: column; }
+  .request-left { flex: 0 0 auto; max-height: 40vh; }
+  .request-right { max-height: none; }
+  .request-left #items-list { min-height: 200px !important; max-height: 40vh !important; }
+  .side-panel { width: 100%; max-width: calc(100vw - 24px); right: -100%; }
+  .panel-open .side-panel { right: 12px; }
+  .inventory-details .details-grid { grid-template-columns: 1fr; max-width: 100%; }
+  .table-search-input { width: 100%; min-width: 0; }
+  .inventory-card .table-actions { flex-wrap: wrap; }
+  .inventory-card .table-footer { flex-wrap: wrap; gap: 8px; }
+  .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .grid-top { grid-template-columns: 1fr; }
+  .panel-right { width: 100%; flex: 1 1 auto; }
+}
+@media (max-width: 480px) {
+  .inventory-table .col-code,
+  .inventory-table .col-name,
+  .inventory-table .col-desc,
+  .inventory-table .col-init,
+  .inventory-table .col-remain,
+  .inventory-table .col-min,
+  .inventory-table .col-status { min-width: 80px; }
+  .table-wrapper { max-height: 50vh; }
 }

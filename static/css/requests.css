@@ -116,3 +116,16 @@
   overflow:auto;
 }
 
+/* Item Requests page: slightly smaller "New Request" button on responsive only */
+@media (max-width: 1024px) {
+  .btn-new-request-item-requests {
+    padding: 8px 16px !important;
+    gap: 6px;
+    font-size: 14px;
+  }
+  .btn-new-request-item-requests img {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+

@@ -47,7 +47,7 @@
 {% block content %}
   <div class="page-header inventory-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Item Requests</h2>
-    <a href="{% url 'request_item' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
+    <a href="{% url 'request_item' %}" class="btn-new-request-item-requests" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
       <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
       New Request
     </a>
