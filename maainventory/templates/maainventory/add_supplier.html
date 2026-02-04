@@ -405,7 +405,8 @@
           <button type="submit" class="btn-green">
             Add Supplier
           </button>
-          <a href="{% url 'suppliers' %}" style="padding: 10px 24px; background: var(--accent); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid var(--border); display: inline-block; font-size: 14px;">
+          <a href="{% url 'suppliers' %}" class="btn-cancel">
+            <img src="{% static 'icons/x.svg' %}" alt="" aria-hidden="true" class="btn-cancel-icon" />
             Cancel
           </a>
         </div>
@@ -559,6 +560,24 @@
     .btn-green:hover {
       background: #15803d;
       border-color: #166534;
+    }
+    .btn-cancel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      background: var(--accent);
+      color: var(--text);
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      font-family: inherit;
+    }
+    .btn-cancel-icon {
+      width: 16px;
+      height: 16px;
     }
   </style>
 
