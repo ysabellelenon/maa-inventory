@@ -64,7 +64,10 @@
     }
 
     .btn-green {
-      padding: 10px 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
       background: #16a34a;
       color: white;
       border: 1px solid #15803d;
@@ -77,6 +80,11 @@
     .btn-green:hover {
       background: #15803d;
       border-color: #166534;
+    }
+    .btn-green img {
+      width: 16px;
+      height: 16px;
+      filter: brightness(0) invert(1);
     }
     .btn-cancel {
       display: inline-flex;
