@@ -100,7 +100,13 @@
 </head>
 <body>
   <div class="app">
+    <div class="sidebar-overlay" aria-hidden="true"></div>
     <aside class="sidebar">
+      <div class="sidebar-header">
+        <button type="button" class="drawer-close" aria-label="Close menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
       <div class="sidebar-toggle" role="button" tabindex="0" aria-pressed="false">
         <img src="{% static 'icons/chevron-left.svg' %}" data-alt-src="{% static 'icons/chevron-right.svg' %}" alt="Collapse sidebar" />
       </div>
@@ -180,6 +186,9 @@
     <main class="main">
       <header class="topbar">
         <div class="brand-top">
+          <button type="button" class="navbar-hamburger" aria-label="Open menu" aria-expanded="false">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          </button>
           <img src="{% static 'images/MAA-logo-transparent.png' %}" alt="MAA logo" class="brand-logo" />
           <span class="brand-text">Inventory Management</span>
         </div>
@@ -278,6 +287,34 @@
         toggle.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
         try { localStorage.setItem(STORAGE_KEY, collapsed ? 'true' : 'false'); } catch (e) {}
       });
+    })();
+
+    (function () {
+      var hamburger = document.querySelector('.navbar-hamburger');
+      var overlay = document.querySelector('.sidebar-overlay');
+      var drawerClose = document.querySelector('.drawer-close');
+      var sidebar = document.querySelector('.sidebar');
+      if (!hamburger || !overlay) return;
+
+      function openMenu() {
+        document.body.classList.add('menu-open');
+        hamburger.setAttribute('aria-expanded', 'true');
+        if (overlay) overlay.setAttribute('aria-hidden', 'false');
+      }
+      function closeMenu() {
+        document.body.classList.remove('menu-open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        if (overlay) overlay.setAttribute('aria-hidden', 'true');
+      }
+
+      hamburger.addEventListener('click', openMenu);
+      overlay.addEventListener('click', closeMenu);
+      if (drawerClose) drawerClose.addEventListener('click', closeMenu);
+      if (sidebar) {
+        sidebar.querySelectorAll('.nav-item').forEach(function (link) {
+          link.addEventListener('click', closeMenu);
+        });
+      }
     })();
 
     
