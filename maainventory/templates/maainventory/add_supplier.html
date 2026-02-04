@@ -107,9 +107,11 @@
             </div>
           {% endif %}
         </div>
+      </div>
 
-        <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <div>
+      <section class="schedule-section" style="width: 100%; margin-top: 20px; margin-bottom: 20px;">
+        <div class="schedule-section-inner schedule-two-columns">
+          <div class="schedule-column schedule-column-delivery">
             <label class="form-label">Delivery Schedule & Cutoff Times</label>
             <div class="delivery-days-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
             <!-- Monday -->
@@ -118,7 +120,7 @@
                 <input type="checkbox" class="day-checkbox" data-day="monday" name="day_monday" />
                 <span>Monday</span>
               </label>
-              <div class="cutoff-time-wrapper" id="cutoff-wrapper-monday" style="display: none; margin-top: 8px;">
+              <div class="cutoff-time-wrapper" id="cutoff-wrapper-monday" style="display: none;">
                 <label for="id_cutoff_monday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.cutoff_monday }}
                 {% if form.cutoff_monday.errors %}
@@ -137,7 +139,7 @@
                 <input type="checkbox" class="day-checkbox" data-day="tuesday" name="day_tuesday" {% if form.cutoff_tuesday.value %}checked{% endif %} />
                 <span>Tuesday</span>
               </label>
-              <div class="cutoff-time-wrapper" id="cutoff-wrapper-tuesday" style="display: {% if form.cutoff_tuesday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="cutoff-time-wrapper" id="cutoff-wrapper-tuesday" style="display: {% if form.cutoff_tuesday.value %}block{% else %}none{% endif %};">
                 <label for="id_cutoff_tuesday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.cutoff_tuesday }}
                 {% if form.cutoff_tuesday.errors %}
@@ -156,7 +158,7 @@
                 <input type="checkbox" class="day-checkbox" data-day="wednesday" name="day_wednesday" {% if form.cutoff_wednesday.value %}checked{% endif %} />
                 <span>Wednesday</span>
               </label>
-              <div class="cutoff-time-wrapper" id="cutoff-wrapper-wednesday" style="display: {% if form.cutoff_wednesday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="cutoff-time-wrapper" id="cutoff-wrapper-wednesday" style="display: {% if form.cutoff_wednesday.value %}block{% else %}none{% endif %};">
                 <label for="id_cutoff_wednesday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.cutoff_wednesday }}
                 {% if form.cutoff_wednesday.errors %}
@@ -175,7 +177,7 @@
                 <input type="checkbox" class="day-checkbox" data-day="thursday" name="day_thursday" {% if form.cutoff_thursday.value %}checked{% endif %} />
                 <span>Thursday</span>
               </label>
-              <div class="cutoff-time-wrapper" id="cutoff-wrapper-thursday" style="display: {% if form.cutoff_thursday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="cutoff-time-wrapper" id="cutoff-wrapper-thursday" style="display: {% if form.cutoff_thursday.value %}block{% else %}none{% endif %};">
                 <label for="id_cutoff_thursday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.cutoff_thursday }}
                 {% if form.cutoff_thursday.errors %}
@@ -194,7 +196,7 @@
                 <input type="checkbox" class="day-checkbox" data-day="friday" name="day_friday" {% if form.cutoff_friday.value %}checked{% endif %} />
                 <span>Friday</span>
               </label>
-              <div class="cutoff-time-wrapper" id="cutoff-wrapper-friday" style="display: {% if form.cutoff_friday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="cutoff-time-wrapper" id="cutoff-wrapper-friday" style="display: {% if form.cutoff_friday.value %}block{% else %}none{% endif %};">
                 <label for="id_cutoff_friday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.cutoff_friday }}
                 {% if form.cutoff_friday.errors %}
@@ -213,7 +215,7 @@
                 <input type="checkbox" class="day-checkbox" data-day="saturday" name="day_saturday" {% if form.cutoff_saturday.value %}checked{% endif %} />
                 <span>Saturday</span>
               </label>
-              <div class="cutoff-time-wrapper" id="cutoff-wrapper-saturday" style="display: {% if form.cutoff_saturday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="cutoff-time-wrapper" id="cutoff-wrapper-saturday" style="display: {% if form.cutoff_saturday.value %}block{% else %}none{% endif %};">
                 <label for="id_cutoff_saturday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.cutoff_saturday }}
                 {% if form.cutoff_saturday.errors %}
@@ -232,7 +234,7 @@
                 <input type="checkbox" class="day-checkbox" data-day="sunday" name="day_sunday" {% if form.cutoff_sunday.value %}checked{% endif %} />
                 <span>Sunday</span>
               </label>
-              <div class="cutoff-time-wrapper" id="cutoff-wrapper-sunday" style="display: {% if form.cutoff_sunday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="cutoff-time-wrapper" id="cutoff-wrapper-sunday" style="display: {% if form.cutoff_sunday.value %}block{% else %}none{% endif %};">
                 <label for="id_cutoff_sunday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.cutoff_sunday }}
                 {% if form.cutoff_sunday.errors %}
@@ -244,21 +246,21 @@
                 {% endif %}
               </div>
             </div>
-            </div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Select delivery days and set cutoff time for each selected day.</div>
+            <div class="schedule-helper-text">Select delivery days and set cutoff time for each selected day.</div>
             {{ form.delivery_days }}
           </div>
+          </div>
 
-          <div>
+          <div class="schedule-column schedule-column-order">
             <label class="form-label">Order Schedule & Cutoff Times</label>
-          <div class="order-days-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+            <div class="order-days-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
             <!-- Monday -->
             <div class="order-day-item" data-day="monday">
               <label class="order-day-checkbox-label">
                 <input type="checkbox" class="order-day-checkbox" data-day="monday" name="order_day_monday" />
                 <span>Monday</span>
               </label>
-              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-monday" style="display: none; margin-top: 8px;">
+              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-monday" style="display: none;">
                 <label for="id_order_cutoff_monday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.order_cutoff_monday }}
                 {% if form.order_cutoff_monday.errors %}
@@ -277,7 +279,7 @@
                 <input type="checkbox" class="order-day-checkbox" data-day="tuesday" name="order_day_tuesday" {% if form.order_cutoff_tuesday.value %}checked{% endif %} />
                 <span>Tuesday</span>
               </label>
-              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-tuesday" style="display: {% if form.order_cutoff_tuesday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-tuesday" style="display: {% if form.order_cutoff_tuesday.value %}block{% else %}none{% endif %};">
                 <label for="id_order_cutoff_tuesday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.order_cutoff_tuesday }}
                 {% if form.order_cutoff_tuesday.errors %}
@@ -296,7 +298,7 @@
                 <input type="checkbox" class="order-day-checkbox" data-day="wednesday" name="order_day_wednesday" {% if form.order_cutoff_wednesday.value %}checked{% endif %} />
                 <span>Wednesday</span>
               </label>
-              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-wednesday" style="display: {% if form.order_cutoff_wednesday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-wednesday" style="display: {% if form.order_cutoff_wednesday.value %}block{% else %}none{% endif %};">
                 <label for="id_order_cutoff_wednesday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.order_cutoff_wednesday }}
                 {% if form.order_cutoff_wednesday.errors %}
@@ -334,7 +336,7 @@
                 <input type="checkbox" class="order-day-checkbox" data-day="friday" name="order_day_friday" {% if form.order_cutoff_friday.value %}checked{% endif %} />
                 <span>Friday</span>
               </label>
-              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-friday" style="display: {% if form.order_cutoff_friday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-friday" style="display: {% if form.order_cutoff_friday.value %}block{% else %}none{% endif %};">
                 <label for="id_order_cutoff_friday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.order_cutoff_friday }}
                 {% if form.order_cutoff_friday.errors %}
@@ -353,7 +355,7 @@
                 <input type="checkbox" class="order-day-checkbox" data-day="saturday" name="order_day_saturday" {% if form.order_cutoff_saturday.value %}checked{% endif %} />
                 <span>Saturday</span>
               </label>
-              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-saturday" style="display: {% if form.order_cutoff_saturday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-saturday" style="display: {% if form.order_cutoff_saturday.value %}block{% else %}none{% endif %};">
                 <label for="id_order_cutoff_saturday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.order_cutoff_saturday }}
                 {% if form.order_cutoff_saturday.errors %}
@@ -372,7 +374,7 @@
                 <input type="checkbox" class="order-day-checkbox" data-day="sunday" name="order_day_sunday" {% if form.order_cutoff_sunday.value %}checked{% endif %} />
                 <span>Sunday</span>
               </label>
-              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-sunday" style="display: {% if form.order_cutoff_sunday.value %}block{% else %}none{% endif %}; margin-top: 8px;">
+              <div class="order-cutoff-time-wrapper" id="order-cutoff-wrapper-sunday" style="display: {% if form.order_cutoff_sunday.value %}block{% else %}none{% endif %};">
                 <label for="id_order_cutoff_sunday" style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 13px;">Cutoff Time</label>
                 {{ form.order_cutoff_sunday }}
                 {% if form.order_cutoff_sunday.errors %}
@@ -384,11 +386,14 @@
                 {% endif %}
               </div>
             </div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Select order days and set cutoff time for each selected day.</div>
+            <div class="schedule-helper-text">Select order days and set cutoff time for each selected day.</div>
             {{ form.order_days }}
           </div>
+          </div>
         </div>
+      </section>
 
+      <div style="display: grid; gap: 16px; max-width: 600px;">
         <div>
           <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text); cursor: pointer;">
             {{ form.is_active }}
@@ -397,10 +402,10 @@
         </div>
 
         <div style="display: flex; gap: 12px; margin-top: 8px;">
-          <button type="submit" style="padding: 10px 24px; background: var(--focus); color: white; border: 1px solid var(--focus); border-radius: 8px; font-weight: 500; cursor: pointer;">
+          <button type="submit" class="btn-green">
             Add Supplier
           </button>
-          <a href="{% url 'suppliers' %}" style="padding: 10px 24px; background: var(--accent); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid var(--border); display: inline-block;">
+          <a href="{% url 'suppliers' %}" style="padding: 10px 24px; background: var(--accent); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid var(--border); display: inline-block; font-size: 14px;">
             Cancel
           </a>
         </div>
@@ -436,17 +441,10 @@
     }
     .delivery-day-item {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px;
-      background: var(--accent);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      transition: all 0.2s;
-    }
-    .delivery-day-item:has(input[type="checkbox"]:checked) {
-      background: #f7e7d0;
-      border-color: var(--focus);
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
     }
     .delivery-day-checkbox-label {
       display: flex;
@@ -467,12 +465,10 @@
     }
     .order-day-item {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px;
-      background: var(--accent);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
     }
     .order-day-checkbox-label {
       display: flex;
@@ -493,16 +489,76 @@
     }
     .cutoff-time-input {
       width: 100%;
-      max-width: 200px;
-      padding: 10px;
+      max-width: 120px;
+      padding: 4px 8px;
+      height: 28px;
+      line-height: 1.2;
+      font-size: 13px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
       font-family: var(--font-stack);
+      box-sizing: border-box;
     }
     .cutoff-time-input:focus {
       border-color: var(--focus);
       outline: none;
-      box-shadow: 0 0 0 3px rgba(217,189,125,0.12);
+      box-shadow: 0 0 0 2px rgba(217,189,125,0.12);
+    }
+    /* Tighten native time input appearance (Chrome/Edge) */
+    .cutoff-time-input::-webkit-datetime-edit {
+      padding: 0;
+      line-height: 1.2;
+    }
+    .cutoff-time-input::-webkit-calendar-picker-indicator {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      padding: 0;
+      opacity: 0.7;
+    }
+    .cutoff-time-wrapper,
+    .order-cutoff-time-wrapper {
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .cutoff-time-wrapper[style*="block"],
+    .order-cutoff-time-wrapper[style*="block"] {
+      display: flex !important;
+    }
+    .cutoff-time-wrapper label,
+    .order-cutoff-time-wrapper label {
+      margin-bottom: 0 !important;
+      flex-shrink: 0;
+    }
+    .schedule-helper-text {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 0;
+    }
+    .schedule-two-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+    }
+    .schedule-column {
+      min-width: 0;
+    }
+    .btn-green {
+      padding: 10px 24px;
+      background: #16a34a;
+      color: white;
+      border: 1px solid #15803d;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-green:hover {
+      background: #15803d;
+      border-color: #166534;
     }
   </style>
 
