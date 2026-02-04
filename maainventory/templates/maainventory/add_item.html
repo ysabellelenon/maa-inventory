@@ -10,15 +10,15 @@
     <div style="display:flex;flex-direction:column;">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
-        <a href="{% url 'inventory' %}">Inventory</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'inventory' %}">Warehouse Inventory</a><span class="sep" aria-hidden="true">&rsaquo;</span>
         <span class="active" aria-current="page">Add New Inventory Item</span>
       </nav>
       <h2 style="margin-top:6px;">Add New Inventory Item</h2>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <a href="{% url 'inventory' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid var(--border);">
-        <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" style="width: 16px; height: 16px;" />
-        Back
+      <a href="{% url 'inventory' %}" class="btn-gold">
+        <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" />
+        Back to Warehouse Inventory
       </a>
     </div>
   </div>

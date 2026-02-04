@@ -110,7 +110,7 @@ body.view-request-page-open {
     <div style="display:flex;flex-direction:column;">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
-        <a href="{% url 'requests' %}">Stock Requests</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'requests' %}">Requests</a><span class="sep" aria-hidden="true">&rsaquo;</span>
         <span class="active" aria-current="page">{{ req.request_code }}</span>
       </nav>
       <h2 style="margin-top:6px;">Request: {{ req.request_code }}</h2>
