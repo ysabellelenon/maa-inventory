@@ -2,10 +2,10 @@
 {% load static %}
 
 {% block content %}
-  <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+  <div class="page-header add-supplier-page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2>Add New Supplier</h2>
-    <a href="{% url 'suppliers' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid var(--border);">
-      <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" style="width: 16px; height: 16px;" />
+    <a href="{% url 'suppliers' %}" class="btn-gold">
+      <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" />
       Back to Suppliers
     </a>
   </div>
@@ -415,6 +415,13 @@
   </div>
 
   <style>
+    .add-supplier-page-header {
+      align-items: center;
+    }
+    .add-supplier-page-header h2 {
+      margin: 0;
+      line-height: 1.2;
+    }
     .form-label {
       display: block;
       margin-bottom: 6px;
@@ -545,39 +552,6 @@
     }
     .schedule-column {
       min-width: 0;
-    }
-    .btn-green {
-      padding: 10px 24px;
-      background: #16a34a;
-      color: white;
-      border: 1px solid #15803d;
-      border-radius: 8px;
-      font-weight: 500;
-      font-size: 14px;
-      cursor: pointer;
-      font-family: inherit;
-    }
-    .btn-green:hover {
-      background: #15803d;
-      border-color: #166534;
-    }
-    .btn-cancel {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 24px;
-      background: var(--accent);
-      color: var(--text);
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 500;
-      font-size: 14px;
-      border: 1px solid var(--border);
-      font-family: inherit;
-    }
-    .btn-cancel-icon {
-      width: 16px;
-      height: 16px;
     }
   </style>
 

@@ -24,8 +24,8 @@
         <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
         Add Price Discussion
       </button>
-      <a href="{% url 'add_supplier' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
-        <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
+      <a href="{% url 'add_supplier' %}" class="btn-gold">
+        <img src="{% static 'icons/plus.svg' %}" alt="Add" />
         Add Supplier
       </a>
       {% endif %}
