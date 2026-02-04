@@ -15,11 +15,15 @@
       </nav>
       <h2 style="margin-top:6px;">Add New Inventory Item</h2>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;">
+    <div style="display:flex;align-items:center;gap:10px;">
       <a href="{% url 'inventory' %}" class="btn-gold">
         <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" />
         Back to Warehouse Inventory
       </a>
+      <button type="submit" form="supplier-item-form" class="btn-green" style="display:inline-flex;align-items:center;gap:8px;">
+        <img src="{% static 'icons/check.svg' %}" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" />
+        Add New Inventory Item
+      </button>
     </div>
   </div>
 
@@ -187,12 +191,6 @@
               </label>
             </div>
 
-            <div style="width:100%;display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--border);">
-              <button type="submit" class="btn-new-request" style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;">
-                <img src="{% static 'icons/plus.svg' %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" />
-                <span>Add New Inventory Item</span>
-              </button>
-            </div>
           </form>
         </div>
 
