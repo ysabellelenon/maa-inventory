@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block content %}
+  <div class="page-add-item">
   <div class="page-header inventory-header">
     <div style="display:flex;flex-direction:column;">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
@@ -45,6 +46,8 @@
             <input id="supplier-search" class="panel-input" placeholder="Search by supplier name" aria-label="Search suppliers" />
           </div>
           <div class="suppliers-list" id="suppliers-list" style="max-height:385px;overflow:auto;border-top:1px solid var(--border);">
+            <div id="suppliers-choose-category-hint" class="empty-state-message" style="padding:12px;text-align:center;display:none;">Choose a category first to see suppliers.</div>
+            <div id="suppliers-none-in-category-hint" class="empty-state-message" style="padding:12px;text-align:center;display:none;">No suppliers in this category.</div>
             {% for supplier in suppliers %}
             <div class="request-item-row" data-id="{{ supplier.id }}" data-name="{{ supplier.name }}" data-category="{{ supplier.category_id|default:'' }}" style="padding:12px 10px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
               <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
@@ -195,7 +198,7 @@
         </div>
 
         <div class="panel-border" style="flex:0 0 400px;min-width:320px;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;max-height:calc(100vh - 200px);">
-          <label class="field-label" style="margin-bottom:12px;font-weight:600;font-size:15px;">Branches Using This Item</label>
+          <label class="field-label" style="margin-bottom:12px;">Branches Using This Item</label>
           <div style="margin-bottom:12px;flex-shrink:0;">
             <input type="text" id="branch-search" class="panel-input" placeholder="Search branches..." aria-label="Search branches" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-stack);font-size:13px;" />
           </div>
@@ -213,7 +216,7 @@
               </div>
             </div>
             {% empty %}
-            <div style="padding:12px;color:#6b7280;text-align:center;background:var(--accent);border-radius:8px;">
+            <div class="empty-state-message" style="padding:12px;text-align:center;border-radius:8px;">
               No branches available.
             </div>
             {% endfor %}
@@ -221,6 +224,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 
   <style>
@@ -270,12 +274,18 @@
         }
       }
 
+      var suppliersChooseCategoryHint = document.getElementById('suppliers-choose-category-hint');
+      var suppliersNoneInCategoryHint = document.getElementById('suppliers-none-in-category-hint');
+
       function updateVisibleSuppliers() {
         var categoryId = categorySelect.value;
         var q = supplierSearch.value.trim().toLowerCase();
         
-        // If no category is selected, hide all suppliers
+        // If no category is selected, show hint (only when there are suppliers) and hide all suppliers
         if (!categoryId) {
+          if (suppliersNoneInCategoryHint) suppliersNoneInCategoryHint.style.display = 'none';
+          var hasRows = suppliersList && suppliersList.querySelectorAll('.request-item-row').length > 0;
+          if (suppliersChooseCategoryHint) suppliersChooseCategoryHint.style.display = hasRows ? 'block' : 'none';
           Array.prototype.forEach.call(suppliersList.querySelectorAll('.request-item-row'), function (row) {
             row.style.display = 'none';
           });
@@ -288,6 +298,7 @@
           return;
         }
         
+        if (suppliersChooseCategoryHint) suppliersChooseCategoryHint.style.display = 'none';
         // Update sidebar list visibility
         Array.prototype.forEach.call(suppliersList.querySelectorAll('.request-item-row'), function (row) {
           var name = row.getAttribute('data-name') || '';
@@ -296,6 +307,11 @@
           var matchesQuery = !q || name.toLowerCase().indexOf(q) !== -1;
           row.style.display = (matchesCategory && matchesQuery) ? 'flex' : 'none';
         });
+        // If category is chosen but no suppliers match, show empty state
+        var rows = suppliersList ? suppliersList.querySelectorAll('.request-item-row') : [];
+        var visibleCount = 0;
+        for (var i = 0; i < rows.length; i++) { if (rows[i].style.display !== 'none') visibleCount++; }
+        if (suppliersNoneInCategoryHint) suppliersNoneInCategoryHint.style.display = visibleCount === 0 ? 'block' : 'none';
 
         // Update supplier dropdown options based on category
         if (supplierSelect) {
@@ -329,6 +345,8 @@
       supplierSearch && supplierSearch.addEventListener('input', function () {
         updateVisibleSuppliers();
       });
+
+      updateVisibleSuppliers();
 
       // When clicking a supplier in the list, select it in the dropdown
       suppliersList && suppliersList.addEventListener('click', function (e) {

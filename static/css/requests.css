@@ -117,7 +117,7 @@
 }
 
 /* Item Requests page: slightly smaller "New Request" button on responsive only */
-@media (max-width: 1024px) {
+@media (max-width: 1190px) {
   .btn-new-request-item-requests {
     padding: 8px 16px !important;
     gap: 6px;

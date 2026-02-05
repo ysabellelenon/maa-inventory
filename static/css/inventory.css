@@ -1058,14 +1058,43 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   overflow-x: hidden;
 }
 
-/* Responsive: smaller screens */
-@media (max-width: 1024px) {
+/* ========== iPad / small laptop responsive ========== */
+/* Add New Inventory Item page only: slightly smaller heading, buttons, and left/side panels at 1390px */
+@media (max-width: 1390px) {
+  .page-add-item .page-header h2 { font-size: 1.2rem; }
+  .page-add-item .btn-gold,
+  .page-add-item .btn-green { padding: 7px 16px; font-size: 13px; }
+  .page-add-item .btn-gold img,
+  .page-add-item .btn-green img { width: 14px; height: 14px; }
+  /* Category + supplier column: a little narrower */
+  .page-add-item .request-left { flex: 0 0 300px !important; min-width: 260px !important; }
+  /* Branches Using This Item panel: a little narrower (item info form stays flex:1) */
+  .page-add-item .request-right + .panel-border { flex: 0 0 340px !important; min-width: 260px !important; }
+  /* Category dropdown: smaller control and options */
+  .page-add-item #category-select { font-size: 13px; padding: 6px 10px; }
+}
+/* Small laptop / iPad landscape (~1190px) */
+@media (max-width: 1190px) {
   .request-left { flex: 0 0 300px; }
   .request-right { min-width: 0; }
   .inventory-container aside { flex-basis: 100%; max-width: 100%; }
   .table-search-input { width: 200px; max-width: 100%; }
-  .inventory-card .table-actions-left { flex-wrap: wrap; }
+  .inventory-card .table-actions { height: auto; min-height: 56px; max-height: none; overflow: visible; }
+  .inventory-card .table-actions-left { flex-wrap: wrap; gap: 10px; }
+  .category-filter-select { min-width: 140px; }
+  .inventory-card { padding: 10px; }
+  .inventory-container { margin-top: 6px; }
+  .table-wrapper { max-height: 52vh; }
 }
+/* iPad / narrow laptop (~900px) */
+@media (max-width: 900px) {
+  .inventory-card .table-actions { padding: 10px 10px 10px 10px; }
+  .inventory-card .table-footer { padding: 10px; }
+  .table-search-input { width: 180px; max-width: 100%; }
+  .category-filter-select { min-width: 130px; }
+  .page-header.inventory-header { gap: 8px; }
+}
+/* iPad portrait / tablet (~768px) */
 @media (max-width: 768px) {
   .request-layout { flex-direction: column; }
   .request-left { flex: 0 0 auto; max-height: 40vh; }
@@ -1075,12 +1104,17 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   .panel-open .side-panel { right: 12px; }
   .inventory-details .details-grid { grid-template-columns: 1fr; max-width: 100%; }
   .table-search-input { width: 100%; min-width: 0; }
-  .inventory-card .table-actions { flex-wrap: wrap; }
-  .inventory-card .table-footer { flex-wrap: wrap; gap: 8px; }
+  .inventory-card .table-actions { flex-wrap: wrap; padding: 10px; height: auto; }
+  .inventory-card .table-actions-left { flex-wrap: wrap; }
+  .inventory-card .table-footer { flex-wrap: wrap; gap: 8px; padding: 10px; }
   .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .grid-top { grid-template-columns: 1fr; }
   .panel-right { width: 100%; flex: 1 1 auto; }
+  .page-header.inventory-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .table-wrapper { max-height: 50vh; }
+  .inventory-card { padding: 8px; }
 }
+/* Small phone (~480px) */
 @media (max-width: 480px) {
   .inventory-table .col-code,
   .inventory-table .col-name,
@@ -1090,4 +1124,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   .inventory-table .col-min,
   .inventory-table .col-status { min-width: 80px; }
   .table-wrapper { max-height: 50vh; }
+  .inventory-card .table-actions { padding: 8px; }
+  .inventory-card .table-footer { padding: 8px; gap: 6px; }
+  .category-filter-select { min-width: 120px; }
 }
