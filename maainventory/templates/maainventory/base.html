@@ -137,10 +137,19 @@
           <span>Warehouse Inventory</span>
         </a>
         {% endif %}
-        <a class="nav-item {% if request.path == '/requests/' %}active{% endif %}" href="{% url 'requests' %}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18.226 5.226-2.52-2.52A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-.351"/><path d="M21.378 12.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/><path d="M8 18h1"/></svg>
-          <span>Requests</span>
-        </a>
+        <div class="nav-group {% if request.path == '/requests/' or '/item-requests/' in request.path %}expanded{% endif %}" data-nav-group="requests">
+          <button type="button" class="nav-item nav-group-toggle {% if request.path == '/requests/' or '/item-requests/' in request.path %}active{% endif %}" aria-expanded="{% if request.path == '/requests/' or '/item-requests/' in request.path %}true{% else %}false{% endif %}" aria-controls="nav-sub-requests" id="nav-toggle-requests">
+            <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18.226 5.226-2.52-2.52A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-.351"/><path d="M21.378 12.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/><path d="M8 18h1"/></svg>
+            <span>Requests</span>
+            <img class="nav-chevron" src="{% static 'icons/chevron-down.svg' %}" alt="" aria-hidden="true" />
+          </button>
+          <div class="nav-sub" id="nav-sub-requests" role="region" aria-label="Requests submenu" {% if request.path == '/requests/' or '/item-requests/' in request.path %}style="display:block"{% endif %}>
+            <a class="nav-sub-item {% if request.path == '/requests/' %}active{% endif %}" href="{% url 'requests' %}">Branch Request</a>
+            {% if not is_branch_user and not is_warehouse_staff %}
+            <a class="nav-sub-item {% if '/item-requests/' in request.path %}active{% endif %}" href="{% url 'item_requests' %}">Item Requests</a>
+            {% endif %}
+          </div>
+        </div>
         {% if not is_branch_user %}
         {% if is_warehouse_staff %}
         <a class="nav-item {% if request.path == '/purchase-orders/' %}active{% endif %}" href="{% url 'purchase_orders' %}">
@@ -153,10 +162,6 @@
         </a>
         {% endif %}
         {% if not is_warehouse_staff %}
-        <a class="nav-item {% if '/item-requests/' in request.path %}active{% endif %}" href="{% url 'item_requests' %}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-          <span>Item Requests</span>
-        </a>
         <a class="nav-item {% if request.path == '/supplier-stock/' %}active{% endif %}" href="{% url 'supplier_stock' %}">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
           <span>Supplier Stock</span>
@@ -195,6 +200,13 @@
         </a>
       </div>
     </aside>
+
+    <div id="nav-requests-popover" class="nav-popover" role="menu" aria-label="Requests menu" hidden>
+      <a class="nav-popover-item {% if request.path == '/requests/' %}active{% endif %}" href="{% url 'requests' %}">Branch Request</a>
+      {% if not is_branch_user and not is_warehouse_staff %}
+      <a class="nav-popover-item {% if '/item-requests/' in request.path %}active{% endif %}" href="{% url 'item_requests' %}">Item Requests</a>
+      {% endif %}
+    </div>
 
     <main class="main">
       <header class="topbar">
@@ -324,8 +336,70 @@
       overlay.addEventListener('click', closeMenu);
       if (drawerClose) drawerClose.addEventListener('click', closeMenu);
       if (sidebar) {
-        sidebar.querySelectorAll('.nav-item').forEach(function (link) {
+        sidebar.querySelectorAll('.nav-item:not(.nav-group-toggle)').forEach(function (link) {
           link.addEventListener('click', closeMenu);
+        });
+        sidebar.querySelectorAll('.nav-sub-item').forEach(function (link) {
+          link.addEventListener('click', closeMenu);
+        });
+      }
+    })();
+
+    (function () {
+      var toggle = document.getElementById('nav-toggle-requests');
+      var group = toggle && toggle.closest('.nav-group');
+      var sub = document.getElementById('nav-sub-requests');
+      var popover = document.getElementById('nav-requests-popover');
+      var sidebar = document.querySelector('.sidebar');
+      if (!toggle || !group || !sub) return;
+
+      function closePopover() {
+        if (popover) {
+          popover.classList.remove('open');
+          popover.setAttribute('hidden', '');
+        }
+      }
+
+      function openPopover() {
+        if (!popover || !sidebar.classList.contains('collapsed')) return;
+        var rect = toggle.getBoundingClientRect();
+        popover.style.top = rect.top + 'px';
+        popover.style.left = (rect.right + 8) + 'px';
+        popover.classList.add('open');
+        popover.removeAttribute('hidden');
+      }
+
+      toggle.addEventListener('click', function (e) {
+        if (sidebar.classList.contains('collapsed')) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (popover && popover.classList.contains('open')) {
+            closePopover();
+          } else {
+            openPopover();
+          }
+          return;
+        }
+        var expanded = group.classList.toggle('expanded');
+        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        sub.style.display = expanded ? 'block' : 'none';
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!popover || !popover.classList.contains('open')) return;
+        if (popover.contains(e.target) || toggle.contains(e.target)) return;
+        closePopover();
+      });
+
+      if (popover) {
+        popover.querySelectorAll('.nav-popover-item').forEach(function (link) {
+          link.addEventListener('click', closePopover);
+        });
+      }
+      var collapseToggle = document.querySelector('.sidebar-toggle');
+      if (collapseToggle) {
+        collapseToggle.addEventListener('click', function () {
+          closePopover();
         });
       }
     })();
