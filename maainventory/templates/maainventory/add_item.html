@@ -171,14 +171,14 @@
               </div>
 
               <div style="grid-column: 1 / -1;">
-                <label for="id_photos" class="field-label">Photos</label>
+                <label for="id_photos" class="field-label">Photos <span style="color: #ef4444;">*</span></label>
                 <div style="display: flex; gap: 12px; align-items: flex-start;">
                   <div style="flex: 1;">
                     <input type="file" name="photos" id="id_photos" 
                            class="form-input" accept="image/*" multiple 
                            style="padding: 8px; border: 1px solid var(--border); border-radius: 8px;"
                            onchange="addPhotos(this)">
-                    <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">Upload up to 5 photos for this item (optional). You can select files one by one.</div>
+                    <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">Required. Upload at least 1 and up to 5 photos for this item. You can select files one by one.</div>
                     <div id="photo-count" style="color: #6b7280; font-size: 12px; margin-top: 4px;"></div>
                   </div>
                 </div>
@@ -494,10 +494,21 @@
           // Make sure the file input has all selected photos before submit
           updateFileInput();
           
+          // Require at least one photo
+          if (!photoInput.files.length && selectedPhotos.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one photo.');
+            const photoSection = document.getElementById('id_photos');
+            if (photoSection) {
+              photoSection.focus();
+              photoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+          }
+          
           // Verify files are in the input
           if (photoInput.files.length !== selectedPhotos.length) {
             console.warn('File count mismatch. Input has', photoInput.files.length, 'but selectedPhotos has', selectedPhotos.length);
-            // Try to update again
             updateFileInput();
           }
           

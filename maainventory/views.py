@@ -1900,61 +1900,45 @@ def add_item(request):
             form = SupplierItemForm(request.POST)
         
         if form.is_valid():
-            supplier_item = form.save(commit=True, user=request.user)
-            # Save many-to-many branches to Item (not SupplierItem)
-            branch_ids = request.POST.getlist('branches')
-            if branch_ids and supplier_item.item:
-                supplier_item.item.branches.set(branch_ids)
-            
-            # Handle photo uploads (maximum 5)
             photos = request.FILES.getlist('photos')
-            
-            # Debug logging
-            print(f"DEBUG: Form is_valid: {form.is_valid()}")
-            print(f"DEBUG: Photos received: {len(photos)}")
-            print(f"DEBUG: Supplier item: {supplier_item}")
-            print(f"DEBUG: Supplier item.item: {supplier_item.item if supplier_item else None}")
-            
-            if photos and supplier_item and supplier_item.item:
-                # Check existing photos count
-                existing_count = ItemPhoto.objects.filter(item=supplier_item.item).count()
-                remaining_slots = 5 - existing_count
+            if not photos:
+                form.add_error(None, 'At least one photo is required.')
+                messages.error(request, 'Please add at least one photo.')
+            else:
+                supplier_item = form.save(commit=True, user=request.user)
+                # Save many-to-many branches to Item (not SupplierItem)
+                branch_ids = request.POST.getlist('branches')
+                if branch_ids and supplier_item.item:
+                    supplier_item.item.branches.set(branch_ids)
                 
-                print(f"DEBUG: Existing photos: {existing_count}, Remaining slots: {remaining_slots}")
+                # Handle photo uploads (maximum 5)
+                if photos and supplier_item and supplier_item.item:
+                    existing_count = ItemPhoto.objects.filter(item=supplier_item.item).count()
+                    remaining_slots = 5 - existing_count
+                    if remaining_slots > 0:
+                        photos_to_save = photos[:remaining_slots]
+                        saved_count = 0
+                        for idx, photo in enumerate(photos_to_save):
+                            try:
+                                ItemPhoto.objects.create(
+                                    item=supplier_item.item,
+                                    photo=photo,
+                                    order=existing_count + idx
+                                )
+                                saved_count += 1
+                            except Exception as e:
+                                messages.error(request, f'Error saving photo {photo.name}: {str(e)}')
+                        
+                        if saved_count > 0:
+                            messages.success(request, f'{saved_count} photo(s) saved successfully.')
+                        
+                        if len(photos) > remaining_slots:
+                            messages.warning(request, f'Only {remaining_slots} photo(s) were saved. Maximum 5 photos per item.')
+                    else:
+                        messages.warning(request, 'Maximum 5 photos already exist for this item.')
                 
-                if remaining_slots > 0:
-                    photos_to_save = photos[:remaining_slots]  # Only save up to the limit
-                    saved_count = 0
-                    for idx, photo in enumerate(photos_to_save):
-                        try:
-                            ItemPhoto.objects.create(
-                                item=supplier_item.item,
-                                photo=photo,
-                                order=existing_count + idx
-                            )
-                            saved_count += 1
-                            print(f"DEBUG: Saved photo {idx + 1}: {photo.name}")
-                        except Exception as e:
-                            print(f"DEBUG: Error saving photo {idx + 1}: {str(e)}")
-                            messages.error(request, f'Error saving photo {photo.name}: {str(e)}')
-                    
-                    if saved_count > 0:
-                        messages.success(request, f'{saved_count} photo(s) saved successfully.')
-                    
-                    if len(photos) > remaining_slots:
-                        messages.warning(request, f'Only {remaining_slots} photo(s) were saved. Maximum 5 photos per item.')
-                else:
-                    messages.warning(request, 'Maximum 5 photos already exist for this item.')
-            elif photos:
-                if not supplier_item:
-                    messages.warning(request, 'Photos could not be saved: Supplier item not found.')
-                elif not supplier_item.item:
-                    messages.warning(request, 'Photos could not be saved: Item not found.')
-                else:
-                    messages.warning(request, 'Photos could not be saved.')
-            
-            messages.success(request, f'Supplier item "{supplier_item.item.name}" for "{supplier_item.supplier.name}" added successfully.')
-            return redirect('inventory')
+                messages.success(request, f'Supplier item "{supplier_item.item.name}" for "{supplier_item.supplier.name}" added successfully.')
+                return redirect('inventory')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
