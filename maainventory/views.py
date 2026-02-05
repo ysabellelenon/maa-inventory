@@ -1125,7 +1125,6 @@ def requests(request):
     context = {
         "items": page_obj,
         "page_obj": page_obj,
-        "can_create_request": _can_create_stock_request(request.user),
     }
     return render(request, "maainventory/requests.html", context)
 

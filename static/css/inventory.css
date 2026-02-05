@@ -525,6 +525,28 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .btn-save-inline img{width:16px;height:16px;display:block;filter:brightness(0) invert(1);}
 .btn-save-inline span{font-size:14px;line-height:1;}
 .btn-save-inline:active{transform:translateY(1px)}
+/* Shared primary button for Add / Create / New actions (e.g. Add Item, New Request) */
+.btn-create{
+  background:#D9BD7D;
+  border:none;
+  color:#ffffff;
+  padding:8px 12px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:none;
+  text-decoration:none;
+}
+.btn-create img,
+.btn-create svg{width:16px;height:16px;display:block;flex-shrink:0;}
+.btn-create img{filter:brightness(0) invert(1);}
+.btn-create svg{color:currentColor;}
+.btn-create span{font-size:14px;line-height:1;}
+.btn-create:active{transform:translateY(1px)}
+
 .btn-new-request{
   background:#D9BD7D;
   border:none;

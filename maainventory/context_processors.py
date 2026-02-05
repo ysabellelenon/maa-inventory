@@ -45,16 +45,19 @@ def branch_user_context(request):
     is_procurement_user = False
     is_it_user = False
     is_warehouse_staff = False
+    is_branch_manager = False
     if request.user.is_authenticated:
         profile = getattr(request.user, 'profile', None)
         role_name = (profile.role.name if profile and profile.role else '').lower()
         is_procurement_user = 'procurement' in role_name
         is_it_user = 'it' in role_name or role_name == 'it'
         is_warehouse_staff = 'warehouse' in role_name
+        is_branch_manager = 'branch' in role_name and not is_procurement_user and not is_warehouse_staff
     return {
         'is_branch_user': is_branch_user,
         'user_branch_ids': user_branch_ids,
         'is_procurement_user': is_procurement_user,
         'is_it_user': is_it_user,
         'is_warehouse_staff': is_warehouse_staff,
+        'is_branch_manager': is_branch_manager,
     }

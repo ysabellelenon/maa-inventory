@@ -8,10 +8,10 @@
 {% block content %}
   <div class="page-header inventory-header">
     <h2>Stock Requests</h2>
-    {% if can_create_request %}
-    <a href="{% url 'create_stock_request' %}" class="btn-new-request" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--focus,#D9BD7D);color:white;text-decoration:none;border-radius:8px;font-weight:500;">
+    {% if is_branch_manager %}
+    <a href="{% url 'create_stock_request' %}" class="btn-create">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-      New Request
+      <span>New Request</span>
     </a>
     {% endif %}
   </div>
@@ -132,7 +132,7 @@
           {% empty %}
             <tr>
               <td colspan="9" class="table-empty-message">
-                No stock requests yet.{% if can_create_request %} <a href="{% url 'create_stock_request' %}" style="color: var(--focus); font-weight: 500;">Create a request</a> to get started.{% endif %}
+                No stock requests yet.{% if is_branch_manager %} <a href="{% url 'create_stock_request' %}" style="color: var(--focus); font-weight: 500;">Create a request</a> to get started.{% endif %}
               </td>
             </tr>
           {% endfor %}
