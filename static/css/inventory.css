@@ -159,7 +159,12 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   -webkit-overflow-scrolling:touch;
   /* Contain scroll inside the card; do not make the whole page scroll */
   min-width:0;
+  scrollbar-width:thin;
 }
+.table-wrapper::-webkit-scrollbar{width:6px;height:6px;}
+.table-wrapper::-webkit-scrollbar-track{background:transparent;}
+.table-wrapper::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px;}
+.table-wrapper::-webkit-scrollbar-thumb:hover{background:#9ca3af;}
 .table-wrapper-inner{
   display:block;
   width:100%;
