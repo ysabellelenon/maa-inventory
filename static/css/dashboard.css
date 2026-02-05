@@ -27,7 +27,7 @@ body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-sy
 .sidebar::-webkit-scrollbar-thumb:hover{background:#9ca3af;}
 .sidebar .nav .nav-item{position:relative;z-index:1;cursor:pointer;pointer-events:auto;}
 .sidebar-toggle{position:fixed;top:calc(64px + 12px);left:calc(var(--sidebar-width) - 18px);width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#ffffff;border:1px solid var(--stroke);box-shadow:0 1px 2px rgba(16,24,40,0.04);cursor:pointer;z-index:50;}
-.sidebar-toggle img{width:16px;height:16px;display:block;}
+.sidebar-toggle img{width:14px;height:14px;display:block;}
 .sidebar-toggle:hover{background:var(--accent);}
 .sidebar{transition:width .18s ease;}
 .sidebar.collapsed{width:96px;padding-left:12px;padding-right:12px;}
@@ -50,21 +50,21 @@ body.sidebar-collapsed .sidebar-toggle{left:calc(96px - 18px);}
 .nav{display:flex;flex-direction:column;gap:8px;margin-top:0;}
 .nav-item{display:flex;gap:12px;align-items:center;padding:12px;border-radius:8px;color:#374151;text-decoration:none;font-size:14px;}
 .nav-item img,.nav-item svg,.nav-item .nav-icon{
-  width:24px !important;
-  height:24px !important;
-  min-width:24px;
-  min-height:24px;
+  width:20px !important;
+  height:20px !important;
+  min-width:20px;
+  min-height:20px;
   flex-shrink:0;
   opacity:1;
 }
 .logout .nav-item img,
 .logout .nav-item svg{
-  width:24px !important;
-  height:24px !important;
-  min-width:24px;
-  min-height:24px;
+  width:18px !important;
+  height:18px !important;
+  min-width:18px;
+  min-height:18px;
   display:block;
-  max-width:24px;
+  max-width:18px;
   object-fit:contain;
   vertical-align:middle;
 }
@@ -89,7 +89,7 @@ body.sidebar-collapsed .sidebar-toggle{left:calc(96px - 18px);}
 /* Requests dropdown (nav-group) */
 .nav-group{margin:0;padding:0;}
 .nav-group-toggle{width:100%;text-align:left;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:normal;font-family:inherit;color:#374151;}
-.nav-group-toggle .nav-chevron{margin-left:auto;width:16px;height:16px;opacity:0.7;transition:transform .2s ease;}
+.nav-group-toggle .nav-chevron{margin-left:auto;width:14px;height:14px;opacity:0.7;transition:transform .2s ease;}
 .nav-group.expanded .nav-group-toggle .nav-chevron{transform:rotate(0deg);}
 .nav-group:not(.expanded) .nav-group-toggle .nav-chevron{transform:rotate(-90deg);}
 .nav-sub{display:none;padding:4px 0 4px 0;margin:0 0 4px 0;}

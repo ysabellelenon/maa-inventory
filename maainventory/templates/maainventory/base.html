@@ -144,7 +144,7 @@
             <img class="nav-chevron" src="{% static 'icons/chevron-down.svg' %}" alt="" aria-hidden="true" />
           </button>
           <div class="nav-sub" id="nav-sub-requests" role="region" aria-label="Requests submenu" {% if request.path == '/requests/' or '/item-requests/' in request.path %}style="display:block"{% endif %}>
-            <a class="nav-sub-item {% if request.path == '/requests/' %}active{% endif %}" href="{% url 'requests' %}">Branch Request</a>
+            <a class="nav-sub-item {% if request.path == '/requests/' %}active{% endif %}" href="{% url 'requests' %}">Branch Requests</a>
             {% if not is_branch_user and not is_warehouse_staff %}
             <a class="nav-sub-item {% if '/item-requests/' in request.path %}active{% endif %}" href="{% url 'item_requests' %}">Item Requests</a>
             {% endif %}
@@ -202,7 +202,7 @@
     </aside>
 
     <div id="nav-requests-popover" class="nav-popover" role="menu" aria-label="Requests menu" hidden>
-      <a class="nav-popover-item {% if request.path == '/requests/' %}active{% endif %}" href="{% url 'requests' %}">Branch Request</a>
+      <a class="nav-popover-item {% if request.path == '/requests/' %}active{% endif %}" href="{% url 'requests' %}">Branch Requests</a>
       {% if not is_branch_user and not is_warehouse_staff %}
       <a class="nav-popover-item {% if '/item-requests/' in request.path %}active{% endif %}" href="{% url 'item_requests' %}">Item Requests</a>
       {% endif %}
