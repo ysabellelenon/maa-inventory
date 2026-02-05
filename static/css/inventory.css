@@ -160,13 +160,18 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   /* Contain scroll inside the card; do not make the whole page scroll */
   min-width:0;
 }
+.table-wrapper-inner{
+  display:block;
+  width:100%;
+  min-width:1100px;
+}
 .inventory-table{
-  width:max-content;
+  width:100%;
+  min-width:1100px;
   border-collapse:collapse;
   font-size:13px;
   table-layout:fixed;
-  /* Fixed total min width so columns don't shrink; wrapper scrolls horizontally when needed */
-  min-width:1100px;
+  /* Grows with container when screen is bigger; horizontal scroll when smaller */
 }
 .inventory-table thead th{text-align:left;padding:10px 8px;color:var(--text);font-weight:600;border-bottom:1px solid var(--border);white-space:normal;overflow-wrap:break-word;word-break:break-word;}
 .inventory-table thead th{
@@ -197,11 +202,18 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   word-break: break-word;
 }
 .inventory-table .col-code{width:120px;}
-.inventory-table .col-name{width:220px;}
+.inventory-table .col-name{width:150px;}
+.inventory-table .col-category{width:140px;}
+.inventory-table .col-min{width:72px;}
+.inventory-table .col-qty{width:72px;}
+.inventory-table .col-remaining{width:80px;}
+.inventory-table .col-price{width:88px;}
+.inventory-table .col-unit{width:88px;}
 .inventory-table .col-requested{width:140px;}
 .inventory-table .col-desc{max-width:160px;}
-.inventory-table .col-init,.inventory-table .col-remain,.inventory-table .col-min{width:110px;}
-.inventory-table .col-status{width:140px;}
+.inventory-table .col-init,.inventory-table .col-remain{width:110px;}
+.inventory-table .col-status{width:90px;}
+.inventory-table .col-action{width:72px;}
 
 /* Align numeric/quantity header text to the right so headers line up with right-aligned data cells */
 .inventory-table thead th.col-init,
@@ -216,7 +228,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .inventory-table .col-check{width:48px;}
 .inventory-table tbody .col-code{width:120px;color:#6b7280;vertical-align:middle;padding-right:8px;}
 .inventory-table tbody .col-code .expand{margin-right:6px;}
-.inventory-table tbody .col-name{width:220px;vertical-align:middle;}
+.inventory-table tbody .col-name{width:150px;vertical-align:middle;}
 .inventory-table tbody .item-thumb{width:36px;height:36px;border-radius:6px;background:#fff;border:1px solid #f2f2f2;object-fit:cover;flex:0 0 36px;margin-right:12px;vertical-align:middle;}
 .inventory-table tbody .item-meta{display:inline-block;vertical-align:middle;max-width:calc(100% - 52px);}
 .inventory-table tbody .item-meta .item-title{font-weight:500;color:#374151;white-space:normal;overflow-wrap:break-word;word-break:break-word;display:inline-block;vertical-align:middle;}
@@ -240,7 +252,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .inventory-table tbody .col-status{
   text-align:left;
   padding-left:8px;
-  width:140px;
+  width:90px;
 }
 .inventory-table tbody .expand{background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:6px;}
 .inventory-row.row-low{background:rgba(245,120,120,0.12);} /* subtle pink band for low rows */
