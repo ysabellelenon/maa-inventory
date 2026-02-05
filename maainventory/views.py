@@ -961,7 +961,11 @@ def edit_item(request, code):
             messages.success(request, f'Item "{item.name}" updated successfully.')
             return redirect('edit_item', code=code)
         else:
-            messages.error(request, 'Please correct the errors below.')
+            error_fields = [form.fields[name].label for name in form.errors]
+            messages.error(
+                request,
+                'Please fix the following required fields: ' + ', '.join(error_fields) + '.'
+            )
     else:
         form = ItemForm(instance=item)
     

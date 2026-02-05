@@ -321,6 +321,18 @@ class ItemForm(forms.ModelForm):
         # Set queryset for brand field
         self.fields['brand'].queryset = Brand.objects.all().order_by('name')
 
+    def clean_min_order_qty(self):
+        value = self.cleaned_data.get('min_order_qty')
+        if value is None or value == 0:
+            raise forms.ValidationError('This field is required and must be greater than 0.')
+        return value
+
+    def clean_min_stock_qty(self):
+        value = self.cleaned_data.get('min_stock_qty')
+        if value is None or value == 0:
+            raise forms.ValidationError('This field is required and must be greater than 0.')
+        return value
+
 
 class SupplierItemForm(forms.ModelForm):
     """Form for adding/editing supplier items"""

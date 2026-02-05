@@ -83,8 +83,9 @@ body.edit-item-page-open .inventory-container aside {
     {% if messages %}
       <div style="margin-bottom: 20px;">
         {% for message in messages %}
-          <div style="padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; background: {% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% else %}var(--accent){% endif %}; color: {% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% else %}var(--text){% endif %}; border: 1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% else %}var(--border){% endif %};">
+          <div class="dismissible-message" style="position:relative;padding:12px 40px 12px 16px;margin-bottom:8px;border-radius:8px;background:{% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% else %}var(--accent){% endif %};color:{% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% else %}var(--text){% endif %};border:1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% else %}var(--border){% endif %};">
             {{ message }}
+            <button type="button" class="message-close" onclick="this.closest('.dismissible-message').remove()" aria-label="Close" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;font-size:18px;line-height:1;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">×</button>
           </div>
         {% endfor %}
       </div>
