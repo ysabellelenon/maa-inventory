@@ -249,8 +249,7 @@ input[type="search"]:focus,
 /* iPad portrait / tablet (~768px) */
 @media(max-width:768px){
   .topbar{height:auto;min-height:64px;padding:12px 14px;}
-  .brand-top .brand-text{display:none;}
-  .search{max-width:none;flex:1 1 100%;order:3;}
+  .search{display:none !important;}
   .search input{max-width:100%;}
   .content{padding:12px 14px;}
   .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
