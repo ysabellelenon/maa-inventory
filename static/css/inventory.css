@@ -112,7 +112,8 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .inventory-card .btn-filter{
   background:#ffffff;
   border:1px solid #e6e6e6;
-  padding:6px 10px;
+  height:36px;
+  padding:0 12px;
   border-radius:8px;
   cursor:pointer;
   display:inline-flex;
@@ -122,6 +123,32 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   color:var(--text);
 }
 .inventory-card .btn-filter img{width:16px;height:16px;display:inline-block;}
+/* Category dropdown filter (same height as search/filter row) */
+.category-filter-form{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+.category-filter-select{
+  height:36px;
+  min-width:160px;
+  padding:0 32px 0 12px;
+  border-radius:8px;
+  border:1px solid #e6e6e6;
+  background:#fff;
+  font-size:14px;
+  font-weight:500;
+  color:var(--text);
+  cursor:pointer;
+  appearance:auto;
+  -webkit-appearance:menulist;
+}
+.category-filter-select:hover,
+.category-filter-select:focus{
+  border-color:#D9BD7D;
+  outline:none;
+}
 .inventory-container{margin-top:8px;}
 .inventory-card{background:var(--card-bg);padding:8px;border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,0.03);overflow:visible;border:1px solid var(--border);}
 /* Table: fixed column widths so it doesn't shrink; wrapper scrolls horizontally inside container */
@@ -185,6 +212,7 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   padding-left: 8px;
 }
 .inventory-table tbody td{padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:middle;color:#374151;white-space:normal;overflow-wrap:break-word;word-break:break-word;}
+.inventory-table .table-empty-message{text-align:center;padding:40px;color:#6b7280;}
 .inventory-table .col-check{width:48px;}
 .inventory-table tbody .col-code{width:120px;color:#6b7280;vertical-align:middle;padding-right:8px;}
 .inventory-table tbody .col-code .expand{margin-right:6px;}

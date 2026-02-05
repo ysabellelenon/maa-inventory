@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Sum, Q, F, DecimalField, Count, Max
+from django.db.models import Sum, Q, F, DecimalField, Count, Max, Prefetch
 from django.db.models.functions import Coalesce
 from decimal import Decimal
 import json
@@ -798,16 +798,33 @@ def dashboard(request):
 def inventory(request):
     """Render inventory list page with dynamic data from database."""
     from django.core.paginator import Paginator
-    
-    # Get all active items
-    items_queryset = Item.objects.filter(is_active=True).select_related('brand').prefetch_related('variations')
-    
+
+    # Supplier categories for the Category dropdown filter
+    categories = SupplierCategory.objects.filter(is_active=True).order_by('name')
+    category_id = request.GET.get('category')
+
+    # Get all active items; prefetch supplier_items for category (from supplier's category)
+    items_queryset = Item.objects.filter(is_active=True).select_related('brand').prefetch_related(
+        'variations',
+        Prefetch('supplier_items', queryset=SupplierItem.objects.select_related('supplier__category')),
+    )
+    if category_id:
+        items_queryset = items_queryset.filter(
+            supplier_items__supplier__category_id=category_id
+        ).distinct()
+
     # Get warehouse locations
     warehouse_locations = InventoryLocation.objects.filter(type='WAREHOUSE')
-    
+
     # Build items list with stock information
     items = []
     for item in items_queryset:
+        # Category from first supplier's category (supplier category)
+        first_si = next(iter(item.supplier_items.all()), None)
+        category_name = None
+        if first_si and first_si.supplier and first_si.supplier.category:
+            category_name = first_si.supplier.category.name
+
         # Calculate total stock across all warehouse locations
         total_stock = StockBalance.objects.filter(
             item=item,
@@ -815,37 +832,39 @@ def inventory(request):
         ).aggregate(
             total=Coalesce(Sum('qty_on_hand'), Decimal('0'), output_field=DecimalField())
         )['total'] or Decimal('0')
-        
+
         # Determine status based on remaining quantity vs min_stock_qty
         status = "LOW" if total_stock < item.min_stock_qty else "GOOD"
-        
+
         # Get price from Item's price_per_unit field
         price = "—"
         if item.price_per_unit:
             price = f"{item.price_per_unit:.2f}"
-        
+
         items.append({
             "code": item.item_code,
             "name": item.name,
-            "category": item.brand.name,  # Using brand as category
+            "category": category_name,
             "min_stock_qty": f"{item.min_stock_qty:,.0f}",
             "status": status,
             "base_unit": item.base_unit,
             "price": price,
-            "qty": f"{total_stock:,.0f}",  # Current quantity
-            "remaining": f"{total_stock:,.0f}",  # Remaining quantity (same as qty for now)
-            "remaining_qty": total_stock,  # Keep for status calculation
-            "id": item.id,  # For edit links
+            "qty": f"{total_stock:,.0f}",
+            "remaining": f"{total_stock:,.0f}",
+            "remaining_qty": total_stock,
+            "id": item.id,
         })
 
     # Paginate items
-    paginator = Paginator(items, 10)  # 10 items per page
+    paginator = Paginator(items, 10)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
     context = {
         "items": page_obj,
         "page_obj": page_obj,
+        "categories": categories,
+        "current_category": category_id,
     }
 
     return render(request, "maainventory/inventory.html", context)

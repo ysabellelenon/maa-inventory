@@ -26,10 +26,14 @@
             <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
             <input class="table-search-input" placeholder="Search by item or code" aria-label="Search inventory" />
           </div>
-          <button class="btn-filter">
-            <img src="{% static 'icons/filter.svg' %}" alt="" />
-            <span>Filter</span>
-          </button>
+          <form method="get" action="{% url 'inventory' %}" class="category-filter-form">
+            <select id="category-filter" name="category" class="category-filter-select" aria-label="Filter by category" onchange="this.form.submit()">
+              <option value="" {% if not current_category %}selected{% endif %}>All categories</option>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if current_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </form>
         </div>
       </div>
       <div class="table-wrapper">
@@ -82,6 +86,12 @@
                 </div>
               </td>
             </tr>
+          {% empty %}
+            <tr>
+              <td colspan="11" class="table-empty-message">
+                No inventory items found. Click "Add Item" to add one.
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -103,7 +113,7 @@
           {% if page_obj.paginator.num_pages > 1 %}
           <nav class="pagination" aria-label="Pagination">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" class="page-prev" aria-label="Previous page">
+            <a href="?{% if current_category %}category={{ current_category }}&{% endif %}page={{ page_obj.previous_page_number }}" class="page-prev" aria-label="Previous page">
               <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
             </a>
             {% else %}
@@ -116,16 +126,16 @@
               {% if page_obj.number == num %}
                 <span class="page-num active" aria-current="page">{{ num }}</span>
               {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+                <a href="?{% if current_category %}category={{ current_category }}&{% endif %}page={{ num }}" class="page-num">{{ num }}</a>
               {% elif num == 1 or num == page_obj.paginator.num_pages %}
-                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+                <a href="?{% if current_category %}category={{ current_category }}&{% endif %}page={{ num }}" class="page-num">{{ num }}</a>
               {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
                 <span class="page-dots">…</span>
               {% endif %}
             {% endfor %}
             
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="page-next" aria-label="Next page">
+            <a href="?{% if current_category %}category={{ current_category }}&{% endif %}page={{ page_obj.next_page_number }}" class="page-next" aria-label="Next page">
               <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
             </a>
             {% else %}
