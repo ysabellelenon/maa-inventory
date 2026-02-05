@@ -72,7 +72,7 @@ body.edit-item-page-open .inventory-container aside {
       <h3 class="item-submeta"><strong>Item Code:</strong> {{ item.code }} &nbsp;•&nbsp; <strong>Category:</strong> {{ item.category|default:"—" }}</h3>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <button type="submit" form="item-form" class="btn-save-inline" aria-label="Save">
+      <button type="submit" form="item-form" class="btn-save-inline btn-green" aria-label="Save">
         <img src="{% static 'icons/check.svg' %}" alt="" />
         <span>Save</span>
       </button>
@@ -126,32 +126,17 @@ body.edit-item-page-open .inventory-container aside {
         </div>
 
         <div style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
-          <div style="font-weight:700;margin-bottom:8px;">Basic Details</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-            <div>
+          <div style="font-weight:700;margin-bottom:12px;">Basic Details</div>
+
+          <div style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:14px;font-weight:700;color:#6b7280;margin-bottom:8px;">Item Identification</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+              <div>
                 <label class="field-label">{{ form.name.label }} <span style="color: #ef4444;">*</span></label>
                 {{ form.name }}
                 {% if form.name.errors %}
                   <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
                     {% for error in form.name.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-              <div>
-                <label class="field-label">{{ form.base_unit.label }} <span style="color: #ef4444;">*</span></label>
-                {{ form.base_unit }}
-                {% if form.base_unit.errors %}
-                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
-                    {% for error in form.base_unit.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-              <div>
-                <label class="field-label">{{ form.brand.label }} <span style="color: #ef4444;">*</span></label>
-                {{ form.brand }}
-                {% if form.brand.errors %}
-                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
-                    {% for error in form.brand.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
               </div>
@@ -165,6 +150,30 @@ body.edit-item-page-open .inventory-container aside {
                 {% endif %}
               </div>
               <div>
+                <label class="field-label">{{ form.brand.label }} <span style="color: #ef4444;">*</span></label>
+                {{ form.brand }}
+                {% if form.brand.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.brand.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:14px;font-weight:700;color:#6b7280;margin-bottom:8px;">Inventory & Quantities</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+              <div>
+                <label class="field-label">{{ form.base_unit.label }} <span style="color: #ef4444;">*</span></label>
+                {{ form.base_unit }}
+                {% if form.base_unit.errors %}
+                  <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
+                    {% for error in form.base_unit.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div>
                 <label class="field-label">{{ form.min_order_qty.label }} <span style="color: #ef4444;">*</span></label>
                 {{ form.min_order_qty }}
                 {% if form.min_order_qty.errors %}
@@ -172,8 +181,8 @@ body.edit-item-page-open .inventory-container aside {
                     {% for error in form.min_order_qty.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-            </div>
-            <div>
+              </div>
+              <div>
                 <label class="field-label">{{ form.min_stock_qty.label }} <span style="color: #ef4444;">*</span></label>
                 {{ form.min_stock_qty }}
                 {% if form.min_stock_qty.errors %}
@@ -181,8 +190,14 @@ body.edit-item-page-open .inventory-container aside {
                     {% for error in form.min_stock_qty.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
+              </div>
             </div>
-            <div>
+          </div>
+
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:14px;font-weight:700;color:#6b7280;margin-bottom:8px;">Pricing</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+              <div>
                 <label class="field-label">{{ form.price_per_unit.label }}</label>
                 {{ form.price_per_unit }}
                 {% if form.price_per_unit.errors %}
@@ -190,9 +205,10 @@ body.edit-item-page-open .inventory-container aside {
                     {% for error in form.price_per_unit.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
+              </div>
             </div>
-  </div>
-  </div>
+          </div>
+        </div>
 
   <script>
     (function () {
