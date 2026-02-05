@@ -129,6 +129,12 @@
                 </div>
               </td>
             </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="table-empty-message">
+                No stock requests yet.{% if can_create_request %} <a href="{% url 'create_stock_request' %}" style="color: var(--focus); font-weight: 500;">Create a request</a> to get started.{% endif %}
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
