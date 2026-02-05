@@ -29,8 +29,8 @@
   </div>
 
   <div class="inventory-container">
-    <div class="request-layout" style="display:flex;gap:18px;align-items:stretch;">
-      <div class="request-left" style="flex:0 0 360px;min-width:320px;">
+    <div class="request-layout add-item-layout">
+      <div class="request-left add-item-left">
         <div class="panel-border" style="background:var(--card-bg);padding:12px;border-radius:8px;margin-bottom:12px;">
           <label class="field-label">Choose Category</label>
           <select id="category-select" class="panel-input" aria-label="Choose Category">
@@ -65,8 +65,8 @@
         </div>
       </div>
 
-      <div style="flex:1;min-width:0;display:flex;gap:18px;align-items:stretch;">
-        <div class="request-right panel-border" style="flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;">
+      <div class="add-item-middle">
+        <div class="request-right panel-border add-item-form">
           <form method="post" action="{% url 'add_item' %}" id="supplier-item-form" enctype="multipart/form-data">
             {% csrf_token %}
             
@@ -197,7 +197,7 @@
           </form>
         </div>
 
-        <div class="panel-border" style="flex:0 0 400px;min-width:320px;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;max-height:calc(100vh - 200px);">
+        <div class="panel-border add-item-branches">
           <label class="field-label" style="margin-bottom:12px;">Branches Using This Item</label>
           <div style="margin-bottom:12px;flex-shrink:0;">
             <input type="text" id="branch-search" class="panel-input" placeholder="Search branches..." aria-label="Search branches" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-stack);font-size:13px;" />

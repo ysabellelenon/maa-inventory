@@ -611,6 +611,11 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .request-layout{flex:1;display:flex;gap:18px;align-items:stretch;overflow:hidden;}
 .request-left{flex:0 0 360px;min-width:0;max-width:100%;overflow:visible;padding-right:6px;}
 .request-right{flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;overflow:auto;}
+/* Add new inventory item page: default layout (above 1190px) */
+.page-add-item .add-item-left{flex:0 0 360px;min-width:320px;}
+.page-add-item .add-item-middle{flex:1;min-width:0;display:flex;gap:18px;align-items:stretch;}
+.page-add-item .add-item-form{flex:1;min-width:0;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;}
+.page-add-item .add-item-branches{flex:0 0 400px;min-width:320px;background:var(--card-bg);border-radius:8px;padding:18px;display:flex;flex-direction:column;max-height:calc(100vh - 200px);}
 
 .request-right{
   position:relative;
@@ -1097,6 +1102,39 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
   .inventory-card { padding: 10px; }
   .inventory-container { margin-top: 6px; }
   .table-wrapper { max-height: 52vh; }
+  /* Add new inventory item page only (1190px): category/supplier + branches on top row, form full width below */
+  .page-add-item .request-layout.add-item-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 18px;
+    align-items: stretch;
+  }
+  .page-add-item .add-item-middle {
+    display: contents;
+  }
+  .page-add-item .add-item-left {
+    grid-column: 1;
+    grid-row: 1;
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .page-add-item .add-item-branches {
+    grid-column: 2;
+    grid-row: 1;
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+    max-height: 420px;
+  }
+  .page-add-item .add-item-form {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    max-width: 100%;
+    flex: none;
+  }
 }
 /* iPad / narrow laptop (~900px) */
 @media (max-width: 900px) {
