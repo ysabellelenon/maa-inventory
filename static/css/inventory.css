@@ -124,9 +124,24 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .inventory-card .btn-filter img{width:16px;height:16px;display:inline-block;}
 .inventory-container{margin-top:8px;}
 .inventory-card{background:var(--card-bg);padding:8px;border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,0.03);overflow:visible;border:1px solid var(--border);}
-.inventory-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;}
+/* Table: fixed column widths so it doesn't shrink; wrapper scrolls horizontally inside container */
+.table-wrapper{
+  max-height:55vh;
+  max-width:100%;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  /* Contain scroll inside the card; do not make the whole page scroll */
+  min-width:0;
+}
+.inventory-table{
+  width:max-content;
+  border-collapse:collapse;
+  font-size:13px;
+  table-layout:fixed;
+  /* Fixed total min width so columns don't shrink; wrapper scrolls horizontally when needed */
+  min-width:1100px;
+}
 .inventory-table thead th{text-align:left;padding:10px 8px;color:var(--text);font-weight:600;border-bottom:1px solid var(--border);white-space:normal;overflow-wrap:break-word;word-break:break-word;}
-.table-wrapper{max-height:55vh;overflow:auto;}
 .inventory-table thead th{
   position:sticky;
   top:0;
