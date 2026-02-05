@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/requests.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
 <style>
   /* Prevent horizontal scroll but allow vertical scroll */
   body {
@@ -125,16 +126,10 @@
 {% block content %}
   <div class="page-header inventory-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Supplier Stock</h2>
-    <div style="display: flex; gap: 12px; align-items: center;">
-      <a href="{% url 'purchase_orders' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
-        <img src="{% static 'icons/delivery.svg' %}" alt="Purchase Orders" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
-        Purchase Orders
-      </a>
-      <a href="{% url 'new_request' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--focus); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; border: 1px solid var(--focus);">
-        <img src="{% static 'icons/plus.svg' %}" alt="Add" style="width: 16px; height: 16px; filter: brightness(0) invert(1);" />
-        Order Stock
-      </a>
-    </div>
+    <a href="{% url 'purchase_orders' %}" class="btn-gold">
+      <img src="{% static 'icons/delivery.svg' %}" alt="" />
+      Purchase Orders
+    </a>
   </div>
 
   <div class="inventory-container">

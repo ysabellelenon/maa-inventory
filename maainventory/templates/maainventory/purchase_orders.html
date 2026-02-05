@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/requests.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
 <style>
   /* Prevent horizontal scroll */
   body {
@@ -53,9 +54,9 @@
   <div class="page-header inventory-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Purchase Orders</h2>
     {% if user.profile.role and 'Warehouse' not in user.profile.role.name %}
-    <a href="{% url 'supplier_stock' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid var(--border);">
-      <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" style="width: 16px; height: 16px;" />
-      Back to Supplier Stock
+    <a href="{% url 'new_request' %}" class="btn-create">
+      <img src="{% static 'icons/plus.svg' %}" alt="" />
+      <span>Order Stock From Supplier</span>
     </a>
     {% endif %}
   </div>
