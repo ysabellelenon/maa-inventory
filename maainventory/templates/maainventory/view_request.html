@@ -15,6 +15,7 @@ body.view-request-page-open .inventory-container {
   height: auto !important;
   overflow: visible !important;
   min-height: auto;
+  font-size: 13px;
 }
 body.view-request-page-open {
   overflow-y: auto;
@@ -29,7 +30,7 @@ body.view-request-page-open {
 }
 .info-card h3 {
   margin: 0 0 16px 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #101828;
   border-bottom: 2px solid #D9BD7D;
@@ -96,6 +97,80 @@ body.view-request-page-open {
   margin-bottom: 24px;
   font-size: 14px;
   color: #1E40AF;
+}
+/* Item thumb in Request Items table - same as branch requests page */
+.items-table tbody .col-item-name {
+  vertical-align: middle;
+}
+.items-table tbody .item-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #f2f2f2;
+  object-fit: cover;
+  flex: 0 0 36px;
+  margin-right: 12px;
+  vertical-align: middle;
+  cursor: pointer;
+  display: inline-block;
+}
+.items-table tbody .item-meta {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: calc(100% - 52px);
+}
+.items-table tbody .item-meta .item-title {
+  font-weight: 500;
+  color: #374151;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+/* Image lightbox */
+#view-request-image-lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.75);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+#view-request-image-lightbox.is-open {
+  display: flex;
+}
+#view-request-image-lightbox .lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#view-request-image-lightbox .lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+#view-request-image-lightbox .lightbox-image {
+  max-width: 90vw;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 </style>
 <script>
@@ -227,9 +302,18 @@ body.view-request-page-open {
             {% for row in items %}
             <tr>
               <td><strong>{{ row.item.item_code }}</strong></td>
-              <td>{{ row.item.name }}</td>
+              <td class="col-item-name">
+                {% if row.image_url %}
+                <img class="item-thumb item-thumb-openable" src="{{ row.image_url }}" alt="{{ row.item.name }}" title="Click to enlarge" />
+                {% else %}
+                <img class="item-thumb item-thumb-openable" src="{% static 'images/sample-item.jpg' %}" alt="{{ row.item.name }}" title="Click to enlarge" />
+                {% endif %}
+                <div class="item-meta">
+                  <div class="item-title">{{ row.item.name }}</div>
+                </div>
+              </td>
               <td>{% if row.variation %}{{ row.variation.variation_name }}{% else %}—{% endif %}</td>
-              <td style="text-align: right;">{{ row.qty_requested }}</td>
+              <td style="text-align: right;">{{ row.qty_requested|floatformat:0 }}</td>
               <td style="text-align: right;">{{ row.qty_approved|default:"—" }}</td>
               <td style="text-align: right;">{{ row.qty_fulfilled|default:"—" }}</td>
             </tr>
@@ -245,6 +329,44 @@ body.view-request-page-open {
       </div>
     </div>
   </div>
+
+  <!-- Image lightbox: click item thumb to view full size -->
+  <div id="view-request-image-lightbox" role="dialog" aria-modal="true" aria-label="Enlarged image">
+    <button type="button" class="lightbox-close" aria-label="Close">&times;</button>
+    <img class="lightbox-image" src="" alt="" />
+  </div>
+
+  <script>
+  (function () {
+    var table = document.querySelector('.items-table');
+    var lightbox = document.getElementById('view-request-image-lightbox');
+    var lightboxImg = lightbox && lightbox.querySelector('.lightbox-image');
+    var lightboxClose = lightbox && lightbox.querySelector('.lightbox-close');
+    if (table && lightbox && lightboxImg) {
+      table.addEventListener('click', function (e) {
+        var thumb = e.target.closest && e.target.closest('.item-thumb-openable');
+        if (!thumb) return;
+        e.preventDefault();
+        e.stopPropagation();
+        lightboxImg.src = thumb.getAttribute('src') || '';
+        lightboxImg.alt = thumb.getAttribute('alt') || 'Item image';
+        lightbox.classList.add('is-open');
+        lightbox.setAttribute('aria-hidden', 'false');
+      }, true);
+      function closeLightbox() {
+        lightbox.classList.remove('is-open');
+        lightbox.setAttribute('aria-hidden', 'true');
+      }
+      if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+      lightbox.addEventListener('click', function (e) {
+        if (e.target === lightbox) closeLightbox();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && lightbox.classList.contains('is-open')) closeLightbox();
+      });
+    }
+  })();
+  </script>
 
   {% if can_approve %}
   <script>

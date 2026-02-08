@@ -1331,7 +1331,7 @@ def view_request(request, request_id):
         return HttpResponseForbidden('You do not have access to this request.')
     request_items = RequestItem.objects.filter(
         request=req
-    ).select_related('item', 'variation').order_by('id')
+    ).select_related('item', 'variation').prefetch_related('item__photos').order_by('id')
 
     user_profile = getattr(request.user, 'profile', None)
     user_role = user_profile.role.name if user_profile and user_profile.role else None
@@ -1347,14 +1347,21 @@ def view_request(request, request_id):
     items_data = []
     for ri in request_items:
         qty_to_fulfill = ri.qty_approved if ri.qty_approved is not None and ri.qty_approved > 0 else ri.qty_requested
+        item = ri.item
+        image_url = item.photo_url
+        if not image_url and item.photos.exists():
+            first_photo = item.photos.first()
+            if first_photo and first_photo.photo:
+                image_url = request.build_absolute_uri(first_photo.photo.url)
         items_data.append({
             'request_item': ri,
-            'item': ri.item,
+            'item': item,
             'variation': ri.variation,
             'qty_requested': ri.qty_requested,
             'qty_approved': ri.qty_approved,
             'qty_fulfilled': ri.qty_fulfilled,
             'qty_to_fulfill': qty_to_fulfill,
+            'image_url': image_url,
         })
 
     approved_by_name = None
