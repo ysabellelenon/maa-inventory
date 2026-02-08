@@ -17,6 +17,9 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
 .item-row:last-child { border-bottom: none; }
 .item-qty-input { width: 80px; padding: 8px 10px; border: 1px solid #E5E7EB; border-radius: 6px; text-align: right; }
 .stock-available { font-size: 12px; color: #6B7280; }
+#items-list { display: flex; flex-direction: column; gap: 0; }
+#items-list.hidden { display: none !important; }
+#items-empty.hidden { display: none !important; }
 </style>
 {% endblock %}
 
@@ -67,20 +70,9 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
           <input id="item-search" class="panel-input" placeholder="Search items by name or code..." aria-label="Search items" style="margin-bottom:8px;" />
         </div>
         <div style="flex:1;overflow-y:auto;margin-bottom:12px;max-height:400px;">
-          <div id="items-list" style="display:flex;flex-direction:column;gap:0;">
-            {% for item in items_list %}
-            <div class="item-row" data-item-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-code="{{ item.item_code|lower }}">
-              <div style="flex:1;min-width:0;">
-                <div style="font-weight:600;color:#111827;">{{ item.item_code }} — {{ item.name }}</div>
-                <div class="stock-available">Available in warehouse: {{ item.qty_available|floatformat:0 }}{% if item.base_unit %} {{ item.base_unit }}{% endif %}</div>
-              </div>
-              <div>
-                <input type="number" class="item-qty-input" data-item-id="{{ item.id }}" min="0" step="0.01" placeholder="0" value="" aria-label="Quantity for {{ item.name }}" />
-              </div>
-            </div>
-            {% empty %}
-            <div style="padding:40px;text-align:center;color:#6B7280;">No items available.</div>
-            {% endfor %}
+          <div id="items-empty" class="empty-message" style="padding:40px;text-align:center;color:#6B7280;">Choose a branch first to see the available items</div>
+          <div id="items-list" class="items-list-flex hidden">
+            <!-- Populated by JS based on selected branch -->
           </div>
         </div>
 
@@ -93,14 +85,67 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
     </div>
   </div>
 
+  {{ items_list|json_script:"items-data" }}
   <script>
   (function() {
+    var itemsData = JSON.parse(document.getElementById('items-data').textContent);
     var checkIconUrl = "{% static 'icons/check.svg' %}";
     var branchSelect = document.getElementById('branch-select');
     var itemSearch = document.getElementById('item-search');
     var itemsList = document.getElementById('items-list');
+    var itemsEmpty = document.getElementById('items-empty');
     var submitBtn = document.getElementById('submit-request');
     var totalItemsSpan = document.getElementById('total-items');
+
+    function renderItemRow(item) {
+      var baseUnit = item.base_unit ? ' ' + item.base_unit : '';
+      var qtyAvailable = typeof item.qty_available === 'number' ? item.qty_available : 0;
+      var row = document.createElement('div');
+      row.className = 'item-row';
+      row.setAttribute('data-item-id', item.id);
+      row.setAttribute('data-name', (item.name || '').toLowerCase());
+      row.setAttribute('data-code', (item.item_code || '').toLowerCase());
+      row.innerHTML =
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-weight:600;color:#111827;">' + (item.item_code || '') + ' — ' + (item.name || '') + '</div>' +
+          '<div class="stock-available">Available in warehouse: ' + qtyAvailable + baseUnit + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<input type="number" class="item-qty-input" data-item-id="' + item.id + '" min="0" step="0.01" placeholder="0" value="" aria-label="Quantity for ' + (item.name || '') + '" />' +
+        '</div>';
+      return row;
+    }
+
+    function toggleItemsByBranch() {
+      var branchId = branchSelect.value ? parseInt(branchSelect.value, 10) : null;
+      itemsList.innerHTML = '';
+      if (!branchId) {
+        itemsEmpty.classList.remove('hidden');
+        itemsList.classList.add('hidden');
+        return;
+      }
+      var filtered = itemsData.filter(function(item) {
+        var bids = item.branch_ids || [];
+        return bids.indexOf(branchId) !== -1;
+      });
+      itemsEmpty.classList.add('hidden');
+      itemsList.classList.remove('hidden');
+      if (filtered.length === 0) {
+        var empty = document.createElement('div');
+        empty.style.cssText = 'padding:40px;text-align:center;color:#6B7280;';
+        empty.textContent = 'No items configured for this branch.';
+        itemsList.appendChild(empty);
+      } else {
+        filtered.forEach(function(item) {
+          itemsList.appendChild(renderItemRow(item));
+        });
+      }
+      itemSearch.value = '';
+      updateTotal();
+    }
+
+    branchSelect.addEventListener('change', toggleItemsByBranch);
+    toggleItemsByBranch();
 
     function getCart() {
       var cart = {};

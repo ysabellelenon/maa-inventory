@@ -1247,7 +1247,7 @@ def create_stock_request(request):
                 'branches': [{'id': branch.id, 'name': branch.name}],
             })
 
-    # Items: active items with warehouse stock info
+    # Items: active items with warehouse stock info, filtered to those used in user's branches
     from django.db.models import Sum
     warehouse_stock_qs = StockBalance.objects.filter(
         location__type='WAREHOUSE',
@@ -1256,8 +1256,11 @@ def create_stock_request(request):
     warehouse_stock = {row['item_id']: row['total'] or Decimal('0') for row in warehouse_stock_qs}
 
     items_list = []
-    for item in Item.objects.filter(is_active=True).select_related('brand').order_by('item_code'):
+    for item in Item.objects.filter(
+        is_active=True, branches__id__in=user_branch_ids
+    ).distinct().select_related('brand').prefetch_related('branches').order_by('item_code'):
         qty_available = warehouse_stock.get(item.id, Decimal('0'))
+        branch_ids = list(item.branches.filter(is_active=True).values_list('id', flat=True))
         items_list.append({
             'id': item.id,
             'item_code': item.item_code,
@@ -1265,6 +1268,7 @@ def create_stock_request(request):
             'base_unit': str(item.base_unit) if item.base_unit else '',
             'min_order_qty': float(item.min_stock_qty) if item.min_stock_qty else 0,
             'qty_available': float(qty_available),
+            'branch_ids': branch_ids,
         })
 
     context = {
