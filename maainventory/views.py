@@ -1906,7 +1906,6 @@ def add_item(request):
             photos = request.FILES.getlist('photos')
             if not photos:
                 form.add_error(None, 'At least one photo is required.')
-                messages.error(request, 'Please add at least one photo.')
             else:
                 supplier_item = form.save(commit=True, user=request.user)
                 # Save many-to-many branches to Item (not SupplierItem)
@@ -1941,9 +1940,34 @@ def add_item(request):
                         messages.warning(request, 'Maximum 5 photos already exist for this item.')
                 
                 messages.success(request, f'Supplier item "{supplier_item.item.name}" for "{supplier_item.supplier.name}" added successfully.')
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    from django.urls import reverse
+                    return JsonResponse({'success': True, 'redirect_url': reverse('inventory')})
                 return redirect('inventory')
-        else:
-            messages.error(request, 'Please correct the errors below.')
+        if not form.is_valid():
+            error_parts = []
+            for err in form.non_field_errors():
+                error_parts.append(err)
+            for name in form.errors:
+                if name in (None, '__all__') or name not in form.fields:
+                    continue
+                label = form.fields[name].label
+                errs = form.errors[name]
+                first_err = errs[0] if errs else 'Invalid'
+                error_parts.append(f"{label}: {first_err}")
+            if error_parts:
+                msg = "Please correct the errors below:\n" + "\n".join("- " + part for part in error_parts)
+            else:
+                msg = "Please correct the errors below."
+            messages.error(request, msg)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                errors_dict = {}
+                for name in form.errors:
+                    if name in (None, '__all__'):
+                        errors_dict['__all__'] = list(form.errors[name])
+                    elif name in form.fields:
+                        errors_dict[name] = list(form.errors[name])
+                return JsonResponse({'success': False, 'message': msg, 'errors': errors_dict})
     else:
         form = SupplierItemForm()
     
@@ -1957,6 +1981,21 @@ def add_item(request):
             "category_id": supplier.category.id if supplier.category else None,
         })
     
+    # When re-rendering after validation error, pass selected supplier so UI can restore it
+    selected_supplier_id = None
+    selected_supplier_category_id = None
+    if request.method == 'POST':
+        sid = request.POST.get('supplier') or request.POST.get('supplier-hidden')
+        if sid:
+            try:
+                selected_supplier_id = int(sid)
+                for s in suppliers_list:
+                    if s['id'] == selected_supplier_id:
+                        selected_supplier_category_id = s.get('category_id')
+                        break
+            except (ValueError, TypeError):
+                pass
+    
     # Get all active items for reference (not used in form, but available if needed)
     items = Item.objects.filter(is_active=True).select_related('brand').order_by('item_code')
     
@@ -1966,6 +2005,8 @@ def add_item(request):
         "categories": categories,
         "brands_branches": brands_branches,
         "items": items,  # Available for reference/autocomplete if needed
+        "selected_supplier_id": selected_supplier_id,
+        "selected_supplier_category_id": selected_supplier_category_id,
     }
     return render(request, "maainventory/add_item.html", context)
 

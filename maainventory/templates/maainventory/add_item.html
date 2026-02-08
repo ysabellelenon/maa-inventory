@@ -7,7 +7,7 @@
 
 {% block content %}
   <div class="page-add-item">
-  <div class="page-header inventory-header">
+  <div id="add-item-page-header" class="page-header inventory-header">
     <div style="display:flex;flex-direction:column;">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
@@ -27,6 +27,26 @@
       </button>
     </div>
   </div>
+
+  {% if messages %}
+  <div style="margin-bottom: 20px;">
+    {% for message in messages %}
+    <div class="dismissible-message" style="position:relative;padding:12px 40px 12px 16px;margin-bottom:8px;border-radius:8px;background:{% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% else %}var(--accent){% endif %};color:{% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% else %}var(--text){% endif %};border:1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% else %}var(--border){% endif %};">
+      {{ message|linebreaksbr }}
+      <button type="button" class="message-close" onclick="this.closest('.dismissible-message').remove()" aria-label="Close" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;font-size:18px;line-height:1;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">×</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div id="add-item-ajax-errors" style="margin-bottom: 20px;"></div>
+  {% if messages %}
+  <script>
+    (function() {
+      var header = document.getElementById('add-item-page-header');
+      if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    })();
+  </script>
+  {% endif %}
 
   <div class="inventory-container">
     <div class="request-layout add-item-layout">
@@ -69,30 +89,12 @@
         <div class="request-right panel-border add-item-form">
           <form method="post" action="{% url 'add_item' %}" id="supplier-item-form" enctype="multipart/form-data">
             {% csrf_token %}
-            
-            {% if messages %}
-              <div style="margin-bottom: 20px;">
-                {% for message in messages %}
-                  <div style="padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; background: {% if message.tags == 'error' %}#fee2e2{% elif message.tags == 'success' %}#dcfce7{% else %}var(--accent){% endif %}; color: {% if message.tags == 'error' %}#991b1b{% elif message.tags == 'success' %}#166534{% else %}var(--text){% endif %}; border: 1px solid {% if message.tags == 'error' %}#fecaca{% elif message.tags == 'success' %}#bbf7d0{% else %}var(--border){% endif %};">
-                    {{ message }}
-                  </div>
-                {% endfor %}
-              </div>
-            {% endif %}
-
-            {% if form.non_field_errors %}
-              <div style="margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
-                {% for error in form.non_field_errors %}
-                  {{ error }}
-                {% endfor %}
-              </div>
-            {% endif %}
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
               <div>
                 <label for="{{ form.supplier.id_for_label }}" class="field-label">{{ form.supplier.label }} <span style="color: #ef4444;">*</span></label>
                 {{ form.supplier }}
-                <input type="hidden" name="supplier" id="supplier-hidden" value="" />
+                <input type="hidden" name="supplier" id="supplier-hidden" value="{{ selected_supplier_id|default:'' }}" />
                 <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">Select a supplier from the list on the left</div>
                 {% if form.supplier.errors %}
                   <div style="color: #991b1b; font-size: 13px; margin-top: 4px;">
@@ -249,6 +251,9 @@
   </style>
 
   <script>
+    window.__ADD_ITEM_SELECTED_SUPPLIER__ = {% if selected_supplier_id %}{ "id": {{ selected_supplier_id }}, "categoryId": {{ selected_supplier_category_id|default:"null" }} }{% else %}null{% endif %};
+  </script>
+  <script>
     (function () {
       var categorySelect = document.getElementById('category-select');
       var supplierSearch = document.getElementById('supplier-search');
@@ -380,6 +385,26 @@
 
       // Initialize on page load
       updateVisibleSuppliers();
+      // Restore supplier/category when re-rendering after validation error
+      var restore = window.__ADD_ITEM_SELECTED_SUPPLIER__;
+      if (restore && restore.id && categorySelect && suppliersList) {
+        if (restore.categoryId) {
+          categorySelect.value = String(restore.categoryId);
+          updateVisibleSuppliers();
+        }
+        if (supplierSelect) {
+          var opt = supplierSelect.querySelector('option[value="' + restore.id + '"]');
+          if (opt) supplierSelect.value = String(restore.id);
+        }
+        var hiddenInput = document.getElementById('supplier-hidden');
+        if (hiddenInput) hiddenInput.value = String(restore.id);
+        var row = suppliersList.querySelector('.request-item-row[data-id="' + restore.id + '"]');
+        if (row) {
+          row.style.display = 'flex';
+          row.style.background = '#f7e7d0';
+          row.style.borderLeft = '3px solid var(--focus)';
+        }
+      }
     })();
 
     // Branch search functionality
@@ -486,35 +511,57 @@
       }
     }
     
-    // Ensure files are included on form submit
+    // Submit via AJAX so validation errors don't reload the page (preserves supplier, photos, and other fields)
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('supplier-item-form');
-      if (form) {
-        form.addEventListener('submit', function(e) {
-          // Make sure the file input has all selected photos before submit
-          updateFileInput();
-          
-          // Require at least one photo
-          if (!photoInput.files.length && selectedPhotos.length === 0) {
-            e.preventDefault();
-            alert('Please add at least one photo.');
-            const photoSection = document.getElementById('id_photos');
-            if (photoSection) {
-              photoSection.focus();
-              photoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const ajaxErrorsEl = document.getElementById('add-item-ajax-errors');
+      if (!form) return;
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateFileInput();
+        if (photoInput.files.length !== selectedPhotos.length) updateFileInput();
+        const formData = new FormData(form);
+        const submitBtn = document.querySelector('button[form="supplier-item-form"][type="submit"]');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" /> Adding…'; }
+        fetch(form.action, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'same-origin'
+        }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: null }; }); })
+          .then(function(result) {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" /> Add New Inventory Item'; }
+            if (result.data && result.data.success) {
+              window.location.href = result.data.redirect_url || '{% url "inventory" %}';
+              return;
             }
-            return;
-          }
-          
-          // Verify files are in the input
-          if (photoInput.files.length !== selectedPhotos.length) {
-            console.warn('File count mismatch. Input has', photoInput.files.length, 'but selectedPhotos has', selectedPhotos.length);
-            updateFileInput();
-          }
-          
-          console.log('Form submitting with', photoInput.files.length, 'photos');
-        });
-      }
+            var msg = (result.data && result.data.message) ? result.data.message : (result.data ? 'Please correct the errors below.' : 'Something went wrong. Please try again.');
+            if (ajaxErrorsEl) {
+              var escaped = msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+              var div = document.createElement('div');
+              div.className = 'dismissible-message';
+              div.style.cssText = 'position:relative;padding:12px 40px 12px 16px;margin-bottom:8px;border-radius:8px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;';
+              div.innerHTML = escaped + ' <button type="button" class="message-close" onclick="this.closest(\'.dismissible-message\').remove()" aria-label="Close" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;font-size:18px;line-height:1;opacity:0.7;">×</button>';
+              ajaxErrorsEl.innerHTML = '';
+              ajaxErrorsEl.appendChild(div);
+              var header = document.getElementById('add-item-page-header');
+              if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          })
+          .catch(function() {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" /> Add New Inventory Item'; }
+            if (ajaxErrorsEl) {
+              var div = document.createElement('div');
+              div.className = 'dismissible-message';
+              div.style.cssText = 'position:relative;padding:12px 40px 12px 16px;margin-bottom:8px;border-radius:8px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;';
+              div.innerHTML = 'Something went wrong. Please try again. <button type="button" class="message-close" onclick="this.closest(\'.dismissible-message\').remove()" aria-label="Close" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;font-size:18px;line-height:1;opacity:0.7;">×</button>';
+              ajaxErrorsEl.innerHTML = '';
+              ajaxErrorsEl.appendChild(div);
+            }
+          });
+      });
     });
 
     function updatePhotoPreview() {
