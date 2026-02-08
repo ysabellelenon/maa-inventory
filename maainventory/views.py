@@ -803,9 +803,10 @@ def inventory(request):
     categories = SupplierCategory.objects.filter(is_active=True).order_by('name')
     category_id = request.GET.get('category')
 
-    # Get all active items; prefetch supplier_items for category (from supplier's category)
+    # Get all active items; prefetch supplier_items for category (from supplier's category), photos for thumbnails
     items_queryset = Item.objects.filter(is_active=True).select_related('brand').prefetch_related(
         'variations',
+        'photos',
         Prefetch('supplier_items', queryset=SupplierItem.objects.select_related('supplier__category')),
     )
     if category_id:
@@ -841,6 +842,13 @@ def inventory(request):
         if item.price_per_unit:
             price = f"{item.price_per_unit:.2f}"
 
+        # Image for item name column: photo_url, or first ItemPhoto, or None (template uses fallback)
+        image_url = item.photo_url
+        if not image_url and item.photos.exists():
+            first_photo = item.photos.first()
+            if first_photo and first_photo.photo:
+                image_url = request.build_absolute_uri(first_photo.photo.url)
+
         items.append({
             "code": item.item_code,
             "name": item.name,
@@ -853,6 +861,7 @@ def inventory(request):
             "remaining": f"{total_stock:,.0f}",
             "remaining_qty": total_stock,
             "id": item.id,
+            "image": image_url,
         })
 
     # Paginate items

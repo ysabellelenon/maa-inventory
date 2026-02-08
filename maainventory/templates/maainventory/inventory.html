@@ -3,6 +3,56 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+<style>
+/* Image lightbox: big version of item thumb */
+#image-lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.75);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+#image-lightbox.is-open {
+  display: flex;
+}
+#image-lightbox .lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#image-lightbox .lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+#image-lightbox .lightbox-image {
+  max-width: 90vw;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.inventory-table .col-name .item-thumb {
+  cursor: pointer;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -64,6 +114,11 @@
                 </div>
               </td>
               <td class="col-name">
+                {% if item.image %}
+                <img class="item-thumb item-thumb-openable" src="{{ item.image }}" alt="{{ item.name }}" title="Click to enlarge" />
+                {% else %}
+                <img class="item-thumb item-thumb-openable" src="{% static 'images/sample-item.jpg' %}" alt="{{ item.name }}" title="Click to enlarge" />
+                {% endif %}
                 <div class="item-meta">
                   <div class="item-title">{{ item.name }}</div>
                 </div>
@@ -286,6 +341,12 @@
   </div>
 </aside>
 
+<!-- Image lightbox: click item thumb to view full size -->
+<div id="image-lightbox" role="dialog" aria-modal="true" aria-label="Enlarged image">
+  <button type="button" class="lightbox-close" aria-label="Close">&times;</button>
+  <img class="lightbox-image" src="" alt="" />
+</div>
+
 <script>
   (function () {
     var overlay = document.querySelector('.overlay');
@@ -425,6 +486,40 @@
   </script>
   <script>
     (function () {
+      // Item thumb: click opens lightbox with big image (does not open edit page)
+      var table = document.querySelector('.inventory-table');
+      var lightbox = document.getElementById('image-lightbox');
+      var lightboxImg = lightbox && lightbox.querySelector('.lightbox-image');
+      var lightboxClose = lightbox && lightbox.querySelector('.lightbox-close');
+
+      if (table && lightbox && lightboxImg) {
+        table.addEventListener('click', function (e) {
+          var thumb = e.target.closest && e.target.closest('.item-thumb-openable');
+          if (!thumb) return;
+          e.preventDefault();
+          e.stopPropagation();
+          lightboxImg.src = thumb.getAttribute('src') || '';
+          lightboxImg.alt = thumb.getAttribute('alt') || 'Item image';
+          lightbox.classList.add('is-open');
+          lightbox.setAttribute('aria-hidden', 'false');
+        });
+
+        function closeLightbox() {
+          lightbox.classList.remove('is-open');
+          lightbox.setAttribute('aria-hidden', 'true');
+        }
+        if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+        lightbox.addEventListener('click', function (e) {
+          if (e.target === lightbox) closeLightbox();
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && lightbox.classList.contains('is-open')) closeLightbox();
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function () {
       // Make entire row clickable to open the inventory edit page (ignore interactive controls)
       var table = document.querySelector('.inventory-table');
       if (!table) return;
@@ -432,8 +527,8 @@
       table.addEventListener('click', function (e) {
         var row = e.target.closest && e.target.closest('tr.inventory-row');
         if (!row) return;
-        // ignore clicks on interactive controls inside the row
-        if (e.target.closest('input') || e.target.closest('button') || e.target.closest('a') || e.target.closest('.action-btn') || e.target.closest('.action-menu')) {
+        // ignore clicks on interactive controls and item thumb (opens lightbox instead)
+        if (e.target.closest('input') || e.target.closest('button') || e.target.closest('a') || e.target.closest('.action-btn') || e.target.closest('.action-menu') || e.target.closest('.item-thumb')) {
           return;
         }
         // get code from action button data attribute
