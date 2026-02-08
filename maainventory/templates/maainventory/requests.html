@@ -127,7 +127,11 @@
               <td class="col-requestor">{{ item.requestor|default:"—" }}</td>
               <td class="col-branch">{{ item.branch|default:"—" }}</td>
               <td class="col-name">
+                {% if item.image %}
+                <img class="item-thumb item-thumb-openable" src="{{ item.image }}" alt="{{ item.name|default:'' }}" title="Click to enlarge" />
+                {% else %}
                 <img class="item-thumb item-thumb-openable" src="{% static 'images/sample-item.jpg' %}" alt="{{ item.name|default:'' }}" title="Click to enlarge" />
+                {% endif %}
                 <div class="item-meta">
                   <div class="item-title">{{ item.name }}</div>
                 </div>

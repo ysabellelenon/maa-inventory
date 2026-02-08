@@ -1101,7 +1101,7 @@ def requests(request):
     # Get all requests, ordered by most recent
     requests_queryset = Request.objects.select_related(
         'branch', 'branch__brand', 'requested_by', 'approved_by'
-    ).prefetch_related('items__item').order_by('-created_at')
+    ).prefetch_related('items__item', 'items__item__photos').order_by('-created_at')
 
     # Branch managers see only requests for their assigned branch(es); must have assignments
     is_branch_user, user_branch_ids = get_branch_user_info(request.user)
@@ -1138,6 +1138,16 @@ def requests(request):
         item_name = first_item.item.name if first_item else "Multiple items"
         request_date = req.date_of_order or req.created_at
         is_new = request_date >= new_cutoff
+
+        # Image for first item: photo_url or first ItemPhoto
+        image_url = None
+        if first_item:
+            item_obj = first_item.item
+            image_url = item_obj.photo_url
+            if not image_url and item_obj.photos.exists():
+                first_photo = item_obj.photos.first()
+                if first_photo and first_photo.photo:
+                    image_url = request.build_absolute_uri(first_photo.photo.url)
         
         requests_list.append({
             "code": req.request_code,
@@ -1148,6 +1158,7 @@ def requests(request):
             "status": req.get_status_display(),
             "id": req.id,  # For detail links
             "is_new": is_new,
+            "image": image_url,
         })
 
     # Paginate requests
