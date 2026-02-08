@@ -12,6 +12,9 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
 .panel-input, .panel-textarea { width: 100%; padding: 10px 12px; border: 1px solid #E5E7EB; border-radius: 6px; font-size: 14px; }
 .panel-border { background: var(--card-bg); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #E5E7EB; }
 .field-label { display: block; font-weight: 500; color: #374151; margin-bottom: 8px; font-size: 14px; }
+.items-list-header { display: flex; align-items: center; gap: 12px; padding: 10px 12px; font-weight: 600; color: #374151; background: rgba(16,24,40,0.02); border-radius: 6px; margin-bottom: 8px; }
+.items-list-header .col-name { flex: 1; min-width: 0; }
+.items-list-header .col-qty { width: 80px; text-align: right; }
 .item-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #F3F4F6; }
 .item-row:hover { background: #F9FAFB; }
 .item-row:last-child { border-bottom: none; }
@@ -66,8 +69,8 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
       </div>
 
       <div class="request-right panel-border" style="flex:1;min-width:0;padding:18px 18px 6px 18px;display:flex;flex-direction:column;">
-        <div style="margin-bottom:12px;">
-          <input id="item-search" class="panel-input" placeholder="Search items by name or code..." aria-label="Search items" style="margin-bottom:8px;" />
+        <div style="margin-bottom:6px;">
+          <input id="item-search" class="panel-input" placeholder="Search items by name or code..." aria-label="Search items" />
         </div>
         <div style="flex:1;overflow-y:auto;margin-bottom:12px;max-height:400px;">
           <div id="items-empty" class="empty-message" style="padding:40px;text-align:center;color:#6B7280;">Choose a branch first to see the available items</div>
@@ -136,6 +139,10 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
         empty.textContent = 'No items configured for this branch.';
         itemsList.appendChild(empty);
       } else {
+        var header = document.createElement('div');
+        header.className = 'items-list-header';
+        header.innerHTML = '<div class="col-name">Item Name</div><div class="col-qty">QTY</div>';
+        itemsList.appendChild(header);
         filtered.forEach(function(item) {
           itemsList.appendChild(renderItemRow(item));
         });
