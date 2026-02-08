@@ -51,10 +51,13 @@ body.branch-assignments-page {
 .assignments-table th { background: #F9FAFB; padding: 14px 16px; text-align: left; font-weight: 600; font-size: 13px; color: #374151; border-bottom: 2px solid #E5E7EB; }
 .assignments-table td { padding: 14px 16px; border-bottom: 1px solid #F3F4F6; font-size: 14px; }
 .assignments-table tr:hover { background: #FAFAFA; }
-.btn-remove { padding: 6px 12px; font-size: 12px; background: transparent; color: #991B1B; border: 1px solid #FECACA; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
-.btn-remove:hover { background: #FEE2E2; }
 .no-assignments { color: #6B7280; padding: 24px; text-align: center; font-size: 14px; }
-.branch-tag { display: inline-block; padding: 5px 12px; background: #EFF6FF; color: #1E40AF; border-radius: 6px; font-size: 12px; margin-right: 6px; margin-bottom: 6px; font-weight: 500; }
+.branch-tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px 5px 12px; background: #EFF6FF; color: #1E40AF; border-radius: 6px; font-size: 12px; margin-right: 6px; margin-bottom: 6px; font-weight: 500; }
+.branch-tag .tag-remove { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; padding: 0; margin: 0; background: transparent; color: #B91C1C; border: none; border-radius: 4px; font-size: 16px; line-height: 1; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.branch-tag .tag-remove:hover { background: rgba(185, 28, 28, 0.15); color: #991B1B; }
+.branch-tag .tag-remove:focus { outline: none; }
+.branch-tag .tag-remove img { display: block; filter: invert(18%) sepia(98%) saturate(5000%) hue-rotate(350deg); }
+.branch-tag .tag-remove:hover img { filter: invert(12%) sepia(98%) saturate(5000%) hue-rotate(350deg); }
 </style>
 {% endblock %}
 
@@ -89,6 +92,9 @@ body.branch-assignments-page {
           </div>
           <div class="add-form-right">
             <span class="section-label">Select branches (one or more)</span>
+            <div style="margin-bottom:12px;flex-shrink:0;">
+              <input type="text" id="branch-search" class="panel-input" placeholder="Search branches..." aria-label="Search branches" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-stack);font-size:13px;" />
+            </div>
             <div class="branches-scroll">
               <div class="select-all-row">
                 <label>
@@ -97,11 +103,11 @@ body.branch-assignments-page {
                 </label>
               </div>
               {% for brand_name, branches in branch_groups.items %}
-              <div class="branch-group">
+              <div class="branch-group" data-brand="{{ brand_name|lower }}">
                 <div class="branch-group-title">{{ brand_name }}</div>
                 <div class="branch-group-list">
                   {% for branch in branches %}
-                  <label class="branch-option">
+                  <label class="branch-option" data-branch-name="{{ branch.name|lower }}">
                     <input type="checkbox" name="branch_ids" value="{{ branch.id }}" class="branch-checkbox" />
                     <span>{{ branch.name }}</span>
                   </label>
@@ -123,7 +129,6 @@ body.branch-assignments-page {
           <tr>
             <th>Branch Manager</th>
             <th>Assigned Branches</th>
-            <th style="width: 100px;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -135,19 +140,17 @@ body.branch-assignments-page {
             </td>
             <td>
               {% for a in row.assignments %}
-              <span class="branch-tag">{{ a.branch.brand.name }} — {{ a.branch.name }}</span>
+              <span class="branch-tag">
+                {{ a.branch.brand.name }} — {{ a.branch.name }}
+                <form method="post" style="display: inline; margin: 0; padding: 0;" onsubmit="return confirm('Remove {{ row.branch_manager.full_name }} from {{ a.branch.name }}?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="remove" />
+                  <input type="hidden" name="assignment_id" value="{{ a.id }}" />
+                  <button type="submit" class="tag-remove" aria-label="Remove {{ a.branch.name }}"><img src="{% static 'icons/trash.svg' %}" alt="" width="14" height="14" style="display:block;" /></button>
+                </form>
+              </span>
               {% empty %}
               <span class="no-assignments" style="padding: 0;">No branches assigned</span>
-              {% endfor %}
-            </td>
-            <td>
-              {% for a in row.assignments %}
-              <form method="post" style="display: inline; margin-right: 4px;" onsubmit="return confirm('Remove {{ row.branch_manager.full_name }} from {{ a.branch.name }}?');">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="remove" />
-                <input type="hidden" name="assignment_id" value="{{ a.id }}" />
-                <button type="submit" class="btn-remove">Remove</button>
-              </form>
               {% endfor %}
             </td>
           </tr>
@@ -177,6 +180,38 @@ body.branch-assignments-page {
         });
       });
     }
+  })();
+
+  (function() {
+    var branchSearch = document.getElementById('branch-search');
+    var branchesScroll = document.querySelector('.add-form-right .branches-scroll');
+    if (!branchSearch || !branchesScroll) return;
+    branchSearch.addEventListener('input', function() {
+      var query = this.value.trim().toLowerCase();
+      var brandGroups = branchesScroll.querySelectorAll('.branch-group');
+      brandGroups.forEach(function(brandGroup) {
+        var branchOptions = brandGroup.querySelectorAll('.branch-option');
+        var visibleCount = 0;
+        branchOptions.forEach(function(branchOption) {
+          var branchName = branchOption.getAttribute('data-branch-name') || '';
+          var brandName = brandGroup.getAttribute('data-brand') || '';
+          var matches = !query ||
+                       branchName.indexOf(query) !== -1 ||
+                       brandName.indexOf(query) !== -1;
+          if (matches) {
+            branchOption.style.display = 'flex';
+            visibleCount++;
+          } else {
+            branchOption.style.display = 'none';
+          }
+        });
+        if (visibleCount === 0) {
+          brandGroup.style.display = 'none';
+        } else {
+          brandGroup.style.display = 'block';
+        }
+      });
+    });
   })();
   </script>
   <script>
