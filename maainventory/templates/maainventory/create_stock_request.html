@@ -31,6 +31,12 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
       <h2 style="margin-top:6px;">New Stock Request</h2>
       <p style="color:#6b7280;font-size:14px;margin-top:4px;">Request items from warehouse for your branch. Flow: Branch Manager requests → Procurement approves → Warehouse fulfills → Delivered.</p>
     </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button type="button" id="submit-request" class="btn-green" style="display:inline-flex;align-items:center;gap:8px;">
+        <img src="{% static 'icons/check.svg' %}" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" />
+        Submit Request
+      </button>
+    </div>
   </div>
 
   <div class="inventory-container" style="margin-bottom: 40px;">
@@ -56,7 +62,7 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
         </div>
       </div>
 
-      <div class="request-right panel-border" style="flex:1;min-width:0;padding:18px;display:flex;flex-direction:column;">
+      <div class="request-right panel-border" style="flex:1;min-width:0;padding:18px 18px 6px 18px;display:flex;flex-direction:column;">
         <div style="margin-bottom:12px;">
           <input id="item-search" class="panel-input" placeholder="Search items by name or code..." aria-label="Search items" style="margin-bottom:8px;" />
         </div>
@@ -78,14 +84,10 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
           </div>
         </div>
 
-        <div style="border-top:1px solid var(--border);padding-top:12px;flex-shrink:0;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="border-top:1px solid var(--border);padding:12px 0 12px 0;flex-shrink:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:600;">Total items: <span id="total-items">0</span></span>
           </div>
-          <button id="submit-request" class="btn-new-request" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--focus,#D9BD7D);color:white;border:none;border-radius:8px;font-weight:500;cursor:pointer;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-            Submit Request
-          </button>
         </div>
       </div>
     </div>
@@ -93,6 +95,7 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
 
   <script>
   (function() {
+    var checkIconUrl = "{% static 'icons/check.svg' %}";
     var branchSelect = document.getElementById('branch-select');
     var itemSearch = document.getElementById('item-search');
     var itemsList = document.getElementById('items-list');
@@ -178,14 +181,14 @@ body { overflow-y: auto !important; overflow-x: hidden; height: auto !important;
         } else {
           alert('Error: ' + (data.error || 'Unknown error'));
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Submit Request';
+          submitBtn.innerHTML = '<img src="' + checkIconUrl + '" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" /> Submit Request';
         }
       })
       .catch(function(err) {
         alert('Error submitting request');
         console.error(err);
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Submit Request';
+        submitBtn.innerHTML = '<img src="' + checkIconUrl + '" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" /> Submit Request';
       });
     });
 
