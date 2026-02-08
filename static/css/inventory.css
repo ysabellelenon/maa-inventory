@@ -511,17 +511,18 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 .switch input:checked + .slider:before{transform:translateX(20px)}
 .switch .slider{display:block}
 
-/* Inline save button on heading */
+/* Inline save button on heading - matches btn-back/btn-green size */
 .btn-save-inline{
   background:#10b981;
   border:none;
   color:#ffffff;
-  padding:8px 12px;
-  border-radius:999px;
+  padding:8px 18px;
+  border-radius:8px;
   display:inline-flex;
   align-items:center;
-  gap:4px;
-  font-weight:700;
+  gap:8px;
+  font-size:14px;
+  font-weight:500;
   cursor:pointer;
   box-shadow:none;
 }
@@ -1106,13 +1107,9 @@ h3.item-submeta{ /* explicit selector for subheading semantics */
 }
 
 /* ========== iPad / small laptop responsive ========== */
-/* Add New Inventory Item page only: slightly smaller heading, buttons, and left/side panels at 1390px */
+/* Add New Inventory Item page only: slightly smaller heading and left/side panels at 1390px */
 @media (max-width: 1390px) {
   .page-add-item .page-header h2 { font-size: 1.2rem; }
-  .page-add-item .btn-gold,
-  .page-add-item .btn-green { padding: 7px 16px; font-size: 13px; }
-  .page-add-item .btn-gold img,
-  .page-add-item .btn-green img { width: 14px; height: 14px; }
   /* Category + supplier column: a little narrower */
   .page-add-item .request-left { flex: 0 0 300px !important; min-width: 260px !important; }
   /* Branches Using This Item panel: a little narrower (item info form stays flex:1) */

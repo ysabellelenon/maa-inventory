@@ -30,6 +30,61 @@ button {
 }
 ```
 
+## Button classes
+
+These button classes provide consistent primary and secondary actions. `btn-gold`, `btn-green`, `btn-red`, and `btn-back` are defined in `maainventory/templates/maainventory/base.html` (available on every page); `btn-create` is in `static/css/inventory.css` (available on pages that load it).
+
+| Class | Use for | Appearance | Defined in |
+|-------|---------|------------|------------|
+| **`btn-gold`** | Primary actions (e.g. Add Supplier, Back to Suppliers) | Gold background (`--focus`), white text | `base.html` |
+| **`btn-green`** | Success/confirm actions (e.g. Approve, Add New Inventory Item) | Green background (#16a34a), white text | `base.html` |
+| **`btn-red`** | Reject/danger actions (e.g. Reject request) | Red background (#EF4444), white text | `base.html` |
+| **`btn-back`** | Secondary back/navigation links | Light gray background (#F9FAFB), dark text, bordered | `base.html` |
+| **`btn-create`** | Add/Create/New actions in page headers (e.g. Add Item, New Request) | Gold background (#D9BD7D), pill shape, white text | `inventory.css` |
+
+`btn-gold`, `btn-green`, `btn-red`, and `btn-back` share the same size: `padding: 8px 18px`, `font-size: 14px`, `gap: 8px`. `btn-create` uses `padding: 8px 12px`, `gap: 4px`, `border-radius: 999px` (pill shape). Icons inside should be 16×16px; use `<img>` or `<svg>` with `width="16" height="16"`.
+
+### Usage examples
+
+```html
+<!-- Gold primary action -->
+<a href="{% url 'add_supplier' %}" class="btn-gold">
+  <img src="{% static 'icons/plus.svg' %}" alt="Add" />
+  Add Supplier
+</a>
+
+<!-- Green confirm action -->
+<button type="submit" class="btn-green">
+  <img src="{% static 'icons/check.svg' %}" alt="" />
+  Approve
+</button>
+
+<!-- Red reject/danger action -->
+<button type="button" class="btn-red">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">...</svg>
+  Reject
+</button>
+
+<!-- Gray back link -->
+<a href="{% url 'requests' %}" class="btn-back">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">...</svg>
+  Back to Requests
+</a>
+
+<!-- Pill-style create button (inventory.css) -->
+<a href="{% url 'add_item' %}" class="btn-create">
+  <img src="{% static 'icons/plus.svg' %}" alt="" />
+  <span>Add Item</span>
+</a>
+```
+
+**Notes:**
+- Do not add inline styles or overrides for these buttons; keep styling consistent.
+- `btn-gold` and `btn-green` expect `<img>` children; `btn-back` and `btn-red` support both `<img>` and `<svg>`.
+- `btn-create` is in `inventory.css`, so it is available on pages that load that stylesheet (e.g. Warehouse Inventory, Branch Stock Requests, Purchase Orders).
+
+---
+
 ## Typography
 - `--font-stack`: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial
 

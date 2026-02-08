@@ -17,14 +17,14 @@
       <h2 style="margin-top:6px;">Add New Inventory Item</h2>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
-      <a href="{% url 'inventory' %}" class="btn-gold">
+      <button type="submit" form="supplier-item-form" class="btn-green">
+        <img src="{% static 'icons/check.svg' %}" alt="" aria-hidden="true" />
+        Add New Inventory Item
+      </button>
+      <a href="{% url 'inventory' %}" class="btn-back">
         <img src="{% static 'icons/chevron-left.svg' %}" alt="Back" />
         Back to Warehouse Inventory
       </a>
-      <button type="submit" form="supplier-item-form" class="btn-green" style="display:inline-flex;align-items:center;gap:8px;">
-        <img src="{% static 'icons/check.svg' %}" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" />
-        Add New Inventory Item
-      </button>
     </div>
   </div>
 
@@ -522,7 +522,7 @@
         if (photoInput.files.length !== selectedPhotos.length) updateFileInput();
         const formData = new FormData(form);
         const submitBtn = document.querySelector('button[form="supplier-item-form"][type="submit"]');
-        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" style="width:16px;height:16px;filter:brightness(0) invert(1);" /> Adding…'; }
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" /> Adding…'; }
         fetch(form.action, {
           method: 'POST',
           body: formData,
@@ -532,7 +532,7 @@
           credentials: 'same-origin'
         }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: null }; }); })
           .then(function(result) {
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" /> Add New Inventory Item'; }
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" aria-hidden="true" /> Add New Inventory Item'; }
             if (result.data && result.data.success) {
               window.location.href = result.data.redirect_url || '{% url "inventory" %}';
               return;
@@ -551,7 +551,7 @@
             }
           })
           .catch(function() {
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" aria-hidden="true" style="width:16px;height:16px;filter:brightness(0) invert(1);" /> Add New Inventory Item'; }
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<img src="{% static "icons/check.svg" %}" alt="" aria-hidden="true" /> Add New Inventory Item'; }
             if (ajaxErrorsEl) {
               var div = document.createElement('div');
               div.className = 'dismissible-message';

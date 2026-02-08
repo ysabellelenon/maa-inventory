@@ -110,7 +110,7 @@ body.view-request-page-open {
     <div style="display:flex;flex-direction:column;">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="{% url 'dashboard' %}">Dashboard</a><span class="sep" aria-hidden="true">&rsaquo;</span>
-        <a href="{% url 'requests' %}">Requests</a><span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{% url 'requests' %}">Branch Stock Requests</a><span class="sep" aria-hidden="true">&rsaquo;</span>
         <span class="active" aria-current="page">{{ req.request_code }}</span>
       </nav>
       <h2 style="margin-top:6px;">Request: {{ req.request_code }}</h2>
@@ -125,11 +125,11 @@ body.view-request-page-open {
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
       {% if can_approve %}
-      <button id="approve-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #10B981; color: white; border-radius: 8px; font-weight: 500; border: none; cursor: pointer;">
+      <button id="approve-btn" type="button" class="btn-green">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
         Approve
       </button>
-      <button id="reject-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #EF4444; color: white; border-radius: 8px; font-weight: 500; border: none; cursor: pointer;">
+      <button id="reject-btn" type="button" class="btn-red">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         Reject
       </button>
@@ -146,7 +146,7 @@ body.view-request-page-open {
         Mark as Delivered
       </button>
       {% endif %}
-      <a href="{% url 'requests' %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #F9FAFB; color: #101828; text-decoration: none; border-radius: 8px; font-weight: 500; border: 1px solid #E5E7EB;">
+      <a href="{% url 'requests' %}" class="btn-back">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
         Back to Requests
       </a>
