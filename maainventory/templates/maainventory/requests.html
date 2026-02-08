@@ -52,6 +52,58 @@
 .inventory-table .col-name .item-thumb {
   cursor: pointer;
 }
+/* Step circles for status column */
+.step-circles {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.step-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+}
+.step-circle.step-completed {
+  background: #16a34a;
+  border: none;
+}
+.step-circle.step-completed .step-check {
+  width: 10px;
+  height: 8px;
+}
+.step-circle.step-current {
+  background: #EAB308;
+  border: none;
+  color: #1f2937;
+}
+.step-circle.step-rejected {
+  background: #EF4444;
+  border: none;
+}
+.step-circle.step-rejected .step-x {
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+}
+.step-circle.step-gray {
+  background: transparent;
+  border: 1.5px solid #D1D5DB;
+  color: #9CA3AF;
+}
+.step-connector {
+  width: 8px;
+  height: 2px;
+  background: #E5E7EB;
+  flex-shrink: 0;
+  display: inline-block;
+}
 </style>
 {% endblock %}
 
@@ -112,7 +164,7 @@
         </thead>
         <tbody>
           {% for item in items %}
-            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}" {% if item.is_new %}data-new="true"{% endif %} style="cursor: pointer;" onclick="window.location.href='{% url 'view_request' item.id %}'" onmouseover="this.style.backgroundColor='#F9FAFB'" onmouseout="this.style.backgroundColor=''">
+            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}" {% if item.is_new %}data-new="true"{% endif %} data-status="{{ item.status }}" style="cursor: pointer;" onclick="window.location.href='{% url 'view_request' item.id %}'" onmouseover="this.style.backgroundColor='#F9FAFB'" onmouseout="this.style.backgroundColor=''">
               <td class="col-check" onclick="event.stopPropagation();"><input type="checkbox" class="row-select" aria-label="select request #{{ forloop.counter }}" /></td>
               <td class="col-expand" onclick="event.stopPropagation();">
                 <button class="expand" aria-hidden="true">
@@ -138,25 +190,15 @@
               </td>
               <td class="col-requested">{{ item.requested_date|default:"—" }}</td>
               <td class="col-status">
-                {% if item.status == 'Pending' %}
-                  <span class="status-pill status-pending">{{ item.status }}</span>
-                {% elif item.status == 'Under Review' %}
-                  <span class="status-pill status-under-review">{{ item.status }}</span>
-                {% elif item.status == 'Approved' %}
-                  <span class="status-pill status-approved">{{ item.status }}</span>
-                {% elif item.status == 'Rejected' %}
-                  <span class="status-pill status-rejected">{{ item.status }}</span>
-                {% elif item.status == 'In Process' %}
-                  <span class="status-pill status-in-process">{{ item.status }}</span>
-                {% elif item.status == 'Out for Delivery' %}
-                  <span class="status-pill status-out-for-delivery">{{ item.status }}</span>
-                {% elif item.status == 'Delivered' %}
-                  <span class="status-pill status-delivered">{{ item.status }}</span>
-                {% elif item.status == 'Completed' %}
-                  <span class="status-pill status-completed">{{ item.status }}</span>
-                {% else %}
-                  <span class="status-pill">{{ item.status }}</span>
-                {% endif %}
+                <div class="step-circles" aria-label="Request status: {{ item.status }}">
+                  {% if item.status == 'Rejected' %}
+                  <div class="step-circle step-rejected" title="Rejected"><span class="step-x">×</span></div><span class="step-connector"></span><div class="step-circle step-gray">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
+                  {% elif item.status == 'Pending' or item.status == 'Under Review' %}
+                  <div class="step-circle step-current" title="{{ item.status }}">1</div><span class="step-connector"></span><div class="step-circle step-gray">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
+                  {% else %}
+                  <div class="step-circle step-completed" title="Approved"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-current" title="{{ item.status }}">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
+                  {% endif %}
+                </div>
               </td>
               <td class="col-action" onclick="event.stopPropagation();">
                 <div class="action-btn-container">
@@ -508,8 +550,7 @@
     };
 
     function statusForRow(row) {
-      var pill = row.querySelector('.col-status .status-pill');
-      return pill ? pill.textContent.trim() : '';
+      return row.getAttribute('data-status') || '';
     }
 
     function applyFilter(key) {

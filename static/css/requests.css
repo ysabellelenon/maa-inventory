@@ -124,6 +124,14 @@
 .inventory-table tbody .col-name {
   width: 180px;
 }
+.inventory-table thead th.col-requested,
+.inventory-table tbody .col-requested {
+  width: 110px;
+}
+.inventory-table thead th.col-status,
+.inventory-table tbody .col-status {
+  width: 120px;
+}
 
 /* Reduce requests table wrapper height slightly to avoid page-level scrolling */
 .table-wrapper{

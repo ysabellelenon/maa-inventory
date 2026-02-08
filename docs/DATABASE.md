@@ -169,6 +169,18 @@ These six roles **must** be added to the `roles` table for the system to work co
   - Inventory screen calculates total warehouse stock for each item by summing `qty_on_hand` where `location.type = WAREHOUSE`.
   - Updated whenever stock moves (receipts, fulfillments, adjustments).
 
+**Manually changing QTY and Remaining Qty (without ordering/requesting flow):**
+
+The **QTY** and **Remaining Qty** shown on the inventory page both come from the same source: the sum of `qty_on_hand` in `stock_balances` for all warehouse locations for that item.
+
+To manually adjust the displayed quantity:
+
+- Update the **`stock_balances`** table, specifically the **`qty_on_hand`** column.
+- If a row already exists for that item at a warehouse location: update `qty_on_hand` to the desired value.
+- If no row exists: insert a new row with the correct `item`, `variation` (NULL for items without variations), `location` (must be a warehouse, i.e. `type = 'WAREHOUSE'`), and `qty_on_hand`.
+
+Note: Manual edits bypass the normal flow (supplier orders, request fulfillment). The `StockLedger` audit log will not automatically record these changes. For audit compliance, consider creating a proper adjustment flow that updates both `StockBalance` and `StockLedger`.
+
 ### 7. `StockLedger`
 - **Table:** `stock_ledger`
 - **Purpose:** Audit log of **all stock movements**.
