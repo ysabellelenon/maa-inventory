@@ -16,6 +16,9 @@
   text-decoration:none;
   margin-right:6px;
 }
+.breadcrumbs a:hover{
+  color:gold;
+}
 .breadcrumbs .sep{
   margin:0 6px;
   color:#9ca3af;
