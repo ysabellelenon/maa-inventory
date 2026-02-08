@@ -85,10 +85,14 @@
             <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
             <input class="table-search-input" placeholder="Search by requestor or item" aria-label="Search requests" />
           </div>
-          <button class="btn-filter">
-            <img src="{% static 'icons/filter.svg' %}" alt="" />
-            <span>Filter</span>
-          </button>
+          <form method="get" action="{% url 'requests' %}" class="category-filter-form">
+            <select id="branch-filter" name="branch" class="category-filter-select" aria-label="Filter by branch" onchange="this.form.submit()">
+              <option value="" {% if not current_branch %}selected{% endif %}>All branches</option>
+              {% for branch in branches %}
+                <option value="{{ branch.id }}" {% if current_branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+              {% endfor %}
+            </select>
+          </form>
         </div>
       </div>
       <div class="table-wrapper">
@@ -206,7 +210,7 @@
           {% if page_obj.paginator.num_pages > 1 %}
           <nav class="pagination" aria-label="Pagination">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" class="page-prev" aria-label="Previous page">
+            <a href="?{% if current_branch %}branch={{ current_branch }}&{% endif %}page={{ page_obj.previous_page_number }}" class="page-prev" aria-label="Previous page">
               <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
             </a>
             {% else %}
@@ -219,16 +223,16 @@
               {% if page_obj.number == num %}
                 <span class="page-num active" aria-current="page">{{ num }}</span>
               {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+                <a href="?{% if current_branch %}branch={{ current_branch }}&{% endif %}page={{ num }}" class="page-num">{{ num }}</a>
               {% elif num == 1 or num == page_obj.paginator.num_pages %}
-                <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+                <a href="?{% if current_branch %}branch={{ current_branch }}&{% endif %}page={{ num }}" class="page-num">{{ num }}</a>
               {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
                 <span class="page-dots">…</span>
               {% endif %}
             {% endfor %}
             
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="page-next" aria-label="Next page">
+            <a href="?{% if current_branch %}branch={{ current_branch }}&{% endif %}page={{ page_obj.next_page_number }}" class="page-next" aria-label="Next page">
               <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
             </a>
             {% else %}

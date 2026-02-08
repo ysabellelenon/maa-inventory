@@ -1111,6 +1111,12 @@ def requests(request):
         else:
             requests_queryset = requests_queryset.none()  # No assignments = see nothing
 
+    # Branch dropdown filter: options are all active branches from the database
+    branch_id = request.GET.get('branch')
+    branches = Branch.objects.filter(is_active=True).order_by('name')
+    if branch_id:
+        requests_queryset = requests_queryset.filter(branch_id=branch_id)
+
     # Tab counts (actual totals): New = requested today or within last 2 days; Pending = status Pending
     now = timezone.now()
     new_cutoff = now - timedelta(days=3)  # today + yesterday + day before = last 3 days
@@ -1153,6 +1159,8 @@ def requests(request):
         "items": page_obj,
         "page_obj": page_obj,
         "tab_counts": tab_counts,
+        "branches": branches,
+        "current_branch": branch_id,
     }
     return render(request, "maainventory/requests.html", context)
 
