@@ -1094,6 +1094,8 @@ def delete_item_photo(request, photo_id):
 def requests(request):
     """Render requests page with dynamic data from database. Branch users see only requests for their branch(es)."""
     from django.core.paginator import Paginator
+    from django.utils import timezone
+    from datetime import timedelta
     from .context_processors import get_branch_user_info
 
     # Get all requests, ordered by most recent
@@ -1108,6 +1110,19 @@ def requests(request):
             requests_queryset = requests_queryset.filter(branch_id__in=user_branch_ids)
         else:
             requests_queryset = requests_queryset.none()  # No assignments = see nothing
+
+    # Tab counts (actual totals): New = requested today or within last 2 days; Pending = status Pending
+    now = timezone.now()
+    new_cutoff = now - timedelta(days=3)  # today + yesterday + day before = last 3 days
+    tab_counts = {
+        'all': requests_queryset.count(),
+        'new': requests_queryset.filter(date_of_order__gte=new_cutoff).count(),
+        'pending': requests_queryset.filter(status=Request.StatusType.PENDING).count(),
+        'in-process': 0,
+        'delivered': 0,
+        'completed': 0,
+        'rejected': 0,
+    }
     
     # Build requests list for template
     requests_list = []
@@ -1115,6 +1130,8 @@ def requests(request):
         # Get first item from request for display
         first_item = req.items.first()
         item_name = first_item.item.name if first_item else "Multiple items"
+        request_date = req.date_of_order or req.created_at
+        is_new = request_date >= new_cutoff
         
         requests_list.append({
             "code": req.request_code,
@@ -1124,6 +1141,7 @@ def requests(request):
             "requested_date": req.date_of_order.strftime("%m/%d/%Y") if req.date_of_order else req.created_at.strftime("%m/%d/%Y"),
             "status": req.get_status_display(),
             "id": req.id,  # For detail links
+            "is_new": is_new,
         })
 
     # Paginate requests
@@ -1134,6 +1152,7 @@ def requests(request):
     context = {
         "items": page_obj,
         "page_obj": page_obj,
+        "tab_counts": tab_counts,
     }
     return render(request, "maainventory/requests.html", context)
 

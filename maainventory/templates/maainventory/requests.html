@@ -69,9 +69,9 @@
   <div class="inventory-container">
     <div class="tabs-container">
       <div class="tabs">
-        <button class="tab-btn active" data-key="all">All <span class="tab-badge">0</span></button>
-        <button class="tab-btn" data-key="new">New <span class="tab-badge">0</span></button>
-        <button class="tab-btn" data-key="pending">Pending <span class="tab-badge">0</span></button>
+        <button class="tab-btn active" data-key="all">All <span class="tab-badge">{{ tab_counts.all|default:0 }}</span></button>
+        <button class="tab-btn" data-key="new">New <span class="tab-badge">{{ tab_counts.new|default:0 }}</span></button>
+        <button class="tab-btn" data-key="pending">Pending <span class="tab-badge">{{ tab_counts.pending|default:0 }}</span></button>
         <button class="tab-btn" data-key="in-process">In Process <span class="tab-badge">0</span></button>
         <button class="tab-btn" data-key="delivered">Delivered <span class="tab-badge">0</span></button>
         <button class="tab-btn" data-key="completed">Completed <span class="tab-badge">0</span></button>
@@ -108,7 +108,7 @@
         </thead>
         <tbody>
           {% for item in items %}
-            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}" style="cursor: pointer;" onclick="window.location.href='{% url 'view_request' item.id %}'" onmouseover="this.style.backgroundColor='#F9FAFB'" onmouseout="this.style.backgroundColor=''">
+            <tr class="inventory-row {% if item.status == 'LOW' %}row-low{% endif %}" {% if item.is_new %}data-new="true"{% endif %} style="cursor: pointer;" onclick="window.location.href='{% url 'view_request' item.id %}'" onmouseover="this.style.backgroundColor='#F9FAFB'" onmouseout="this.style.backgroundColor=''">
               <td class="col-check" onclick="event.stopPropagation();"><input type="checkbox" class="row-select" aria-label="select request #{{ forloop.counter }}" /></td>
               <td class="col-expand" onclick="event.stopPropagation();">
                 <button class="expand" aria-hidden="true">
@@ -276,6 +276,7 @@
   })();
 </script>
 
+{{ tab_counts|json_script:"tab-counts-data" }}
 <!-- Action menu: Approve/Reject for Procurement on Pending/Under Review, else View -->
 <div class="overlay" hidden></div>
 <div class="action-menu" hidden role="menu" aria-hidden="true"></div>
@@ -483,9 +484,14 @@
     var table = document.querySelector('.inventory-table');
     if (!tabButtons.length || !table) return;
 
+    // Server-provided counts for All, New, Pending (from json_script)
+    var tabCountsEl = document.getElementById('tab-counts-data');
+    var tabCountsFromServer = tabCountsEl ? JSON.parse(tabCountsEl.textContent) : {};
+
+    // New = requested today or within last 2 days (data-new); Pending = status "Pending"
     var tabMap = {
       all: ['*'],
-      new: ['Under Review', 'Pending'],
+      new: 'data-new',   // special: show rows with data-new="true"
       pending: ['Pending'],
       'in-process': ['In Process', 'Approved', 'Out for Delivery'],
       delivered: ['Delivered'],
@@ -499,38 +505,52 @@
     }
 
     function applyFilter(key) {
-      var allowed = tabMap[key];
+      var rule = tabMap[key];
       var rows = table.querySelectorAll('tbody tr.inventory-row');
       rows.forEach(function (row) {
-        var status = statusForRow(row);
         var show = false;
-        if (allowed && allowed[0] === '*') {
+        if (key === 'all' || (rule && rule === '*')) {
           show = true;
-        } else if (allowed) {
-          show = allowed.indexOf(status) !== -1;
+        } else if (key === 'new' && rule === 'data-new') {
+          show = row.getAttribute('data-new') === 'true';
+        } else if (key === 'pending' && Array.isArray(rule)) {
+          show = statusForRow(row) === 'Pending';
+        } else if (Array.isArray(rule)) {
+          var status = statusForRow(row);
+          show = rule.indexOf(status) !== -1;
         }
         row.style.display = show ? '' : 'none';
       });
     }
 
     function updateBadges() {
-      var counts = {};
-      Object.keys(tabMap).forEach(function (k) { counts[k] = 0; });
+      // All, New, Pending use server counts; others count from current page rows
       var rows = table.querySelectorAll('tbody tr.inventory-row');
+      var counts = { 'all': 0, 'new': 0, 'pending': 0, 'in-process': 0, 'delivered': 0, 'completed': 0, 'rejected': 0 };
+      var statusMap = {
+        'in-process': ['In Process', 'Approved', 'Out for Delivery'],
+        'delivered': ['Delivered'],
+        'completed': ['Completed'],
+        'rejected': ['Rejected']
+      };
       rows.forEach(function (row) {
+        if (row.getAttribute('data-new') === 'true') counts['new']++;
         var status = statusForRow(row);
-        // increment counts for matching tabs
-        Object.keys(tabMap).forEach(function (k) {
-          var allowed = tabMap[k];
-          if (allowed[0] === '*' || allowed.indexOf(status) !== -1) {
-            counts[k]++;
-          }
+        if (status === 'Pending') counts['pending']++;
+        counts['all']++;
+        Object.keys(statusMap).forEach(function (k) {
+          if (statusMap[k].indexOf(status) !== -1) counts[k]++;
         });
       });
       tabButtons.forEach(function (btn) {
         var key = btn.getAttribute('data-key');
         var badge = btn.querySelector('.tab-badge');
-        if (badge) badge.textContent = counts[key] || 0;
+        if (!badge) return;
+        if (key === 'all' || key === 'new' || key === 'pending') {
+          badge.textContent = tabCountsFromServer[key] !== undefined ? tabCountsFromServer[key] : counts[key];
+        } else {
+          badge.textContent = counts[key] || 0;
+        }
       });
     }
 
@@ -543,9 +563,8 @@
       });
     });
 
-    // initialize UI
+    // Badges for All, New, Pending come from server (already in HTML); others from DOM
     updateBadges();
-    // show only 'all' by default
     applyFilter('all');
   })();
 </script>
