@@ -385,10 +385,11 @@ class SupplierPriceDiscussion(models.Model):
 class Request(models.Model):
     """Branch requests for inventory"""
     class StatusType(models.TextChoices):
-        PENDING = 'Pending', 'Pending'
-        UNDER_REVIEW = 'UnderReview', 'Under Review'
-        APPROVED = 'Approved', 'Approved'
-        REJECTED = 'Rejected', 'Rejected'
+        PENDING = 'Pending', 'Pending Procurement Manager Approval'
+        APPROVED = 'Approved', 'Approved'  # legacy; after approval flow uses WAREHOUSE_PROCESSING
+        REJECTED = 'Rejected', 'Rejected by Procurement Manager'
+        WAREHOUSE_PROCESSING = 'WarehouseProcessing', 'Warehouse Processing'
+        READY_FOR_DELIVERY = 'ReadyForDelivery', 'Ready for Delivery'
         IN_PROCESS = 'InProcess', 'In Process'
         OUT_FOR_DELIVERY = 'OutForDelivery', 'Out for Delivery'
         DELIVERED = 'Delivered', 'Delivered'

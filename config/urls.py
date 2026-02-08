@@ -44,6 +44,7 @@ urlpatterns = [
     path("requests/<int:request_id>/", views.view_request, name="view_request"),
     path("requests/<int:request_id>/approve-reject/", views.approve_reject_request, name="approve_reject_request"),
     path("requests/<int:request_id>/mark-in-process/", views.mark_request_in_process, name="mark_request_in_process"),
+    path("requests/<int:request_id>/mark-out-for-delivery/", views.mark_request_out_for_delivery, name="mark_request_out_for_delivery"),
     path("requests/<int:request_id>/mark-delivered/", views.mark_request_delivered, name="mark_request_delivered"),
     path("requests/new/", views.new_request, name="new_request"),
     path("purchase-orders/", views.purchase_orders, name="purchase_orders"),

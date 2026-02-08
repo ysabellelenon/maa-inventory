@@ -67,7 +67,14 @@
   justify-content: center;
   font-size: 10px;
   font-weight: 600;
+  line-height: 1;
   color: white;
+  flex-shrink: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.step-circle .step-check {
+  display: block;
   flex-shrink: 0;
 }
 .step-circle.step-completed {
@@ -88,9 +95,8 @@
   border: none;
 }
 .step-circle.step-rejected .step-x {
-  font-size: 14px;
-  line-height: 1;
-  font-weight: 700;
+  display: block;
+  flex-shrink: 0;
 }
 .step-circle.step-gray {
   background: transparent;
@@ -191,12 +197,20 @@
               <td class="col-requested">{{ item.requested_date|default:"—" }}</td>
               <td class="col-status">
                 <div class="step-circles" aria-label="Request status: {{ item.status }}">
-                  {% if item.status == 'Rejected' %}
-                  <div class="step-circle step-rejected" title="Rejected"><span class="step-x">×</span></div><span class="step-connector"></span><div class="step-circle step-gray">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
-                  {% elif item.status == 'Pending' or item.status == 'Under Review' %}
+                  {% if item.status == 'Rejected by Procurement Manager' %}
+                  <div class="step-circle step-rejected" title="Rejected by Procurement Manager"><svg class="step-x" width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l8 8M9 1l-8 8"/></svg></div><span class="step-connector"></span><div class="step-circle step-gray">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
+                  {% elif item.status == 'Pending Procurement Manager Approval' %}
                   <div class="step-circle step-current" title="{{ item.status }}">1</div><span class="step-connector"></span><div class="step-circle step-gray">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
+                  {% elif item.status == 'Warehouse Processing' %}
+                  <div class="step-circle step-completed" title="Submitted"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-current" title="{{ item.status }}">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
+                  {% elif item.status == 'Ready for Delivery' %}
+                  <div class="step-circle step-completed" title="Submitted"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-completed" title="Warehouse Processing"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-current" title="{{ item.status }}">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
+                  {% elif item.status == 'Out for Delivery' %}
+                  <div class="step-circle step-completed" title="Submitted"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-completed" title="Warehouse Processing"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-completed" title="Ready for Delivery"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-current" title="{{ item.status }}">4</div>
+                  {% elif item.status == 'Delivered' or item.status == 'Completed' %}
+                  <div class="step-circle step-completed" title="Submitted"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-completed" title="Warehouse Processing"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-completed" title="Ready for Delivery"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-completed" title="{{ item.status }}"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div>
                   {% else %}
-                  <div class="step-circle step-completed" title="Approved"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-current" title="{{ item.status }}">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
+                  <div class="step-circle step-completed" title="Submitted"><svg class="step-check" width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></div><span class="step-connector"></span><div class="step-circle step-current" title="{{ item.status }}">2</div><span class="step-connector"></span><div class="step-circle step-gray">3</div><span class="step-connector"></span><div class="step-circle step-gray">4</div>
                   {% endif %}
                 </div>
               </td>
@@ -327,7 +341,7 @@
 </script>
 
 {{ tab_counts|json_script:"tab-counts-data" }}
-<!-- Action menu: Approve/Reject for Procurement on Pending/Under Review, else View -->
+<!-- Action menu: Approve/Reject for Procurement on Pending, else View -->
 <div class="overlay" hidden></div>
 <div class="action-menu" hidden role="menu" aria-hidden="true"></div>
 
@@ -387,7 +401,7 @@
     function buildMenuItems(btn) {
       var status = btn.getAttribute('data-status') || '';
       var requestId = btn.getAttribute('data-id') || '';
-      var canApprove = isProcurement && (status === 'Pending' || status === 'Under Review');
+      var canApprove = isProcurement && status === 'Pending Procurement Manager Approval';
       var items = [];
       if (canApprove) {
         items.push('<button class="action-menu-item action-approve" data-action="approve">Approve</button>');
@@ -542,11 +556,11 @@
     var tabMap = {
       all: ['*'],
       new: 'data-new',   // special: show rows with data-new="true"
-      pending: ['Pending'],
-      'in-process': ['In Process', 'Approved', 'Out for Delivery'],
+      pending: ['Pending Procurement Manager Approval'],
+      'in-process': ['In Process', 'Warehouse Processing', 'Ready for Delivery', 'Out for Delivery'],
       delivered: ['Delivered'],
       completed: ['Completed'],
-      rejected: ['Rejected']
+      rejected: ['Rejected by Procurement Manager']
     };
 
     function statusForRow(row) {
@@ -563,7 +577,7 @@
         } else if (key === 'new' && rule === 'data-new') {
           show = row.getAttribute('data-new') === 'true';
         } else if (key === 'pending' && Array.isArray(rule)) {
-          show = statusForRow(row) === 'Pending';
+          show = statusForRow(row) === 'Pending Procurement Manager Approval';
         } else if (Array.isArray(rule)) {
           var status = statusForRow(row);
           show = rule.indexOf(status) !== -1;
@@ -577,15 +591,15 @@
       var rows = table.querySelectorAll('tbody tr.inventory-row');
       var counts = { 'all': 0, 'new': 0, 'pending': 0, 'in-process': 0, 'delivered': 0, 'completed': 0, 'rejected': 0 };
       var statusMap = {
-        'in-process': ['In Process', 'Approved', 'Out for Delivery'],
+        'in-process': ['In Process', 'Warehouse Processing', 'Ready for Delivery', 'Out for Delivery'],
         'delivered': ['Delivered'],
         'completed': ['Completed'],
-        'rejected': ['Rejected']
+        'rejected': ['Rejected by Procurement Manager']
       };
       rows.forEach(function (row) {
         if (row.getAttribute('data-new') === 'true') counts['new']++;
         var status = statusForRow(row);
-        if (status === 'Pending') counts['pending']++;
+        if (status === 'Pending Procurement Manager Approval') counts['pending']++;
         counts['all']++;
         Object.keys(statusMap).forEach(function (k) {
           if (statusMap[k].indexOf(status) !== -1) counts[k]++;

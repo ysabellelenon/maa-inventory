@@ -82,9 +82,21 @@ body.view-request-page-open {
   font-weight: 600;
 }
 .status-pending { background: #FEF3C7; color: #92400E; }
-.status-underreview { background: #DBEAFE; color: #1E40AF; }
 .status-approved { background: #D1FAE5; color: #065F46; }
 .status-rejected { background: #FEE2E2; color: #991B1B; }
+.rejection-reason-banner {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.rejection-reason-banner strong { color: #991B1B; }
+.status-warehouseprocessing { background: #FEF3C7; color: #92400E; }
+.status-readyfordelivery { background: #E0E7FF; color: #3730A3; }
 .status-inprocess { background: #E0E7FF; color: #3730A3; }
 .status-outfordelivery { background: #FEF3C7; color: #92400E; }
 .status-delivered { background: #D1FAE5; color: #065F46; }
@@ -248,13 +260,19 @@ body.view-request-page-open {
       </button>
       {% endif %}
       {% if can_start_fulfillment %}
-      <button id="mark-in-process-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; border: none; cursor: pointer;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        Start Fulfillment (In Process)
+      <button id="mark-in-process-btn" type="button" class="btn-green">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 4 0h8a2 2 0 0 0 4 0V8"/><path d="M14 6h4l4 4v6"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+        Ready for Delivery
+      </button>
+      {% endif %}
+      {% if can_mark_out_for_delivery %}
+      <button id="mark-out-for-delivery-btn" type="button" class="btn-green">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 4 0h8a2 2 0 0 0 4 0V8"/><path d="M14 6h4l4 4v6"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+        Out for Delivery
       </button>
       {% endif %}
       {% if can_mark_delivered %}
-      <button id="mark-delivered-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #10B981; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; border: none; cursor: pointer;">
+      <button id="mark-delivered-btn" type="button" class="btn-green">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
         Mark as Delivered
       </button>
@@ -270,12 +288,18 @@ body.view-request-page-open {
     <div class="inventory-card">
       {% if can_start_fulfillment %}
       <div class="warehouse-note">
-        <strong>Warehouse:</strong> Click &quot;Start Fulfillment (In Process)&quot; to deduct items from warehouse stock and set this request to In Process. The branch manager for <strong>{{ req.branch.name }}</strong> will then mark it as Delivered when items arrive; delivered items will appear on the <a href="{% url 'branches' %}">Branches</a> page for this branch.
+        <strong>Warehouse:</strong> Click &quot;Ready for Delivery&quot; to deduct items from warehouse stock and set this request to Ready for Delivery. The branch manager for <strong>{{ req.branch.name }}</strong> will then mark it as Delivered when items arrive; delivered items will appear on the <a href="{% url 'branches' %}">Branches</a> page for this branch.
       </div>
       {% endif %}
       {% if can_mark_delivered %}
       <div class="warehouse-note">
         <strong>Branch manager:</strong> Confirm that items have been delivered to <strong>{{ req.branch.name }}</strong>. Once you mark as Delivered, these items will appear on the <a href="{% url 'branches' %}">Branches</a> page for your branch.
+      </div>
+      {% endif %}
+
+      {% if req.status == 'Rejected' and req.rejected_reason %}
+      <div class="rejection-reason-banner">
+        <strong>Rejection reason:</strong> {{ req.rejected_reason }}
       </div>
       {% endif %}
 
@@ -574,6 +598,16 @@ body.view-request-page-open {
   {% endif %}
 
   {% if can_start_fulfillment %}
+  <div id="ready-for-delivery-confirm-modal" class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="ready-for-delivery-modal-title" aria-describedby="ready-for-delivery-modal-message">
+    <div class="modal-confirm-card">
+      <h3 id="ready-for-delivery-modal-title" class="modal-confirm-title">Ready for Delivery</h3>
+      <p id="ready-for-delivery-modal-message" class="modal-confirm-message">Are you sure you want to mark this request as Ready for Delivery?<br><br>This will deduct the items from warehouse stock and move this request to Ready for Delivery for the logistics team.</p>
+      <div class="modal-confirm-buttons">
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-cancel" id="ready-for-delivery-modal-cancel">Cancel</button>
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-confirm modal-confirm-btn-approve" id="ready-for-delivery-modal-confirm">Ready for Delivery</button>
+      </div>
+    </div>
+  </div>
   <script>
     (function() {
       function getCookie(name) {
@@ -582,13 +616,33 @@ body.view-request-page-open {
         if (parts.length === 2) return parts.pop().split(';').shift();
       }
       var btn = document.getElementById('mark-in-process-btn');
-      if (btn) {
+      var modal = document.getElementById('ready-for-delivery-confirm-modal');
+      var cancelBtn = document.getElementById('ready-for-delivery-modal-cancel');
+      var confirmBtn = document.getElementById('ready-for-delivery-modal-confirm');
+
+      function closeModal() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      if (btn && modal) {
         btn.addEventListener('click', function() {
-          if (!confirm('Start fulfillment? This will deduct items from warehouse stock and set the request to In Process. The branch manager can then mark as Delivered when items arrive.')) {
-            return;
-          }
-          btn.disabled = true;
+          modal.classList.add('is-open');
+          modal.setAttribute('aria-hidden', 'false');
+        });
+
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+        });
+
+        confirmBtn.addEventListener('click', function() {
+          closeModal();
           var originalHtml = btn.innerHTML;
+          btn.disabled = true;
           btn.innerHTML = '<span>Processing...</span>';
           fetch('{% url "mark_request_in_process" req.id %}', {
             method: 'POST',
@@ -597,7 +651,71 @@ body.view-request-page-open {
           })
           .then(function(res) { return res.json(); })
           .then(function(data) {
-            if (data.success) { alert(data.message || 'Request is now In Process.'); window.location.reload(); }
+            if (data.success) { window.location.reload(); }
+            else { alert('Error: ' + (data.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = originalHtml; }
+          })
+          .catch(function(err) { alert('Error processing request'); btn.disabled = false; btn.innerHTML = originalHtml; });
+        });
+      }
+    })();
+  </script>
+  {% endif %}
+
+  {% if can_mark_out_for_delivery %}
+  <div id="out-for-delivery-confirm-modal" class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="out-for-delivery-modal-title" aria-describedby="out-for-delivery-modal-message">
+    <div class="modal-confirm-card">
+      <h3 id="out-for-delivery-modal-title" class="modal-confirm-title">Out for Delivery</h3>
+      <p id="out-for-delivery-modal-message" class="modal-confirm-message">Are you sure you want to mark this request as Out for Delivery? The branch manager can then mark it as Delivered when items arrive.</p>
+      <div class="modal-confirm-buttons">
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-cancel" id="out-for-delivery-modal-cancel">Cancel</button>
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-confirm modal-confirm-btn-approve" id="out-for-delivery-modal-confirm">Out for Delivery</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      function getCookie(name) {
+        var value = '; ' + document.cookie;
+        var parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+      var btn = document.getElementById('mark-out-for-delivery-btn');
+      var modal = document.getElementById('out-for-delivery-confirm-modal');
+      var cancelBtn = document.getElementById('out-for-delivery-modal-cancel');
+      var confirmBtn = document.getElementById('out-for-delivery-modal-confirm');
+
+      function closeModal() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      if (btn && modal) {
+        btn.addEventListener('click', function() {
+          modal.classList.add('is-open');
+          modal.setAttribute('aria-hidden', 'false');
+        });
+
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+        });
+
+        confirmBtn.addEventListener('click', function() {
+          closeModal();
+          var originalHtml = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<span>Processing...</span>';
+          fetch('{% url "mark_request_out_for_delivery" req.id %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.success) { window.location.reload(); }
             else { alert('Error: ' + (data.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = originalHtml; }
           })
           .catch(function(err) { alert('Error processing request'); btn.disabled = false; btn.innerHTML = originalHtml; });
@@ -608,6 +726,16 @@ body.view-request-page-open {
   {% endif %}
 
   {% if can_mark_delivered %}
+  <div id="mark-delivered-confirm-modal" class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="mark-delivered-modal-title" aria-describedby="mark-delivered-modal-message">
+    <div class="modal-confirm-card">
+      <h3 id="mark-delivered-modal-title" class="modal-confirm-title">Mark as Delivered</h3>
+      <p id="mark-delivered-modal-message" class="modal-confirm-message">Confirm that items have been delivered to your branch? They will then appear on the Branches page for {{ req.branch.name }}.</p>
+      <div class="modal-confirm-buttons">
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-cancel" id="mark-delivered-modal-cancel">Cancel</button>
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-confirm modal-confirm-btn-approve" id="mark-delivered-modal-confirm">Mark as Delivered</button>
+      </div>
+    </div>
+  </div>
   <script>
     (function() {
       function getCookie(name) {
@@ -616,13 +744,33 @@ body.view-request-page-open {
         if (parts.length === 2) return parts.pop().split(';').shift();
       }
       var btn = document.getElementById('mark-delivered-btn');
-      if (btn) {
+      var modal = document.getElementById('mark-delivered-confirm-modal');
+      var cancelBtn = document.getElementById('mark-delivered-modal-cancel');
+      var confirmBtn = document.getElementById('mark-delivered-modal-confirm');
+
+      function closeModal() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      if (btn && modal) {
         btn.addEventListener('click', function() {
-          if (!confirm('Confirm that items have been delivered to your branch? They will then appear on the Branches page for {{ req.branch.name }}.')) {
-            return;
-          }
-          btn.disabled = true;
+          modal.classList.add('is-open');
+          modal.setAttribute('aria-hidden', 'false');
+        });
+
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+        });
+
+        confirmBtn.addEventListener('click', function() {
+          closeModal();
           var originalHtml = btn.innerHTML;
+          btn.disabled = true;
           btn.innerHTML = '<span>Processing...</span>';
           fetch('{% url "mark_request_delivered" req.id %}', {
             method: 'POST',
@@ -631,20 +779,10 @@ body.view-request-page-open {
           })
           .then(function(res) { return res.json(); })
           .then(function(data) {
-            if (data.success) {
-              alert(data.message || 'Request marked as delivered. Items are now on the Branches page.');
-              window.location.reload();
-            } else {
-              alert('Error: ' + (data.error || 'Unknown error'));
-              btn.disabled = false;
-              btn.innerHTML = originalHtml;
-            }
+            if (data.success) { window.location.reload(); }
+            else { alert('Error: ' + (data.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = originalHtml; }
           })
-          .catch(function(err) {
-            alert('Error processing request');
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-          });
+          .catch(function(err) { alert('Error processing request'); btn.disabled = false; btn.innerHTML = originalHtml; });
         });
       }
     })();

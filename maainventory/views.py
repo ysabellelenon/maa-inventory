@@ -614,10 +614,10 @@ def dashboard(request):
     # ALERT 2: Pending Requests Waiting for Review
     # ========================================================================
     pending_requests = Request.objects.filter(
-        status__in=['Pending', 'UnderReview']
+        status='Pending'
     ).select_related('branch', 'requested_by', 'branch__brand').order_by('-created_at')[:10]
     
-    pending_requests_count = Request.objects.filter(status__in=['Pending', 'UnderReview']).count()
+    pending_requests_count = Request.objects.filter(status='Pending').count()
     
     # ========================================================================
     # ALERT 3: Items Held at Supplier (Supplier Stock)
@@ -660,9 +660,9 @@ def dashboard(request):
         total_consumed=Sum('qty_consumed')
     )
     
-    # Calculate requested quantities from pending/approved requests
+    # Calculate requested quantities from pending/warehouse-processing/ready/in-process requests
     request_data = RequestItem.objects.filter(
-        request__status__in=['Pending', 'Approved', 'InProcess']
+        request__status__in=['Pending', 'WarehouseProcessing', 'ReadyForDelivery', 'InProcess']
     ).values('item', 'variation').annotate(
         total_requested=Sum('qty_requested')
     )
@@ -1347,9 +1347,13 @@ def view_request(request, request_id):
     user_profile = getattr(request.user, 'profile', None)
     user_role = user_profile.role.name if user_profile and user_profile.role else None
     is_warehouse_staff = user_role and 'Warehouse' in user_role
+    is_logistics_staff = user_role and 'Logistics' in user_role
 
-    # Warehouse can start fulfillment (deduct stock, set In Process) when status is Approved
-    can_start_fulfillment = req.status == 'Approved' and is_warehouse_staff
+    # Warehouse can mark "Ready for Delivery" (deduct stock, set Ready for Delivery) when status is Warehouse Processing
+    can_start_fulfillment = req.status == 'WarehouseProcessing' and is_warehouse_staff
+
+    # Logistics can mark "Out for Delivery" when status is Ready for Delivery
+    can_mark_out_for_delivery = req.status == 'ReadyForDelivery' and is_logistics_staff
 
     # Branch manager for this request's branch can mark as Delivered when status is In Process or Out for Delivery
     is_branch_manager_for_this_branch = is_branch_user and user_branch_ids and req.branch_id in user_branch_ids
@@ -1380,7 +1384,7 @@ def view_request(request, request_id):
         approved_by_name = (getattr(req.approved_by.profile, 'full_name', None) or req.approved_by.get_full_name() or req.approved_by.username)
 
     is_procurement = user_role and 'Procurement' in user_role
-    can_approve = is_procurement and req.status in ('Pending', 'UnderReview')
+    can_approve = is_procurement and req.status == 'Pending'
 
     context = {
         'req': req,
@@ -1389,6 +1393,7 @@ def view_request(request, request_id):
         'approved_by_name': approved_by_name,
         'is_warehouse_staff': is_warehouse_staff,
         'can_start_fulfillment': can_start_fulfillment,
+        'can_mark_out_for_delivery': can_mark_out_for_delivery,
         'can_mark_delivered': can_mark_delivered,
         'can_approve': can_approve,
     }
@@ -1411,10 +1416,10 @@ def approve_reject_request(request, request_id):
 
     req = get_object_or_404(Request.objects.prefetch_related('items'), id=request_id)
 
-    if req.status not in ('Pending', 'UnderReview'):
+    if req.status != 'Pending':
         return JsonResponse({
             'success': False,
-            'error': f'Request must be Pending or Under Review to approve/reject. Current status: {req.get_status_display()}'
+            'error': f'Request must be Pending Procurement Manager Approval to approve/reject. Current status: {req.get_status_display()}'
         }, status=400)
 
     try:
@@ -1432,7 +1437,7 @@ def approve_reject_request(request, request_id):
     with transaction.atomic():
         old_status = req.status
         if action == 'approve':
-            req.status = Request.StatusType.APPROVED
+            req.status = Request.StatusType.WAREHOUSE_PROCESSING
             req.approved_by = request.user
             req.approved_at = timezone.now()
             req.rejected_reason = None
@@ -1474,8 +1479,8 @@ def approve_reject_request(request, request_id):
 @login_required
 def mark_request_in_process(request, request_id):
     """
-    Warehouse: Start fulfillment — deduct from warehouse stock, set qty_fulfilled, set status to In Process.
-    Only warehouse staff. Request must be Approved.
+    Warehouse: Mark Ready for Delivery — deduct from warehouse stock, set qty_fulfilled, set status to Ready for Delivery.
+    Only warehouse staff. Request must be Warehouse Processing.
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
@@ -1483,7 +1488,7 @@ def mark_request_in_process(request, request_id):
     user_profile = getattr(request.user, 'profile', None)
     user_role = user_profile.role.name if user_profile and user_profile.role else None
     if not (user_role and 'Warehouse' in user_role):
-        return JsonResponse({'success': False, 'error': 'Only warehouse staff can start fulfillment (mark in process)'}, status=403)
+        return JsonResponse({'success': False, 'error': 'Only warehouse staff can mark request as Ready for Delivery'}, status=403)
 
     from django.db import transaction
     from django.utils import timezone
@@ -1491,10 +1496,10 @@ def mark_request_in_process(request, request_id):
 
     req = get_object_or_404(Request.objects.prefetch_related('items__item', 'items__variation'), id=request_id)
 
-    if req.status != 'Approved':
+    if req.status != 'WarehouseProcessing':
         return JsonResponse({
             'success': False,
-            'error': f'Request must be Approved to start fulfillment. Current status: {req.get_status_display()}'
+            'error': f'Request must be Warehouse Processing to mark Ready for Delivery. Current status: {req.get_status_display()}'
         }, status=400)
 
     warehouse_location, _ = InventoryLocation.objects.get_or_create(
@@ -1556,7 +1561,7 @@ def mark_request_in_process(request, request_id):
                 ri.save()
 
             old_status = req.status
-            req.status = Request.StatusType.IN_PROCESS
+            req.status = Request.StatusType.READY_FOR_DELIVERY
             req.save()
 
             RequestStatusHistory.objects.create(
@@ -1564,13 +1569,61 @@ def mark_request_in_process(request, request_id):
                 old_status=old_status,
                 new_status=req.status,
                 changed_by=request.user,
-                notes='Warehouse started fulfillment; inventory deducted from warehouse.'
+                notes='Warehouse marked Ready for Delivery; inventory deducted from warehouse.'
             )
 
-        messages.success(request, f'Request {req.request_code} is now In Process. Inventory deducted from warehouse.')
+        messages.success(request, f'Request {req.request_code} is now Ready for Delivery. Inventory deducted from warehouse.')
         return JsonResponse({
             'success': True,
-            'message': f'Request {req.request_code} is now In Process. Branch manager can mark as Delivered when items arrive.'
+            'message': f'Request {req.request_code} is now Ready for Delivery.'
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def mark_request_out_for_delivery(request, request_id):
+    """
+    Logistics: Mark request as Out for Delivery. Only logistics staff. Request must be Ready for Delivery.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
+    user_profile = getattr(request.user, 'profile', None)
+    user_role = user_profile.role.name if user_profile and user_profile.role else None
+    if not (user_role and 'Logistics' in user_role):
+        return JsonResponse({'success': False, 'error': 'Only logistics staff can mark requests as Out for Delivery'}, status=403)
+
+    req = get_object_or_404(Request.objects.prefetch_related('items'), id=request_id)
+
+    if req.status != 'ReadyForDelivery':
+        return JsonResponse({
+            'success': False,
+            'error': f'Request must be Ready for Delivery to mark as Out for Delivery. Current status: {req.get_status_display()}'
+        }, status=400)
+
+    from django.db import transaction
+
+    try:
+        with transaction.atomic():
+            old_status = req.status
+            req.status = Request.StatusType.OUT_FOR_DELIVERY
+            req.save()
+
+            RequestStatusHistory.objects.create(
+                request=req,
+                old_status=old_status,
+                new_status=req.status,
+                changed_by=request.user,
+                notes='Logistics marked Out for Delivery.'
+            )
+
+        messages.success(request, f'Request {req.request_code} is now Out for Delivery.')
+        return JsonResponse({
+            'success': True,
+            'message': f'Request {req.request_code} is now Out for Delivery. Branch manager can mark as Delivered when items arrive.'
         })
     except Exception as e:
         import traceback
@@ -3325,7 +3378,7 @@ def reports(request):
         branch_name = req.branch.name
         request_summary['by_branch'][branch_name] = request_summary['by_branch'].get(branch_name, 0) + 1
         
-        if req.status == 'Approved':
+        if req.status in ('Approved', 'WarehouseProcessing', 'ReadyForDelivery', 'InProcess', 'OutForDelivery', 'Delivered', 'Completed'):
             approved_count += 1
         elif req.status == 'Rejected':
             rejected_count += 1
