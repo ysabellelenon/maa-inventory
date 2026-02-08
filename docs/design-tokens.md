@@ -136,6 +136,32 @@ When adding new responsive styles, use the same `max-width` values so behavior s
 
 ---
 
+## Confirmation modal (modal-confirm)
+
+Reusable confirmation modal defined in `base.html`. Use for approve/reject or other confirmation dialogs.
+
+**Structure:**
+```html
+<div id="my-confirm-modal" class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+  <div class="modal-confirm-card">
+    <h3 id="modal-title" class="modal-confirm-title">Confirm Action</h3>
+    <p id="modal-message" class="modal-confirm-message">Are you sure?</p>
+    <div class="modal-confirm-buttons">
+      <button type="button" class="modal-confirm-btn modal-confirm-btn-cancel">Cancel</button>
+      <button type="button" class="modal-confirm-btn modal-confirm-btn-confirm modal-confirm-btn-approve">Confirm</button>
+    </div>
+  </div>
+</div>
+```
+
+**Button variants:**
+- `modal-confirm-btn-approve` — green (for approve/success actions)
+- `modal-confirm-btn-reject` — red (for reject/danger actions)
+
+**JavaScript:** Add `modal-confirm.is-open` to show; remove to hide. Example: `modal.classList.add('is-open')` / `modal.classList.remove('is-open')`.
+
+---
+
 ## Notes
 - Prefer tokens over raw hex values for colors. If a new color is needed, add it to the `:root` tokens and document it here with intended usage.
 - Keep token names semantic (e.g., `--focus`, `--muted`) so intent is clear across the codebase.

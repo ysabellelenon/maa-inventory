@@ -172,112 +172,7 @@ body.view-request-page-open {
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
-/* Approve/Reject confirmation modal */
-#approve-reject-confirm-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 2100;
-  background: rgba(0, 0, 0, 0.5);
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  box-sizing: border-box;
-}
-#approve-reject-confirm-modal.is-open {
-  display: flex;
-}
-#approve-reject-confirm-modal .confirm-modal-card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 420px;
-  width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid var(--border);
-}
-#approve-reject-confirm-modal .confirm-modal-title {
-  margin: 0 0 12px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text);
-}
-#approve-reject-confirm-modal .confirm-modal-message {
-  margin: 0 0 20px 0;
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-#approve-reject-confirm-modal .confirm-modal-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-#approve-reject-confirm-modal .confirm-modal-btn {
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-}
-#approve-reject-confirm-modal .confirm-modal-btn-cancel {
-  background: #F9FAFB;
-  color: #101828;
-  border: 1px solid #E5E7EB;
-}
-#approve-reject-confirm-modal .confirm-modal-btn-cancel:hover {
-  background: #F3F4F6;
-}
-#approve-reject-confirm-modal .confirm-modal-btn-confirm {
-  border: none;
-  color: white;
-}
-#approve-reject-confirm-modal .confirm-modal-btn-confirm.btn-confirm-approve {
-  background: #16a34a;
-  border: 1px solid #15803d;
-}
-#approve-reject-confirm-modal .confirm-modal-btn-confirm.btn-confirm-approve:hover {
-  background: #15803d;
-}
-#approve-reject-confirm-modal .confirm-modal-btn-confirm.btn-confirm-reject {
-  background: #EF4444;
-  border: 1px solid #DC2626;
-}
-#approve-reject-confirm-modal .confirm-modal-btn-confirm.btn-confirm-reject:hover {
-  background: #DC2626;
-}
-/* Reject reason modal */
-#reject-reason-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 2100;
-  background: rgba(0, 0, 0, 0.5);
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  box-sizing: border-box;
-}
-#reject-reason-modal.is-open {
-  display: flex;
-}
-#reject-reason-modal .reject-reason-card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 420px;
-  width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid var(--border);
-}
-#reject-reason-modal .reject-reason-title {
-  margin: 0 0 12px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text);
-}
+/* Reject reason modal - extends modal-confirm with textarea and label */
 #reject-reason-modal .reject-reason-label {
   display: block;
   margin-bottom: 6px;
@@ -309,35 +204,11 @@ body.view-request-page-open {
 #reject-reason-modal .reject-reason-error.is-visible {
   display: block;
 }
+#reject-reason-modal .reject-reason-required {
+  color: #991b1b;
+}
 #reject-reason-modal .reject-reason-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
   margin-top: 20px;
-}
-#reject-reason-modal .reject-reason-btn {
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-}
-#reject-reason-modal .reject-reason-btn-cancel {
-  background: #F9FAFB;
-  color: #101828;
-  border: 1px solid #E5E7EB;
-}
-#reject-reason-modal .reject-reason-btn-cancel:hover {
-  background: #F3F4F6;
-}
-#reject-reason-modal .reject-reason-btn-submit {
-  background: #EF4444;
-  color: white;
-  border: 1px solid #DC2626;
-}
-#reject-reason-modal .reject-reason-btn-submit:hover {
-  background: #DC2626;
 }
 </style>
 <script>
@@ -536,28 +407,28 @@ body.view-request-page-open {
   </script>
 
   {% if can_approve %}
-  <!-- Reject reason modal -->
-  <div id="reject-reason-modal" role="dialog" aria-modal="true" aria-labelledby="reject-reason-title">
-    <div class="reject-reason-card">
-      <h3 id="reject-reason-title" class="reject-reason-title">Reject Request</h3>
-      <label for="reject-reason-textarea" class="reject-reason-label">Reason for rejection <span style="color: #991b1b;">*</span></label>
+  <!-- Reject reason modal (uses modal-confirm from base.html) -->
+  <div id="reject-reason-modal" class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="reject-reason-title">
+    <div class="modal-confirm-card">
+      <h3 id="reject-reason-title" class="modal-confirm-title">Reject Request</h3>
+      <label for="reject-reason-textarea" class="reject-reason-label">Reason for rejection <span class="reject-reason-required">*</span></label>
       <textarea id="reject-reason-textarea" class="reject-reason-textarea" placeholder="Enter the reason for rejecting this request..." aria-required="true"></textarea>
       <div id="reject-reason-error" class="reject-reason-error" aria-live="polite">Rejection reason is required.</div>
-      <div class="reject-reason-buttons">
-        <button type="button" class="reject-reason-btn reject-reason-btn-cancel" id="reject-reason-cancel">Cancel</button>
-        <button type="button" class="reject-reason-btn reject-reason-btn-submit" id="reject-reason-submit">Reject</button>
+      <div class="modal-confirm-buttons reject-reason-buttons">
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-cancel" id="reject-reason-cancel">Cancel</button>
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-confirm modal-confirm-btn-reject" id="reject-reason-submit">Reject</button>
       </div>
     </div>
   </div>
 
-  <!-- Approve/Reject confirmation modal -->
-  <div id="approve-reject-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-message">
-    <div class="confirm-modal-card">
-      <h3 id="confirm-modal-title" class="confirm-modal-title"></h3>
-      <p id="confirm-modal-message" class="confirm-modal-message"></p>
-      <div class="confirm-modal-buttons">
-        <button type="button" class="confirm-modal-btn confirm-modal-btn-cancel" id="confirm-modal-cancel">Cancel</button>
-        <button type="button" class="confirm-modal-btn confirm-modal-btn-confirm" id="confirm-modal-confirm"></button>
+  <!-- Approve/Reject confirmation modal (uses reusable modal-confirm class from base.html) -->
+  <div id="approve-reject-confirm-modal" class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-message">
+    <div class="modal-confirm-card">
+      <h3 id="confirm-modal-title" class="modal-confirm-title"></h3>
+      <p id="confirm-modal-message" class="modal-confirm-message"></p>
+      <div class="modal-confirm-buttons">
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-cancel" id="confirm-modal-cancel">Cancel</button>
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-confirm" id="confirm-modal-confirm"></button>
       </div>
     </div>
   </div>
@@ -594,7 +465,7 @@ body.view-request-page-open {
         titleEl.textContent = opts.title || 'Confirm';
         messageEl.textContent = opts.message || '';
         confirmBtn.textContent = opts.confirmText || 'Confirm';
-        confirmBtn.className = 'confirm-modal-btn confirm-modal-btn-confirm ' + (opts.confirmClass || 'btn-confirm-approve');
+        confirmBtn.className = 'modal-confirm-btn modal-confirm-btn-confirm ' + (opts.confirmClass || 'modal-confirm-btn-approve');
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
 
@@ -629,7 +500,7 @@ body.view-request-page-open {
           title: 'Approve Request',
           message: 'Are you sure you want to approve this request?',
           confirmText: 'Approve',
-          confirmClass: 'btn-confirm-approve',
+          confirmClass: 'modal-confirm-btn-approve',
           onConfirm: function() {
             btn.disabled = true;
             btn.innerHTML = '<span>Processing...</span>';
@@ -681,7 +552,7 @@ body.view-request-page-open {
           title: 'Reject Request',
           message: 'Are you sure you want to reject this request with the following reason?\n\n' + reason,
           confirmText: 'Reject',
-          confirmClass: 'btn-confirm-reject',
+          confirmClass: 'modal-confirm-btn-reject',
           onConfirm: function() {
             rejectBtn.disabled = true;
             rejectBtn.innerHTML = '<span>Processing...</span>';

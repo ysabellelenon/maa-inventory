@@ -132,6 +132,83 @@
       flex-shrink: 0;
     }
 
+    /* Reusable confirmation modal - use class="modal-confirm" on the overlay */
+    .modal-confirm {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2100;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .modal-confirm.is-open {
+      display: flex;
+    }
+    .modal-confirm .modal-confirm-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--border);
+    }
+    .modal-confirm .modal-confirm-title {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .modal-confirm .modal-confirm-message {
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .modal-confirm .modal-confirm-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .modal-confirm .modal-confirm-btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .modal-confirm .modal-confirm-btn-cancel {
+      background: #F9FAFB;
+      color: #101828;
+      border: 1px solid #E5E7EB;
+    }
+    .modal-confirm .modal-confirm-btn-cancel:hover {
+      background: #F3F4F6;
+    }
+    .modal-confirm .modal-confirm-btn-confirm {
+      border: none;
+      color: white;
+    }
+    .modal-confirm .modal-confirm-btn-confirm.modal-confirm-btn-approve {
+      background: #16a34a;
+      border: 1px solid #15803d;
+    }
+    .modal-confirm .modal-confirm-btn-confirm.modal-confirm-btn-approve:hover {
+      background: #15803d;
+    }
+    .modal-confirm .modal-confirm-btn-confirm.modal-confirm-btn-reject {
+      background: #EF4444;
+      border: 1px solid #DC2626;
+    }
+    .modal-confirm .modal-confirm-btn-confirm.modal-confirm-btn-reject:hover {
+      background: #DC2626;
+    }
+
     .btn-cancel {
       display: inline-flex;
       align-items: center;
