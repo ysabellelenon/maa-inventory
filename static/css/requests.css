@@ -110,6 +110,21 @@
 .tab-btn.active[data-key="completed"]{border-bottom-color:#10B981;color:#111827;}
 .tab-btn.active[data-key="rejected"]{border-bottom-color:#EF4444;color:#111827;}
 
+/* Requests table: limit Requestor width so Branch sits closer to it; tighter Branch; wider Item Name */
+.inventory-table thead th.col-requestor,
+.inventory-table tbody .col-requestor {
+  max-width: 150px;
+  width: 150px;
+}
+.inventory-table thead th.col-branch,
+.inventory-table tbody .col-branch {
+  width: 100px;
+}
+.inventory-table thead th.col-name,
+.inventory-table tbody .col-name {
+  width: 180px;
+}
+
 /* Reduce requests table wrapper height slightly to avoid page-level scrolling */
 .table-wrapper{
   max-height:50vh;
