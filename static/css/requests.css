@@ -152,3 +152,63 @@
   }
 }
 
+/* Step circles: shared by branch requests status column and view_request progress bar + timeline */
+.step-circles {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: white;
+  flex-shrink: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.step-circle .step-check {
+  display: block;
+  flex-shrink: 0;
+}
+.step-circle.step-completed {
+  background: #16a34a;
+  border: none;
+}
+.step-circle.step-completed .step-check {
+  width: 12px;
+  height: 10px;
+}
+.step-circle.step-current {
+  background: #EAB308;
+  border: none;
+  color: #1f2937;
+}
+.step-circle.step-rejected {
+  background: #EF4444;
+  border: none;
+}
+.step-circle.step-rejected .step-x {
+  display: block;
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+}
+.step-circle.step-gray {
+  background: transparent;
+  border: 1.5px solid #D1D5DB;
+  color: #9CA3AF;
+}
+.step-connector {
+  width: 8px;
+  height: 2px;
+  background: #E5E7EB;
+  flex-shrink: 0;
+  display: inline-block;
+}

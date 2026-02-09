@@ -95,6 +95,186 @@ body.view-request-page-open {
   line-height: 1.5;
 }
 .rejection-reason-banner strong { color: #991B1B; }
+
+/* Two-column top section: Request Status Tracking (left) + Request Information (right) */
+.view-request-top-columns {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  align-items: stretch;
+}
+.view-request-tracking-col,
+.view-request-info-col {
+  flex: 1;
+  min-width: 0;
+}
+.view-request-tracking-col .info-card,
+.view-request-info-col .info-card {
+  margin-bottom: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.view-request-info-col .info-card h3 { margin-bottom: 16px; }
+.view-request-info-col .info-card .info-rows-wrap { flex: 1; }
+
+/* Request Status Tracking (left column) – timeline like screenshot */
+.request-tracking-card {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+.request-tracking-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #101828;
+  border-bottom: 2px solid #D9BD7D;
+  padding-bottom: 8px;
+}
+.request-tracking-current-status {
+  border: 1px solid #93C5FD;
+  background: #EFF6FF;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+.request-tracking-current-status .label {
+  font-weight: 600;
+  color: #1E40AF;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.request-tracking-current-status .value {
+  font-size: 14px;
+  color: #1E3A8A;
+  margin-bottom: 12px;
+}
+.request-tracking-progress-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+.request-tracking-progress-bar .progress-connector {
+  flex: 1;
+  min-width: 0;
+  height: 2px;
+  background: #E5E7EB;
+}
+.request-tracking-timeline {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.request-tracking-step {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.request-tracking-step:last-child { margin-bottom: 0; }
+.request-tracking-step-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 1;
+}
+.request-tracking-step-icon.step-done {
+  background: #16a34a;
+  color: white;
+  font-size: 0;
+}
+.request-tracking-step-icon.step-done svg {
+  width: 12px;
+  height: 10px;
+}
+.request-tracking-step-icon.step-current {
+  background: #EAB308;
+  color: #1f2937;
+}
+.request-tracking-step-icon.step-rejected {
+  background: #EF4444;
+  color: white;
+  font-size: 14px;
+  line-height: 1;
+}
+.request-tracking-step-body {
+  flex: 1;
+  min-width: 0;
+}
+.request-tracking-step-title {
+  font-weight: 600;
+  color: #101828;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.request-tracking-step-details {
+  font-size: 13px;
+  color: #6B7280;
+  line-height: 1.5;
+}
+.request-tracking-step-details .detail-line { margin-bottom: 4px; }
+.request-tracking-step-details .detail-line:last-child { margin-bottom: 0; }
+.request-tracking-step-details strong { color: #374151; }
+.request-tracking-timeline-connector {
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: -20px;
+  width: 2px;
+  background: #E5E7EB;
+}
+.request-tracking-step:last-child .request-tracking-timeline-connector { display: none; }
+/* Timeline: step 1 only = blue up arrow (step-submitted); steps 2-4 use step-circle from requests.css (28px) */
+.request-tracking-timeline .request-tracking-step-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.request-tracking-timeline .request-tracking-step-icon.step-submitted {
+  background: #3B82F6;
+  border: none;
+  color: white;
+  font-size: 0;
+}
+.request-tracking-timeline .request-tracking-step-icon.step-submitted svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+.request-tracking-timeline .request-tracking-timeline-connector {
+  left: 13px;
+  top: 28px;
+}
+.request-tracking-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+.request-tracking-badge.approved { background: #D1FAE5; color: #065F46; }
+.request-tracking-badge.rejected { background: #FEE2E2; color: #991B1B; }
+
 .status-warehouseprocessing { background: #FEF3C7; color: #92400E; }
 .status-readyfordelivery { background: #E0E7FF; color: #3730A3; }
 .status-inprocess { background: #E0E7FF; color: #3730A3; }
@@ -303,46 +483,172 @@ body.view-request-page-open {
       </div>
       {% endif %}
 
-      <!-- Request Information -->
-      <div class="info-card">
-        <h3>Request Information</h3>
-        <div class="info-row">
-          <div class="info-label">Request Code</div>
-          <div class="info-value"><strong>{{ req.request_code }}</strong></div>
-        </div>
-        <div class="info-row">
-          <div class="info-label">Status</div>
-          <div class="info-value">
-            <span class="status-badge status-{{ req.status|lower }}">{{ req.get_status_display }}</span>
+      <!-- Two columns: Request Status Tracking (left) + Request Information (right) -->
+      <div class="view-request-top-columns">
+        <!-- Left: Request Status Tracking -->
+        <div class="view-request-tracking-col">
+          <div class="request-tracking-card">
+            <h3>Request Tracking</h3>
+            <div class="request-tracking-current-status">
+              <div class="label">Current status</div>
+              <div class="value">{{ req.get_status_display }}</div>
+              <div class="request-tracking-progress-bar" aria-label="Request progress">
+                {% comment %}Same 4 steps as dashboard status column: 1 Submitted, 2 Warehouse Processing, 3 Ready for Delivery, 4 Out for Delivery/Delivered. Uses step-circle, step-completed, step-current, step-rejected, step-gray from requests.css. {% endcomment %}
+                {% if req.status == 'Rejected' %}
+                <span class="step-circle step-rejected" title="Rejected by procurement manager"><svg class="step-x" width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l8 8M9 1l-8 8"/></svg></span><span class="progress-connector"></span><span class="step-circle step-gray">2</span><span class="progress-connector"></span><span class="step-circle step-gray">3</span><span class="progress-connector"></span><span class="step-circle step-gray">4</span>
+                {% elif req.status == 'Pending' %}
+                <span class="step-circle step-current" title="{{ req.get_status_display }}">1</span><span class="progress-connector"></span><span class="step-circle step-gray">2</span><span class="progress-connector"></span><span class="step-circle step-gray">3</span><span class="progress-connector"></span><span class="step-circle step-gray">4</span>
+                {% elif req.status == 'WarehouseProcessing' %}
+                <span class="step-circle step-completed" title="Submitted"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-current" title="{{ req.get_status_display }}">2</span><span class="progress-connector"></span><span class="step-circle step-gray">3</span><span class="progress-connector"></span><span class="step-circle step-gray">4</span>
+                {% elif req.status == 'ReadyForDelivery' %}
+                <span class="step-circle step-completed" title="Submitted"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-completed" title="Warehouse processing"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-current" title="{{ req.get_status_display }}">3</span><span class="progress-connector"></span><span class="step-circle step-gray">4</span>
+                {% elif req.status == 'OutForDelivery' or req.status == 'InProcess' %}
+                <span class="step-circle step-completed" title="Submitted"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-completed" title="Warehouse processing"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-completed" title="Ready for Delivery"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-current" title="{{ req.get_status_display }}">4</span>
+                {% elif req.status == 'Delivered' or req.status == 'Completed' %}
+                <span class="step-circle step-completed" title="Submitted"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-completed" title="Warehouse processing"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-completed" title="Ready for Delivery"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span><span class="progress-connector"></span><span class="step-circle step-completed" title="{{ req.get_status_display }}"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span>
+                {% else %}
+                <span class="step-circle step-current" title="{{ req.get_status_display }}">1</span><span class="progress-connector"></span><span class="step-circle step-gray">2</span><span class="progress-connector"></span><span class="step-circle step-gray">3</span><span class="progress-connector"></span><span class="step-circle step-gray">4</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="request-tracking-timeline">
+              <!-- Step 1: Request for stock submitted - blue circle with up arrow (same as requests page style, first step) -->
+              <div class="request-tracking-step">
+                <span class="request-tracking-timeline-connector"></span>
+                <span class="request-tracking-step-icon step-submitted" title="Request for stock submitted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12l7-7 7 7"/></svg></span>
+                <div class="request-tracking-step-body">
+                  <div class="request-tracking-step-title">Request for stock submitted</div>
+                  <div class="request-tracking-step-details">
+                    <div class="detail-line"><strong>Submitted by:</strong> {{ requestor }}</div>
+                    <div class="detail-line"><strong>Submitted on:</strong> {{ req.date_of_order|date:"F d, Y" }}, {{ req.date_of_order|time:"g:i A" }}</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Timeline step 1: Waiting for Procurement Manager Approval (numbering starts here = 1). Circle colors match progress bar step 1. -->
+              <div class="request-tracking-step">
+                <span class="request-tracking-timeline-connector"></span>
+                {% if req.status == 'Rejected' %}
+                <span class="step-circle step-rejected" title="Rejected by procurement manager"><svg class="step-x" width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l8 8M9 1l-8 8"/></svg></span>
+                {% elif req.status == 'Pending' %}
+                <span class="step-circle step-current" title="{{ req.get_status_display }}">1</span>
+                {% else %}
+                <span class="step-circle step-completed" title="Request approved"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span>
+                {% endif %}
+                <div class="request-tracking-step-body">
+                  <div class="request-tracking-step-title">{% if req.status == 'Rejected' %}Request rejected{% elif req.status == 'Pending' %}Waiting for Procurement Manager approval{% else %}Request approved{% endif %}</div>
+                  <div class="request-tracking-step-details">
+                    {% if req.status == 'Rejected' %}
+                    {% if tracking_rejected_by %}<div class="detail-line"><strong>Rejected by:</strong> {{ tracking_rejected_by }}</div>{% endif %}
+                    {% if tracking_rejected_at %}<div class="detail-line"><strong>Rejected on:</strong> {{ tracking_rejected_at|date:"F d, Y" }}, {{ tracking_rejected_at|time:"g:i A" }}</div>{% endif %}
+                    {% if req.rejected_reason %}<div class="detail-line"><strong>Rejection Reason:</strong> {{ req.rejected_reason }}</div>{% endif %}
+                    {% else %}
+                    {% if approved_by_name %}<div class="detail-line"><strong>Approved by:</strong> {{ approved_by_name }}</div>{% endif %}
+                    {% if req.approved_at %}<div class="detail-line"><strong>Approved on:</strong> {{ req.approved_at|date:"F d, Y" }}, {{ req.approved_at|time:"g:i A" }}</div>{% endif %}
+                    {% if req.status == 'Pending' %}<div class="detail-line"><strong>To be approved by:</strong> {% if approved_by_name %}{{ approved_by_name }}{% else %}Procurement Manager{% endif %}</div>{% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <!-- Timeline step 2: show only when current (yellow) or completed (not gray). -->
+              {% if req.status != 'Rejected' and req.status != 'Pending' %}
+              <div class="request-tracking-step">
+                <span class="request-tracking-timeline-connector"></span>
+                {% if req.status == 'WarehouseProcessing' %}
+                <span class="step-circle step-current" title="{{ req.get_status_display }}">2</span>
+                {% else %}
+                <span class="step-circle step-completed" title="Sent to warehouse for processing"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span>
+                {% endif %}
+                <div class="request-tracking-step-body">
+                  <div class="request-tracking-step-title">{% if req.status == 'ReadyForDelivery' or req.status == 'OutForDelivery' or req.status == 'InProcess' or req.status == 'Delivered' or req.status == 'Completed' %}Items ready for delivery{% else %}Sent to warehouse for processing{% endif %}</div>
+                  <div class="request-tracking-step-details">
+                    {% if req.status == 'WarehouseProcessing' %}
+                    <div class="detail-line"><strong>To be processed by:</strong> {% if tracking_warehouse_staff_name %}{{ tracking_warehouse_staff_name }}{% else %}Warehouse staff{% endif %}</div>
+                    {% if req.approved_at %}<div class="detail-line"><strong>Processing started on:</strong> {{ req.approved_at|date:"F d, Y" }}, {{ req.approved_at|time:"g:i A" }}</div>{% endif %}
+                    {% else %}
+                    {% if tracking_ready_by %}<div class="detail-line"><strong>Processed by:</strong> {{ tracking_ready_by }}</div>{% endif %}
+                    {% if tracking_ready_at %}<div class="detail-line"><strong>Finished processing on:</strong> {{ tracking_ready_at|date:"F d, Y" }}, {{ tracking_ready_at|time:"g:i A" }}</div>{% endif %}
+                    {% if req.status == 'ReadyForDelivery' or tracking_ready_at %}<div class="detail-line">Warehouse stock deducted.</div>{% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+              <!-- Timeline step 3: show only when current (yellow) or completed (not gray). -->
+              {% if req.status == 'ReadyForDelivery' or req.status == 'OutForDelivery' or req.status == 'InProcess' or req.status == 'Delivered' or req.status == 'Completed' %}
+              <div class="request-tracking-step">
+                <span class="request-tracking-timeline-connector"></span>
+                {% if req.status == 'ReadyForDelivery' %}
+                <span class="step-circle step-current" title="{{ req.get_status_display }}">3</span>
+                {% else %}
+                <span class="step-circle step-completed" title="Out for delivery"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span>
+                {% endif %}
+                <div class="request-tracking-step-body">
+                  <div class="request-tracking-step-title">{% if req.status == 'OutForDelivery' or req.status == 'InProcess' or req.status == 'Delivered' or req.status == 'Completed' %}Out for delivery{% else %}Sent to logistics for delivery{% endif %}</div>
+                  <div class="request-tracking-step-details">
+                    {% if req.status == 'ReadyForDelivery' %}
+                    <div class="detail-line"><strong>To be delivered by:</strong> {% if tracking_logistics_staff_name %}{{ tracking_logistics_staff_name }}{% else %}Logistics staff{% endif %}</div>
+                    {% else %}
+                    {% if tracking_out_by %}<div class="detail-line"><strong>To be delivered by:</strong> {{ tracking_out_by }}</div>{% endif %}
+                    {% if tracking_out_at %}<div class="detail-line"><strong>Left warehouse at:</strong> {{ tracking_out_at|date:"F d, Y" }}, {{ tracking_out_at|time:"g:i A" }}</div>{% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+              <!-- Timeline step 4: show only when current (yellow) or completed (not gray). -->
+              {% if req.status == 'OutForDelivery' or req.status == 'InProcess' or req.status == 'Delivered' or req.status == 'Completed' %}
+              <div class="request-tracking-step">
+                <span class="request-tracking-timeline-connector"></span>
+                {% if req.status == 'OutForDelivery' or req.status == 'InProcess' %}
+                <span class="step-circle step-current" title="{{ req.get_status_display }}">4</span>
+                {% else %}
+                <span class="step-circle step-completed" title="{{ req.get_status_display }}"><svg class="step-check" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4l3 3 5-6"/></svg></span>
+                {% endif %}
+                <div class="request-tracking-step-body">
+                  <div class="request-tracking-step-title">{% if req.status == 'Delivered' or req.status == 'Completed' %}Delivered to branch{% else %}Awaiting arrival confirmation{% endif %}</div>
+                  <div class="request-tracking-step-details">
+                    {% if req.status == 'OutForDelivery' or req.status == 'InProcess' %}
+                    <div class="detail-line"><strong>To be received by:</strong> {{ requestor }}</div>
+                    {% else %}
+                    {% if tracking_delivered_by %}<div class="detail-line"><strong>Confirmed by:</strong> {{ tracking_delivered_by }}</div>{% endif %}
+                    {% if tracking_delivered_at %}<div class="detail-line"><strong>Delivered on:</strong> {{ tracking_delivered_at|date:"F d, Y" }}, {{ tracking_delivered_at|time:"g:i A" }}</div>{% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
           </div>
         </div>
-        <div class="info-row">
-          <div class="info-label">Branch</div>
-          <div class="info-value">{{ req.branch.name }}</div>
-        </div>
-        <div class="info-row">
-          <div class="info-label">Requested By</div>
-          <div class="info-value">{{ requestor }}</div>
-        </div>
-        <div class="info-row">
-          <div class="info-label">Order Date</div>
-          <div class="info-value">{{ req.date_of_order|date:"F d, Y, g:i A" }}</div>
-        </div>
-        {% if req.approved_by and approved_by_name %}
-        <div class="info-row">
-          <div class="info-label">Approved By</div>
-          <div class="info-value">{{ approved_by_name }}</div>
-        </div>
-        {% endif %}
-        {% if req.approved_at %}
-        <div class="info-row">
-          <div class="info-label">Approved At</div>
-          <div class="info-value">{{ req.approved_at|date:"F d, Y, g:i A" }}</div>
-        </div>
-        {% endif %}
-        <div class="info-row">
-          <div class="info-label">Last Updated</div>
-          <div class="info-value">{{ req.updated_at|date:"F d, Y, g:i A" }}</div>
+        <!-- Right: Request Information -->
+        <div class="view-request-info-col">
+          <div class="info-card">
+            <h3>Request Information</h3>
+            <div class="info-rows-wrap">
+            <div class="info-row">
+              <div class="info-label">Request Code</div>
+              <div class="info-value"><strong>{{ req.request_code }}</strong></div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Status</div>
+              <div class="info-value">
+                <span class="status-badge status-{{ req.status|lower }}">{{ req.get_status_display }}</span>
+              </div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Branch</div>
+              <div class="info-value">{{ req.branch.name }}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Requested By</div>
+              <div class="info-value">{{ requestor }}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Order Date</div>
+              <div class="info-value">{{ req.date_of_order|date:"F d, Y, g:i A" }}</div>
+            </div>
+            </div>
+          </div>
         </div>
       </div>
 

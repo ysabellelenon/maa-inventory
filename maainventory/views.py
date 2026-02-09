@@ -1332,7 +1332,9 @@ def view_request(request, request_id):
     from .context_processors import get_branch_user_info
 
     req = get_object_or_404(
-        Request.objects.select_related('branch', 'branch__brand', 'requested_by', 'approved_by'),
+        Request.objects.select_related('branch', 'branch__brand', 'requested_by', 'approved_by').prefetch_related(
+            'status_history__changed_by'
+        ),
         id=request_id
     )
 
@@ -1379,12 +1381,50 @@ def view_request(request, request_id):
             'image_url': image_url,
         })
 
-    approved_by_name = None
-    if req.approved_by:
-        approved_by_name = (getattr(req.approved_by.profile, 'full_name', None) or req.approved_by.get_full_name() or req.approved_by.username)
+    def _user_display_name(user):
+        if not user:
+            return None
+        return getattr(user.profile, 'full_name', None) or user.get_full_name() or user.username
+
+    approved_by_name = _user_display_name(req.approved_by)
+
+    # Status tracking: who/when for ReadyForDelivery, OutForDelivery, Delivered, Rejected (from history)
+    tracking_ready_by = tracking_ready_at = None
+    tracking_out_by = tracking_out_at = None
+    tracking_delivered_by = tracking_delivered_at = None
+    tracking_rejected_by = tracking_rejected_at = None
+    for h in req.status_history.all():
+        if h.new_status == 'ReadyForDelivery':
+            tracking_ready_by = _user_display_name(h.changed_by)
+            tracking_ready_at = h.changed_at
+        elif h.new_status == 'OutForDelivery':
+            tracking_out_by = _user_display_name(h.changed_by)
+            tracking_out_at = h.changed_at
+        elif h.new_status == 'Delivered':
+            tracking_delivered_by = _user_display_name(h.changed_by)
+            tracking_delivered_at = h.changed_at
+        elif h.new_status == 'Rejected':
+            tracking_rejected_by = _user_display_name(h.changed_by)
+            tracking_rejected_at = h.changed_at
 
     is_procurement = user_role and 'Procurement' in user_role
     can_approve = is_procurement and req.status == 'Pending'
+
+    # For "Sent to warehouse for processing" step: show name of a user with Warehouse role (for "To be processed by")
+    tracking_warehouse_staff_name = None
+    warehouse_role = Role.objects.filter(name__icontains='Warehouse').first()
+    if warehouse_role:
+        warehouse_profile = UserProfile.objects.filter(role=warehouse_role).select_related('user').first()
+        if warehouse_profile and warehouse_profile.user:
+            tracking_warehouse_staff_name = _user_display_name(warehouse_profile.user)
+
+    # For "Sent to logistics for delivery" step when status is Ready for Delivery: show name of a user with Logistics role (for "To be delivered by")
+    tracking_logistics_staff_name = None
+    logistics_role = Role.objects.filter(name__icontains='Logistics').first()
+    if logistics_role:
+        logistics_profile = UserProfile.objects.filter(role=logistics_role).select_related('user').first()
+        if logistics_profile and logistics_profile.user:
+            tracking_logistics_staff_name = _user_display_name(logistics_profile.user)
 
     context = {
         'req': req,
@@ -1396,6 +1436,16 @@ def view_request(request, request_id):
         'can_mark_out_for_delivery': can_mark_out_for_delivery,
         'can_mark_delivered': can_mark_delivered,
         'can_approve': can_approve,
+        'tracking_ready_by': tracking_ready_by,
+        'tracking_ready_at': tracking_ready_at,
+        'tracking_out_by': tracking_out_by,
+        'tracking_out_at': tracking_out_at,
+        'tracking_delivered_by': tracking_delivered_by,
+        'tracking_delivered_at': tracking_delivered_at,
+        'tracking_rejected_by': tracking_rejected_by,
+        'tracking_rejected_at': tracking_rejected_at,
+        'tracking_warehouse_staff_name': tracking_warehouse_staff_name,
+        'tracking_logistics_staff_name': tracking_logistics_staff_name,
     }
     return render(request, 'maainventory/view_request.html', context)
 
