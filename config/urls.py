@@ -65,6 +65,7 @@ urlpatterns = [
     path("suppliers/update-category/", views.update_supplier_category, name="update_supplier_category"),
     path("reports/", views.reports, name="reports"),
     path("branch-assignments/", views.manage_branch_assignments, name="manage_branch_assignments"),
+    path("settings/", views.procurement_settings, name="procurement_settings"),
     path("branches/", views.branches, name="branches"),
     path("branches/configure/", views.branches_configure, name="branches_configure"),
     path("branches/<int:branch_id>/packaging/", views.branch_packaging, name="branch_packaging"),

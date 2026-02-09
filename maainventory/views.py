@@ -14,6 +14,7 @@ from .models import (
     Item, ItemVariation, StockBalance, InventoryLocation,
     Supplier, SupplierCategory, SupplierItem, SupplierOrder, SupplierOrderItem,
     Request, RequestItem, RequestStatusHistory, Branch, Brand, ValidPunchID, UserProfile, Role,
+    BranchUser,
     IntegrationFoodics, ImportJob, SystemSettings, ItemPhoto, PortalToken,
     SupplierPriceDiscussion, BranchPackagingRule, BranchPackagingItem, BranchPackagingRuleItem,
     BranchInventory,
@@ -3855,6 +3856,11 @@ def manage_branch_assignments(request):
                 branch_name = assignment.branch.name
                 assignment.delete()
                 messages.success(request, f'Removed {user_name} from {branch_name}.')
+        next_url = request.GET.get('next') or request.POST.get('next')
+        if next_url:
+            from django.utils.http import url_has_allowed_host_and_scheme
+            if url_has_allowed_host_and_scheme(next_url, allowed_hosts=request.get_host()):
+                return redirect(next_url)
         return redirect('manage_branch_assignments')
 
     # Get users with Branch Manager role (role name contains "branch" and not "procurement")
@@ -3901,6 +3907,77 @@ def manage_branch_assignments(request):
         'branch_groups': branch_groups,
     }
     return render(request, 'maainventory/manage_branch_assignments.html', context)
+
+
+@login_required
+def procurement_settings(request):
+    """
+    Settings page for procurement managers only. Two tabs: Configure Packaging, Branch Assignments.
+    """
+    from django.http import HttpResponseForbidden
+
+    user_profile = getattr(request.user, 'profile', None)
+    role_name = (user_profile.role.name if user_profile and user_profile.role else '').lower()
+    is_procurement = 'procurement' in role_name
+    is_it = 'it' in role_name
+    if not is_procurement or is_it:
+        return HttpResponseForbidden('Only procurement managers can access settings.')
+
+    # Data for Configure Packaging tab (same as branches_configure)
+    all_branches_cfg = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
+    branch_groups_configure = {}
+    for branch in all_branches_cfg:
+        brand_name = branch.brand.name
+        if brand_name not in branch_groups_configure:
+            branch_groups_configure[brand_name] = []
+        branch_groups_configure[brand_name].append({
+            'id': branch.id,
+            'name': branch.name,
+            'address': branch.address or '',
+            'rules_count': branch.packaging_rules.count(),
+        })
+
+    # Data for Branch Assignments tab (same as manage_branch_assignments)
+    branch_manager_role_ids = list(
+        Role.objects.filter(name__icontains='branch')
+        .exclude(name__icontains='procurement')
+        .values_list('id', flat=True)
+    )
+    branch_managers = UserProfile.objects.filter(
+        role_id__in=branch_manager_role_ids
+    ).select_related('user', 'role').order_by('user__username')
+    branch_manager_user_ids = [bm.user_id for bm in branch_managers]
+    assignments = BranchUser.objects.select_related(
+        'user', 'branch', 'branch__brand'
+    ).filter(user_id__in=branch_manager_user_ids).order_by('user__username', 'branch__name')
+    assignments_by_user = {a.user_id: [] for a in assignments}
+    for a in assignments:
+        assignments_by_user[a.user_id].append(a)
+    manager_rows = []
+    for bm in branch_managers:
+        manager_rows.append({
+            'branch_manager': bm,
+            'assignments': assignments_by_user.get(bm.user_id, []),
+        })
+    all_branches = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
+    branch_groups_assignments = {}
+    for branch in all_branches:
+        brand_name = branch.brand.name
+        if brand_name not in branch_groups_assignments:
+            branch_groups_assignments[brand_name] = []
+        branch_groups_assignments[brand_name].append(branch)
+
+    from django.urls import reverse
+    assignments_next = request.build_absolute_uri(reverse('procurement_settings') + '?tab=branch-assignments')
+    context = {
+        'branch_groups_configure': branch_groups_configure,
+        'branch_managers': branch_managers,
+        'manager_rows': manager_rows,
+        'all_branches': all_branches,
+        'branch_groups': branch_groups_assignments,
+        'assignments_next': assignments_next,
+    }
+    return render(request, 'maainventory/procurement_settings.html', context)
 
 
 @login_required

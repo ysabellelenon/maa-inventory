@@ -295,12 +295,6 @@
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12h.01"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 0l-2 2"/><path d="M22 13a18.15 18.15 0 0 1-20 0"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>
           <span>Suppliers</span>
         </a>
-        {% if is_procurement_user or is_it_user %}
-        <a class="nav-item {% if '/branch-assignments/' in request.path %}active{% endif %}" href="{% url 'manage_branch_assignments' %}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"/></svg>
-          <span>Branch Assignments</span>
-        </a>
-        {% endif %}
         <a class="nav-item {% if request.path == '/reports/' %}active{% endif %}" href="{% url 'reports' %}">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16v5"/><path d="M16 14v7"/><path d="M20 10v11"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18v3"/><path d="M8 14v7"/></svg>
           <span>Reports</span>
@@ -353,6 +347,37 @@
           <span class="icon-badge">
             <img class="icon" src="{% static 'icons/bell.svg' %}" alt="notifications" />
           </span>
+          {% if is_procurement_user and not is_it_user %}
+          <a href="{% url 'procurement_settings' %}" class="user user-link" aria-label="Open settings">
+            <div class="user-name">
+              {% if user.is_authenticated %}
+                {% if user.profile.full_name %}
+                  {{ user.profile.full_name }}
+                {% elif user.get_full_name %}
+                  {{ user.get_full_name }}
+                {% else %}
+                  {{ user.username }}
+                {% endif %}
+              {% else %}
+                Guest
+              {% endif %}
+            </div>
+            <div class="user-role">
+              {% if user.is_authenticated %}
+                {% if user.profile.punch_id %}
+                  {{ user.profile.punch_id }}
+                {% endif %}
+                {% if user.profile.role %}
+                  {% if user.profile.punch_id %} • {% endif %}{{ user.profile.role.name }}
+                {% elif not user.profile.punch_id %}
+                  MAA Employee
+                {% endif %}
+              {% else %}
+                Not logged in
+              {% endif %}
+            </div>
+          </a>
+          {% else %}
           <div class="user">
             <div class="user-name">
               {% if user.is_authenticated %}
@@ -382,6 +407,7 @@
               {% endif %}
             </div>
           </div>
+          {% endif %}
         </div>
       </header>
 

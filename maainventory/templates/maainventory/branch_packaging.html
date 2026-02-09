@@ -8,7 +8,11 @@
 {% block content %}
   {# Procurement only: branch managers are redirected to /branches/ and use Sync Foodics Sales there #}
   <div class="page-header branch-packaging-header">
+    {% if is_procurement_user %}
+    <a href="{% url 'procurement_settings' %}?tab=configure-packaging" class="back-link">← Back to Configure Packaging</a>
+    {% else %}
     <a href="{% url 'branches_configure' %}" class="back-link">← Back to Configure Packaging</a>
+    {% endif %}
     <h2>{{ branch.name }} — Packaging Configuration</h2>
     <p class="page-subtitle">
       <strong>Step 1:</strong> Upload CSV with products to define rules. <strong>Step 2:</strong> Map each product to warehouse inventory items (e.g., 1 Mini Kucu Bucket = 1 Burger Box).

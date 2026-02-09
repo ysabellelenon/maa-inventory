@@ -11,9 +11,6 @@
       <h2>Branch Inventory</h2>
       <p class="page-subtitle">Items delivered to each branch. When a branch manager marks a request as Delivered, its items appear here under that branch.</p>
     </div>
-    {% if is_procurement_user %}
-    <a href="{% url 'branches_configure' %}" class="btn-configure">Configure Packaging</a>
-    {% endif %}
   </div>
 
   <div class="tabs-container branches-tabs">
