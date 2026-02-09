@@ -36,6 +36,7 @@
             <img class="branch-toggle-icon" src="{% static 'icons/chevron-right.svg' %}" alt="" />
           </button>
           <h3 class="branch-group-title">{{ branch.brand }} — {{ branch.name }}</h3>
+          <span class="branch-items-chip">{{ branch.items|length }} item{{ branch.items|length|pluralize }}</span>
         </div>
         <div class="branch-group-body" id="branch-body-{{ branch.id }}" aria-labelledby="branch-header-{{ branch.id }}">
           {% if branch.address %}
