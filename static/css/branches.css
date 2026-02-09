@@ -1,6 +1,28 @@
 /* Branches page styles */
 @import url('inventory.css');
 
+/* Brand tabs: match warehouse/requests tab style; badge for branch count.
+   Use .branches-tabs so badge styling is consistent for both branch manager and procurement. */
+.branches-tabs.tabs-container .tab-btn .tab-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 11px;
+  margin-left: 6px;
+  background: #D9BD7D !important;
+  color: #fff !important;
+}
+
+/* Reduce gap between heading and tabs on Branch Inventory */
+.page-header.branches-header + .tabs-container {
+  margin-top: 0;
+}
+/* Match Branch Requests: space between tabs and content = 12px */
+.branches-tabs.tabs-container {
+  margin-bottom: 12px;
+}
+
 /* Fix: Content cut off - inventory.css sets .content overflow:hidden; override for branches */
 .content {
   overflow-y: auto !important;
@@ -9,16 +31,16 @@
 
 .page-header.branches-header,
 .page-header.branch-packaging-header {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 }
-
 .branches-header-left {
   flex: 1;
+  min-width: 0;
 }
 
 .page-header.branches-header h2,
@@ -66,7 +88,7 @@
   background: var(--card-bg, #fff);
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
-  padding: 20px;
+  padding: 8px;
 }
 
 .branch-group-title {
@@ -142,7 +164,65 @@
   margin-bottom: 24px;
 }
 
+/* Collapsible branch header: chevron + title row */
 .branch-items-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+  border-radius: 6px;
+}
+.branch-items-header:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+.branch-items-header .branch-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.branch-items-header .branch-toggle:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+.branch-items-header .branch-toggle-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  transition: transform 0.2s ease;
+}
+.branch-items-header .branch-group-title {
+  margin: 0;
+  flex: 1;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text, #111827);
+}
+.branch-group.collapsed .branch-items-header {
+  margin-bottom: 0;
+}
+
+/* Branch body: address, actions, table (hidden when collapsed) */
+.branch-group-body {
+  padding-left: 36px;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+.branch-group.collapsed .branch-group-body {
+  display: none;
+}
+.branch-group-body .branch-address {
+  margin-top: 0;
   margin-bottom: 12px;
 }
 

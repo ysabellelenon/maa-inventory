@@ -3944,8 +3944,20 @@ def branches(request):
             'items': items_with_qty,
         })
 
+    # Group branches by brand for tabs (use all brands from DB, order by name)
+    from django.utils.text import slugify
+    all_brands = Brand.objects.all().order_by('name')
+    branch_by_brand = {b['brand']: [] for b in branch_data}
+    for b in branch_data:
+        branch_by_brand[b['brand']].append(b)
+    brands_with_branches = [
+        {'name': brand.name, 'slug': slugify(brand.name), 'branches': branch_by_brand.get(brand.name, [])}
+        for brand in all_brands
+    ]
+
     context = {
         'branch_data': branch_data,
+        'brands_with_branches': brands_with_branches,
     }
     return render(request, 'maainventory/branches.html', context)
 
