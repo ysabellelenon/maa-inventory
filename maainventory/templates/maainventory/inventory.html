@@ -77,7 +77,7 @@
             <input class="table-search-input" placeholder="Search by item or code" aria-label="Search inventory" />
           </div>
           <form method="get" action="{% url 'inventory' %}" class="category-filter-form">
-            <select id="category-filter" name="category" class="category-filter-select" aria-label="Filter by category" onchange="this.form.submit()">
+            <select id="category-filter" name="category" class="category-filter-select{% if current_category %} filter-active{% endif %}" aria-label="Filter by category" onchange="this.form.submit()">
               <option value="" {% if not current_category %}selected{% endif %}>All categories</option>
               {% for cat in categories %}
                 <option value="{{ cat.id }}" {% if current_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>

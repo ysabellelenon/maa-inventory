@@ -144,7 +144,7 @@
             <input class="table-search-input" placeholder="Search by requestor or item" aria-label="Search requests" />
           </div>
           <form method="get" action="{% url 'requests' %}" class="category-filter-form">
-            <select id="branch-filter" name="branch" class="category-filter-select" aria-label="Filter by branch" onchange="this.form.submit()">
+            <select id="branch-filter" name="branch" class="category-filter-select{% if current_branch %} filter-active{% endif %}" aria-label="Filter by branch" onchange="this.form.submit()">
               <option value="" {% if not current_branch %}selected{% endif %}>All branches</option>
               {% for branch in branches %}
                 <option value="{{ branch.id }}" {% if current_branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
