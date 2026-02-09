@@ -419,14 +419,6 @@ body.view-request-page-open {
         <span class="active" aria-current="page">{{ req.request_code }}</span>
       </nav>
       <h2 style="margin-top:6px;">Request: {{ req.request_code }}</h2>
-      <h3 class="item-submeta">
-        <strong>Status:</strong>
-        <span class="status-badge status-{{ req.status|lower }}">{{ req.get_status_display }}</span>
-        &nbsp;•&nbsp;
-        <strong>Branch:</strong> {{ req.branch.name }}
-        &nbsp;•&nbsp;
-        <strong>Date:</strong> {{ req.date_of_order|date:"F d, Y" }}
-      </h3>
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
       {% if can_approve %}
