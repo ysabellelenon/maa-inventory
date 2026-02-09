@@ -44,7 +44,15 @@
           {% endif %}
           {% if is_branch_user and branch.id in user_branch_ids %}
           <div class="branch-actions" style="margin-bottom: 12px;">
-            <a href="{% url 'branch_packaging' branch.id %}" class="btn-configure" style="display: inline-block; text-decoration: none;">Upload CSV/Excel to deduct packaging</a>
+            {% if branch.has_packaging_rules %}
+            <form method="post" action="{% url 'branch_process_packaging_csv' branch_id=branch.id %}" enctype="multipart/form-data" class="sync-sales-form" data-branch-id="{{ branch.id }}" style="display: inline;">
+              {% csrf_token %}
+              <input type="file" name="csv_file" accept=".csv,.xlsx" class="sync-sales-file-input" data-branch-id="{{ branch.id }}" aria-label="Select CSV or Excel file" style="display: none;" />
+              <button type="button" class="btn-gold sync-sales-trigger" data-branch-id="{{ branch.id }}">Sync Foodics Sales</button>
+            </form>
+            {% else %}
+            <button type="button" class="btn-gold sync-sales-no-rules" data-branch-id="{{ branch.id }}">Sync Foodics Sales</button>
+            {% endif %}
           </div>
           {% endif %}
           {% if branch.items %}
@@ -54,9 +62,9 @@
                 <tr>
                   <th>Item Code</th>
                   <th>Item Name</th>
+                  <th class="col-min-qty">MIN</th>
+                  <th class="col-min-qty">Qty Available</th>
                   <th>Unit</th>
-                  <th>MIN</th>
-                  <th>Qty Available</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -64,10 +72,19 @@
                 {% for item in branch.items %}
                 <tr class="{% if item.min_order_qty != None and item.qty_available != None and item.qty_available <= item.min_order_qty %}branch-item-low{% endif %}">
                   <td>{{ item.item_code }}</td>
-                  <td>{{ item.name }}</td>
+                  <td class="col-name">
+                    {% if item.image %}
+                    <img class="item-thumb item-thumb-openable" src="{{ item.image }}" alt="{{ item.name }}" title="Click to enlarge" />
+                    {% else %}
+                    <img class="item-thumb item-thumb-openable" src="{% static 'images/sample-item.jpg' %}" alt="{{ item.name }}" title="Click to enlarge" />
+                    {% endif %}
+                    <div class="item-meta">
+                      <div class="item-title">{{ item.name }}</div>
+                    </div>
+                  </td>
+                  <td class="col-min-qty">{{ item.min_order_qty|default:"—" }}</td>
+                  <td class="col-min-qty">{% if item.qty_available != None %}{{ item.qty_available|floatformat:0 }}{% else %}—{% endif %}</td>
                   <td>{{ item.base_unit }}</td>
-                  <td>{{ item.min_order_qty|default:"—" }}</td>
-                  <td>{% if item.qty_available != None %}{{ item.qty_available|floatformat:0 }}{% else %}—{% endif %}</td>
                   <td class="branch-status-cell">
                     {% if item.min_order_qty != None and item.qty_available != None %}
                       {% if item.qty_available <= item.min_order_qty %}
@@ -101,6 +118,24 @@
     </div>
     {% endfor %}
   </div>
+
+  <!-- Packaging rules not defined modal (Sync Foodics Sales when branch has no rules) -->
+  <div id="packaging-no-rules-modal" class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="packaging-no-rules-title" aria-hidden="true">
+    <div class="modal-confirm-card">
+      <h3 id="packaging-no-rules-title" class="modal-confirm-title">Packaging rules not configured</h3>
+      <p class="modal-confirm-message">Packaging rules for this branch are not defined yet. Ask procurement to configure packaging rules first; then you can upload a CSV/Excel file here to deduct items.</p>
+      <div class="modal-confirm-buttons">
+        <button type="button" class="modal-confirm-btn modal-confirm-btn-confirm modal-confirm-btn-approve" id="packaging-no-rules-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image lightbox: click item thumb to view full size -->
+  <div id="image-lightbox" role="dialog" aria-modal="true" aria-label="Enlarged image" aria-hidden="true">
+    <button type="button" class="lightbox-close" aria-label="Close">&times;</button>
+    <img class="lightbox-image" src="" alt="" />
+  </div>
+
   <script>
     (function () {
       var container = document.querySelector('.branches-container');
@@ -156,6 +191,90 @@
           }
         });
       });
+    })();
+  </script>
+  <script>
+    (function () {
+      var container = document.querySelector('.branches-container');
+      var lightbox = document.getElementById('image-lightbox');
+      var lightboxImg = lightbox && lightbox.querySelector('.lightbox-image');
+      var lightboxClose = lightbox && lightbox.querySelector('.lightbox-close');
+
+      if (container && lightbox && lightboxImg) {
+        container.addEventListener('click', function (e) {
+          var thumb = e.target.closest && e.target.closest('.item-thumb-openable');
+          if (!thumb) return;
+          e.preventDefault();
+          e.stopPropagation();
+          lightboxImg.src = thumb.getAttribute('src') || '';
+          lightboxImg.alt = thumb.getAttribute('alt') || 'Item image';
+          lightbox.classList.add('is-open');
+          lightbox.setAttribute('aria-hidden', 'false');
+        });
+
+        function closeLightbox() {
+          lightbox.classList.remove('is-open');
+          lightbox.setAttribute('aria-hidden', 'true');
+        }
+        if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+        lightbox.addEventListener('click', function (e) {
+          if (e.target === lightbox) closeLightbox();
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && lightbox.classList.contains('is-open')) closeLightbox();
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      var noRulesModal = document.getElementById('packaging-no-rules-modal');
+      var noRulesOk = document.getElementById('packaging-no-rules-ok');
+
+      document.querySelectorAll('.sync-sales-trigger').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var branchId = btn.getAttribute('data-branch-id');
+          var form = document.querySelector('.sync-sales-form[data-branch-id="' + branchId + '"]');
+          var fileInput = document.querySelector('.sync-sales-file-input[data-branch-id="' + branchId + '"]');
+          if (form && fileInput) {
+            fileInput.click();
+          }
+        });
+      });
+
+      document.querySelectorAll('.sync-sales-file-input').forEach(function (input) {
+        input.addEventListener('change', function () {
+          var form = input.closest('form');
+          if (form && input.files && input.files.length) {
+            form.submit();
+          }
+        });
+      });
+
+      document.querySelectorAll('.sync-sales-no-rules').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (noRulesModal) {
+            noRulesModal.classList.add('is-open');
+            noRulesModal.setAttribute('aria-hidden', 'false');
+          }
+        });
+      });
+
+      function closeNoRulesModal() {
+        if (noRulesModal) {
+          noRulesModal.classList.remove('is-open');
+          noRulesModal.setAttribute('aria-hidden', 'true');
+        }
+      }
+      if (noRulesOk) noRulesOk.addEventListener('click', closeNoRulesModal);
+      if (noRulesModal) {
+        noRulesModal.addEventListener('click', function (e) {
+          if (e.target === noRulesModal) closeNoRulesModal();
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && noRulesModal.classList.contains('is-open')) closeNoRulesModal();
+        });
+      }
     })();
   </script>
 {% endblock %}

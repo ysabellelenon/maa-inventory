@@ -16,6 +16,7 @@ from .models import (
     Request, RequestItem, RequestStatusHistory, Branch, Brand, ValidPunchID, UserProfile, Role,
     IntegrationFoodics, ImportJob, SystemSettings, ItemPhoto, PortalToken,
     SupplierPriceDiscussion, BranchPackagingRule, BranchPackagingItem, BranchPackagingRuleItem,
+    BranchInventory,
 )
 
 
@@ -1727,6 +1728,24 @@ def mark_request_delivered(request, request_id):
                 changed_by=request.user,
                 notes='Branch manager confirmed delivery. Items will appear on the Branches page for this branch.'
             )
+
+            # Add fulfilled quantities to branches_inventory (Branches page source of truth)
+            for ri in req.items.all():
+                qty = ri.qty_fulfilled or 0
+                if qty <= 0:
+                    continue
+                inv, created = BranchInventory.objects.get_or_create(
+                    branch=req.branch,
+                    item=ri.item,
+                    variation=ri.variation,
+                    defaults={
+                        'brand': req.branch.brand,
+                        'quantity': qty,
+                    }
+                )
+                if not created:
+                    inv.quantity += qty
+                    inv.save(update_fields=['quantity', 'updated_at'])
 
         messages.success(request, f'Request {req.request_code} marked as delivered. Items are now shown for branch "{req.branch.name}" on the Branches page.')
         return JsonResponse({
@@ -3887,11 +3906,11 @@ def manage_branch_assignments(request):
 @login_required
 def branches(request):
     """
-    Render branches page: items delivered to each branch; quantity shown is available at branch
-    (delivered minus consumption from packaging CSV / other consumption).
+    Render branches page: rows are from branches_inventory table only.
+    When requests are marked Delivered, quantities are added to branches_inventory;
+    when consumption (e.g. packaging CSV) is recorded, quantities are decremented.
     """
     from .context_processors import get_branch_user_info
-    from .models import ItemConsumptionDaily
 
     all_branches = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
 
@@ -3902,38 +3921,37 @@ def branches(request):
         else:
             all_branches = all_branches.none()
 
-    # Delivered per branch+item (from fulfilled requests)
-    delivered_by_branch_item = {}
-    for row in RequestItem.objects.filter(
-        request__branch__is_active=True,
-        request__status__in=['Delivered', 'Completed'],
-        qty_fulfilled__gt=0
-    ).values('request__branch_id', 'item_id').annotate(total=Sum('qty_fulfilled')):
-        key = (row['request__branch_id'], row['item_id'])
-        delivered_by_branch_item[key] = row['total']
+    # Branches that have packaging rules (for Sync Foodics Sales: open file picker vs show modal)
+    branch_ids_with_rules = set(
+        BranchPackagingRule.objects.filter(branch__is_active=True).values_list('branch_id', flat=True).distinct()
+    )
 
-    # Consumed per branch+item (packaging CSV, Foodics, etc.)
-    consumed_by_branch_item = {}
-    for row in ItemConsumptionDaily.objects.filter(branch__is_active=True).values('branch_id', 'item_id').annotate(total=Sum('qty_consumed')):
+    # Per-branch: item_id -> total quantity from branches_inventory (sum across variations)
+    inv_by_branch_item = {}
+    for row in BranchInventory.objects.filter(branch__is_active=True).values('branch_id', 'item_id').annotate(total=Sum('quantity')):
         key = (row['branch_id'], row['item_id'])
-        consumed_by_branch_item[key] = row['total']
+        inv_by_branch_item[key] = row['total']
 
     branch_data = []
     for branch in all_branches:
-        item_ids = [iid for (bid, iid) in delivered_by_branch_item.keys() if bid == branch.id]
+        item_ids = [iid for (bid, iid) in inv_by_branch_item.keys() if bid == branch.id]
         items_with_qty = []
         if item_ids:
-            for item in Item.objects.filter(id__in=item_ids, is_active=True).order_by('item_code'):
-                delivered = delivered_by_branch_item.get((branch.id, item.id)) or 0
-                consumed = consumed_by_branch_item.get((branch.id, item.id)) or 0
-                available = max(Decimal('0'), Decimal(str(delivered)) - Decimal(str(consumed)))
+            for item in Item.objects.filter(id__in=item_ids, is_active=True).prefetch_related('photos').order_by('item_code'):
+                qty_available = inv_by_branch_item.get((branch.id, item.id)) or 0
+                # Image for item name column: photo_url, or first ItemPhoto (same as warehouse inventory)
+                image_url = item.photo_url
+                if not image_url and item.photos.exists():
+                    first_photo = item.photos.first()
+                    if first_photo and first_photo.photo:
+                        image_url = request.build_absolute_uri(first_photo.photo.url)
                 items_with_qty.append({
                     'item_code': item.item_code,
                     'name': item.name,
                     'base_unit': item.base_unit,
                     'min_order_qty': item.min_order_qty,
-                    'qty_delivered': float(delivered),
-                    'qty_available': float(available),
+                    'qty_available': float(qty_available),
+                    'image': image_url,
                 })
 
         branch_data.append({
@@ -3942,6 +3960,7 @@ def branches(request):
             'brand': branch.brand.name,
             'address': branch.address or '',
             'items': items_with_qty,
+            'has_packaging_rules': branch.id in branch_ids_with_rules,
         })
 
     # Group branches by brand for tabs (use all brands from DB, order by name)
@@ -4014,9 +4033,12 @@ def branch_packaging(request, branch_id):
         if is_branch_user and (not user_branch_ids or branch.id not in user_branch_ids):
             return HttpResponseForbidden('You do not have access to this branch.')
     
-    # Only branch managers for this branch can process CSV / deduct; procurement cannot
+    # Only branch managers for this branch can process CSV / deduct; procurement cannot.
+    # Branch managers no longer see this page: they use Sync Foodics Sales on /branches/ (file picker or modal).
     can_process_packaging_csv = is_branch_user and user_branch_ids and branch.id in user_branch_ids
-    
+    if can_process_packaging_csv:
+        return redirect('branches')
+
     rules = branch.packaging_rules.prefetch_related(
         'rule_items__packaging_item',
         'rule_items__inventory_item'
@@ -4325,29 +4347,29 @@ def branch_process_packaging_csv(request, branch_id):
     from .models import ItemConsumptionDaily
 
     if request.method != 'POST':
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')
 
     is_branch_user, user_branch_ids = get_branch_user_info(request.user)
     if not is_branch_user or not user_branch_ids or branch_id not in user_branch_ids:
         messages.error(request, 'Only the branch manager for this branch can process packaging CSV.')
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')
 
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
 
     uploaded_file = request.FILES.get('csv_file')
     if not uploaded_file:
         messages.error(request, 'Please select a CSV or Excel file to upload.')
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')
 
     try:
         products_data = _parse_products_file(uploaded_file)
     except Exception as e:
         messages.error(request, f'Error reading file: {e}')
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')
 
     if not products_data:
         messages.warning(request, 'No valid products found in the file.')
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')
 
     # Build deduction plan: which items and how much to deduct at this branch
     deduction_plan = {}
@@ -4385,36 +4407,25 @@ def branch_process_packaging_csv(request, branch_id):
 
     if not deduction_plan:
         messages.warning(request, 'No packaging items to deduct from the uploaded file.')
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')
 
-    # Delivered to this branch (same as /branches/ page)
-    delivered = {
-        r['item_id']: r['total']
-        for r in RequestItem.objects.filter(
-            request__branch_id=branch.id,
-            request__status__in=['Delivered', 'Completed'],
-            qty_fulfilled__gt=0
-        ).values('item_id').annotate(total=Sum('qty_fulfilled'))
-    }
-    # Already consumed at this branch (all sources)
-    consumed = {
-        r['item_id']: r['total']
-        for r in ItemConsumptionDaily.objects.filter(branch=branch).values('item_id').annotate(total=Sum('qty_consumed'))
+    # Current quantity at branch from branches_inventory (source of truth for Branches page)
+    branch_inv_by_item = {
+        r['item_id']: r['quantity']
+        for r in BranchInventory.objects.filter(branch=branch).values('item_id').annotate(quantity=Sum('quantity'))
     }
 
     insufficient = []
     for item_id, plan in deduction_plan.items():
         item = plan['item']
         qty_needed = plan['total_qty']
-        total_delivered = delivered.get(item_id) or Decimal('0')
-        total_consumed = consumed.get(item_id) or Decimal('0')
-        available = total_delivered - total_consumed
+        available = branch_inv_by_item.get(item_id) or Decimal('0')
         if available < qty_needed:
             insufficient.append(f'{item.name} (need {qty_needed}, available at branch {available})')
 
     if insufficient:
         messages.error(request, f'Insufficient quantity at your branch: {"; ".join(insufficient[:3])}{"..." if len(insufficient) > 3 else ""}')
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')
 
     today = timezone.now().date()
     source = ItemConsumptionDaily.SourceType.PACKAGING_CSV
@@ -4436,10 +4447,18 @@ def branch_process_packaging_csv(request, branch_id):
                     rec.qty_consumed += qty_to_deduct
                     rec.save(update_fields=['qty_consumed'])
 
+                # Decrement branches_inventory (Branches page source of truth)
+                inv = BranchInventory.objects.filter(
+                    branch=branch, item=item, variation__isnull=True
+                ).first()
+                if inv:
+                    inv.quantity = max(Decimal('0'), inv.quantity - qty_to_deduct)
+                    inv.save(update_fields=['quantity', 'updated_at'])
+
         messages.success(request, f'Deducted from your branch ({branch.name}): {len(deduction_plan)} item types. Quantities on the Branches page have been updated.')
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')
     except Exception as e:
         import traceback
         traceback.print_exc()
         messages.error(request, f'Error processing packaging: {str(e)}')
-        return redirect('branch_packaging', branch_id=branch_id)
+        return redirect('branches')

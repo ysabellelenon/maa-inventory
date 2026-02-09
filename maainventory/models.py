@@ -782,6 +782,29 @@ class ItemConsumptionDaily(models.Model):
         return f"{self.date} - {self.branch.name} - {self.item.item_code}: {self.qty_consumed}"
 
 
+class BranchInventory(models.Model):
+    """
+    Current inventory at each branch. Rows are added when requests are marked Delivered
+    and decremented when consumption (e.g. packaging CSV) is recorded.
+    The Branches page displays rows from this table only.
+    """
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='branch_inventory')
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='branch_inventory')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='branch_inventory')
+    variation = models.ForeignKey(ItemVariation, on_delete=models.CASCADE, null=True, blank=True, related_name='branch_inventory')
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'branches_inventory'
+        unique_together = ['branch', 'item', 'variation']
+        ordering = ['branch', 'item', 'variation']
+
+    def __str__(self):
+        var_str = f" - {self.variation.variation_name}" if self.variation else ""
+        return f"{self.branch.name}: {self.item.item_code}{var_str} = {self.quantity}"
+
+
 class SupplierSpendMonthly(models.Model):
     """Monthly supplier spending report (optional materialized table)"""
     month = models.CharField(max_length=7)  # YYYY-MM

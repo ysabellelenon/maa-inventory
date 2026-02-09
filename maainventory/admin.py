@@ -16,6 +16,8 @@ from .models import (
     Delivery, DeliveryDocument, DeliverySignature,
     # Foodics Integration
     IntegrationFoodics, FoodicsBranchMapping, ItemConsumptionDaily, SupplierSpendMonthly,
+    # Branch inventory (Branches page source of truth)
+    BranchInventory,
     # Excel Import
     ImportJob, ImportJobRow,
     # System Settings
@@ -302,6 +304,15 @@ class ItemConsumptionDailyAdmin(admin.ModelAdmin):
     search_fields = ['branch__name', 'item__item_code', 'item__name']
     raw_id_fields = ['branch', 'item', 'variation']
     readonly_fields = ['created_at']
+
+
+@admin.register(BranchInventory)
+class BranchInventoryAdmin(admin.ModelAdmin):
+    list_display = ['branch', 'brand', 'item', 'variation', 'quantity', 'updated_at']
+    list_filter = ['branch', 'brand']
+    search_fields = ['branch__name', 'item__item_code', 'item__name']
+    raw_id_fields = ['branch', 'brand', 'item', 'variation']
+    readonly_fields = ['updated_at']
 
 
 @admin.register(SupplierSpendMonthly)

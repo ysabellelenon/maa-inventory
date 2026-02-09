@@ -1,6 +1,55 @@
 /* Branches page styles */
 @import url('inventory.css');
 
+/* Image lightbox: click item thumb to view full size (same as warehouse inventory) */
+#image-lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.75);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+#image-lightbox.is-open {
+  display: flex;
+}
+#image-lightbox .lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#image-lightbox .lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+#image-lightbox .lightbox-image {
+  max-width: 90vw;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.branch-items-table .col-name .item-thumb {
+  cursor: pointer;
+}
+
 /* Brand tabs: match warehouse/requests tab style; badge for branch count.
    Use .branches-tabs so badge styling is consistent for both branch manager and procurement. */
 .branches-tabs.tabs-container .tab-btn .tab-badge {
@@ -371,6 +420,44 @@
 
 .packaging-table tbody tr:hover {
   background: #f9fafb;
+}
+
+/* Item Name column: thumb + name (same as warehouse inventory) */
+.branch-items-table .col-name {
+  width: 320px;
+  min-width: 320px;
+  vertical-align: middle;
+}
+
+/* MIN and Qty Available columns: same width */
+.branch-items-table .col-min-qty {
+  width: 120px;
+  min-width: 120px;
+}
+.branch-items-table tbody .item-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #f2f2f2;
+  object-fit: cover;
+  flex: 0 0 36px;
+  margin-right: 12px;
+  vertical-align: middle;
+}
+.branch-items-table tbody .item-meta {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: calc(100% - 52px);
+}
+.branch-items-table tbody .item-meta .item-title {
+  font-weight: 500;
+  color: #374151;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .linked-badge {

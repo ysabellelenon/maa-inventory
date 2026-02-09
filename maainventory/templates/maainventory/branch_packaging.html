@@ -6,38 +6,7 @@
 {% endblock %}
 
 {% block content %}
-  {% if can_process_packaging_csv %}
-  {# Branch manager: only the deduction upload, no configure packaging #}
-  <div class="page-header branch-packaging-header">
-    <a href="{% url 'branches' %}" class="back-link">← Back to Branches</a>
-    <h2>{{ branch.name }} — Deduct packaging</h2>
-    <p class="page-subtitle">Upload a CSV or Excel file with <strong>Product</strong> and <strong>Quantity</strong> columns. Deduction uses items available to your branch (defined by procurement).</p>
-  </div>
-
-  {% if rules %}
-  <div class="packaging-process-section">
-    <div class="upload-card" style="background: #F0F9FF; border: 2px solid #3B82F6;">
-      <h4>Upload CSV/Excel to deduct packaging from warehouse</h4>
-      <p class="upload-hint">
-        Your file must have <strong>Product</strong> and <strong>Quantity</strong> columns. The system will match products to packaging rules (set by procurement) and deduct the corresponding items from warehouse inventory for <strong>{{ branch.name }}</strong>.
-      </p>
-      <form method="post" action="{% url 'branch_process_packaging_csv' branch_id=branch.id %}" enctype="multipart/form-data" class="upload-form">
-        {% csrf_token %}
-        <div class="upload-row">
-          <input type="file" name="csv_file" accept=".csv,.xlsx" required class="file-input" aria-label="Select CSV or Excel file" />
-          <button type="submit" class="btn-upload" style="background: #3B82F6;">Process & deduct from warehouse</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  {% else %}
-  <div class="upload-card" style="max-width: 560px;">
-    <p class="no-rules">Packaging rules for this branch are not defined yet. Ask procurement to configure packaging rules first; then you can upload a CSV/Excel file here to deduct items.</p>
-  </div>
-  {% endif %}
-
-  {% else %}
-  {# Procurement: full configure packaging (define rules only), no deduction #}
+  {# Procurement only: branch managers are redirected to /branches/ and use Sync Foodics Sales there #}
   <div class="page-header branch-packaging-header">
     <a href="{% url 'branches_configure' %}" class="back-link">← Back to Configure Packaging</a>
     <h2>{{ branch.name }} — Packaging Configuration</h2>
@@ -146,5 +115,4 @@
     <p class="no-rules">No packaging rules yet. Upload a CSV file above to define products, then map to warehouse items.</p>
     {% endif %}
   </div>
-  {% endif %}
 {% endblock %}
