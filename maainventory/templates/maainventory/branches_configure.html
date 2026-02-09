@@ -8,7 +8,7 @@
 {% block content %}
   <div class="page-header branches-header">
     <a href="{% url 'branches' %}" class="back-link">← Back to Branches</a>
-    <h2>Configure Packaging</h2>
+    <h2>Menu Items Configuration</h2>
     <p class="page-subtitle">Select a branch to upload CSV/Excel and define packaging consumption rules.</p>
   </div>
 
@@ -26,7 +26,7 @@
           {% if b.address %}
           <p class="branch-address">{{ b.address }}</p>
           {% endif %}
-          <span class="branch-card-link">Configure packaging →</span>
+          <span class="branch-card-link">Menu items configuration →</span>
         </a>
         {% endfor %}
       </div>

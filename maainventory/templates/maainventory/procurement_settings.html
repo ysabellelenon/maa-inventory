@@ -32,6 +32,49 @@ body.settings-page {
 #tab-branch-assignments { display: none; }
 #tab-configure-packaging.is-active,
 #tab-branch-assignments.is-active { display: block; }
+/* Menu Items Configuration: same table style as warehouse inventory (.inventory-table) */
+.menu-config-tables { display: flex; flex-direction: column; gap: 24px; }
+.menu-config-brand-section { background: var(--card-bg); padding: 0 8px 0 8px; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.03); overflow: hidden; border: 1px solid var(--border); }
+.menu-config-brand-title { margin: 0 -8px 0 -8px; padding: 10px 12px 10px 12px; font-size: 16px; font-weight: 600; color: #101828; background: var(--card-bg); border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0; }
+/* Global table-actions (one search + filter for all tables): same as warehouse inventory */
+.menu-config-global-actions { display: flex; justify-content: flex-start; padding: 12px 0; margin-bottom: 12px; height: 56px; min-height: 56px; max-height: 56px; box-sizing: border-box; overflow: hidden; align-items: center; }
+.menu-config-global-actions .table-actions-left { display: flex; align-items: center; gap: 12px; flex-wrap: nowrap; overflow: hidden; min-width: 0; }
+.menu-config-global-actions .table-search-input { width: 260px; box-sizing: border-box; padding: 0 12px 0 34px; height: 36px; border-radius: 8px; border: 1px solid #e6e6e6; background: #fff; font-size: 14px; }
+.menu-config-global-actions .table-search-input::placeholder { font-size: 13px; color: #9ca3af; }
+.menu-config-global-actions .category-filter-select { height: 36px; min-width: 160px; padding: 0 44px 0 12px; border-radius: 8px; border: 1px solid #e6e6e6; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 20px center; background-size: 16px; font-size: 14px; font-weight: 500; color: var(--text); cursor: pointer; appearance: none; -webkit-appearance: none; -moz-appearance: none; }
+.menu-config-global-actions .category-filter-select:hover,
+.menu-config-global-actions .category-filter-select:focus { border-color: #D9BD7D; outline: none; }
+.menu-config-global-actions .category-filter-select.filter-active { background: #D9BD7D url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 20px center; background-size: 16px; color: #fff; border-color: #D9BD7D; }
+.menu-config-global-actions .category-filter-select.filter-active:hover { border-color: #c4a85f; background-color: #c4a85f; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 20px center; background-size: 16px; }
+.menu-config-global-actions .category-filter-select.filter-active:focus { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 20px center; background-size: 16px; color: var(--text); border-color: #D9BD7D; }
+.menu-config-global-actions .table-search { position: relative; display: inline-block; }
+.menu-config-global-actions .table-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.7; }
+.menu-config-table { width: calc(100% + 16px); margin: 0 -8px 0 -8px; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+.menu-config-table thead th { text-align: left; padding: 10px 16px; color: var(--text); font-weight: 600; border-bottom: 1px solid var(--border); white-space: normal; overflow-wrap: break-word; word-break: break-word; background: var(--card-bg); box-sizing: border-box; }
+.menu-config-table tbody td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; color: #374151; white-space: normal; overflow-wrap: break-word; word-break: break-word; box-sizing: border-box; }
+.menu-config-table tbody tr:last-child td { border-bottom: none; }
+.menu-config-row { cursor: pointer; transition: background-color 0.12s ease; }
+.menu-config-row:hover { background-color: #fbf9f2; }
+.menu-config-empty { color: #6B7280; font-size: 14px; margin: 0; }
+.menu-config-empty-cell { text-align: center; padding: 32px 16px; color: #6B7280; font-size: 14px; }
+.menu-config-empty-row .menu-config-empty-cell { border-bottom: none; }
+/* Table footer / pagination: match warehouse inventory (.inventory-card .table-footer) */
+.menu-config-brand-section .table-footer { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-top: 1px solid #f3f3f3; gap: 12px; }
+.menu-config-brand-section .table-footer .table-footer-left { display: flex; align-items: center; gap: 12px; }
+.menu-config-brand-section .table-footer .show-label { font-size: 13px; color: #374151; display: flex; align-items: center; gap: 8px; }
+.menu-config-brand-section .table-footer .page-size { padding: 6px 8px; border-radius: 8px; border: 1px solid #e6e6e6; background: #fff; }
+.menu-config-brand-section .table-footer .entries-info { color: #6b7280; font-size: 13px; }
+.menu-config-brand-section .table-footer .table-footer-right .pagination { display: flex; align-items: center; gap: 8px; }
+.menu-config-brand-section .table-footer .pagination .page-prev,
+.menu-config-brand-section .table-footer .pagination .page-next { background: #fff; border: 1px solid #eef2f6; padding: 6px 10px; border-radius: 8px; cursor: pointer; color: #374151; display: inline-flex; align-items: center; justify-content: center; }
+.menu-config-brand-section .table-footer .pagination .page-nums { display: flex; align-items: center; gap: 8px; }
+.menu-config-brand-section .table-footer .pagination .page-num,
+.menu-config-brand-section .table-footer .pagination a.page-num { background: #fff; border: 1px solid #eef2f6; padding: 6px 10px; border-radius: 8px; cursor: pointer; color: #374151; text-decoration: none; display: inline-block; }
+.menu-config-brand-section .table-footer .pagination .page-num.active,
+.menu-config-brand-section .table-footer .pagination span.page-num.active { border: 1.5px solid #D9BD7D; color: #D9BD7D; font-weight: 600; }
+.menu-config-brand-section .table-footer .pagination a.page-num:hover { background: #f9fafb; }
+.menu-config-brand-section .table-footer .pagination span[style*="opacity"] { cursor: not-allowed !important; }
+.menu-config-brand-section .table-footer .pagination img { width: 12px; height: 12px; display: block; }
 /* Branch assignments embedded styles (from manage_branch_assignments) */
 .assignments-card { background: var(--card-bg); border-radius: 12px; padding: 28px; margin-bottom: 24px; border: 1px solid #E5E7EB; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
 .assignments-card h3 { margin: 0 0 20px 0; font-size: 17px; font-weight: 600; color: #101828; }
@@ -81,39 +124,89 @@ body.settings-page {
 
   <div class="tabs-container settings-tabs">
     <div class="tabs">
-      <button type="button" class="tab-btn active" data-tab="configure-packaging">Configure Packaging</button>
+      <button type="button" class="tab-btn active" data-tab="configure-packaging">Menu Items Configuration</button>
       <button type="button" class="tab-btn" data-tab="branch-assignments">Branch Assignments</button>
     </div>
   </div>
 
   <div id="tab-configure-packaging" class="tab-panel is-active">
     <div class="page-header branches-header" style="margin-top:0;">
-      <a href="{% url 'branches' %}" class="back-link">← Back to Branches</a>
       <p class="page-subtitle">Select a branch to upload CSV/Excel and define packaging consumption rules.</p>
     </div>
-    <div class="branches-container">
+    <div class="table-actions menu-config-table-actions menu-config-global-actions">
+      <div class="table-actions-left">
+        <div class="table-search">
+          <img src="{% static 'icons/search.svg' %}" class="table-search-icon" alt="Search" />
+          <input class="table-search-input" placeholder="Search by branch name" aria-label="Search branches" id="menu-config-global-search" />
+        </div>
+        <div class="category-filter-form">
+          <select class="category-filter-select menu-config-filter" aria-label="Filter by brand" id="menu-config-global-brand-filter">
+            <option value="">All brands</option>
+            {% for brand_name, branch_list in branch_groups_configure.items %}
+            <option value="{{ brand_name }}">{{ brand_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="category-filter-form">
+          <select class="category-filter-select menu-config-filter" aria-label="Filter branches" id="menu-config-global-filter">
+            <option value="">All branches</option>
+            <option value="with-rules">With rules</option>
+            <option value="no-rules">Without rules</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="menu-config-tables">
       {% for brand_name, branch_list in branch_groups_configure.items %}
-      <div class="branch-group">
-        <h3 class="branch-group-title">{{ brand_name }}</h3>
-        <div class="branch-cards">
-          {% for b in branch_list %}
-          <a href="{% url 'branch_packaging' b.id %}" class="branch-card">
-            <div class="branch-card-header">
-              <span class="branch-name">{{ b.name }}</span>
-              <span class="branch-rules-badge">{{ b.rules_count }} rule{{ b.rules_count|pluralize }}</span>
-            </div>
-            {% if b.address %}
-            <p class="branch-address">{{ b.address }}</p>
+      <div class="menu-config-brand-section" data-brand="{{ brand_name }}">
+        <h3 class="menu-config-brand-title">{{ brand_name }}</h3>
+        <table class="menu-config-table">
+          <thead>
+            <tr>
+              <th>Branch Name</th>
+              <th>Rules</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if branch_list %}
+            <tr class="menu-config-empty-row menu-config-empty-filter" style="display: none;"><td colspan="2" class="menu-config-empty-cell">No results match your search.</td></tr>
             {% endif %}
-            <span class="branch-card-link">Configure packaging →</span>
-          </a>
-          {% endfor %}
+            {% for b in branch_list %}
+            <tr class="menu-config-row" data-href="{% url 'branch_packaging' b.id %}" data-branch-name="{{ b.name|lower }}" data-rules-count="{{ b.rules_count }}">
+              <td>{{ b.name }}</td>
+              <td>{{ b.rules_count }} rule{{ b.rules_count|pluralize }}</td>
+            </tr>
+            {% empty %}
+            <tr class="menu-config-empty-row"><td colspan="2" class="menu-config-empty-cell">No branches in this brand.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="table-footer" data-menu-config-footer>
+          <div class="table-footer-left">
+            <label class="show-label">Show
+              <select class="page-size" aria-label="Results per page" data-menu-config-pagesize>
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </label>
+            <span class="entries-info" data-menu-config-entries>Showing 0 to 0 of 0 entries</span>
+          </div>
+          <div class="table-footer-right">
+            <nav class="pagination" aria-label="Pagination" data-menu-config-pagination>
+              <span class="page-prev" data-menu-config-prev role="button" tabindex="0" aria-label="Previous page" style="opacity: 0.5; cursor: not-allowed;">
+                <img src="{% static 'icons/chevron-left.svg' %}" alt="Prev" />
+              </span>
+              <span class="page-nums" data-menu-config-pagenums></span>
+              <span class="page-next" data-menu-config-next role="button" tabindex="0" aria-label="Next page" style="opacity: 0.5; cursor: not-allowed;">
+                <img src="{% static 'icons/chevron-right.svg' %}" alt="Next" />
+              </span>
+            </nav>
+          </div>
         </div>
       </div>
       {% empty %}
-      <div class="branches-empty">
-        <p>No branches found.</p>
-      </div>
+      <p class="menu-config-empty">No branches found.</p>
       {% endfor %}
     </div>
   </div>
@@ -217,6 +310,156 @@ body.settings-page {
   </div>
 
   <script>
+  (function() {
+    document.querySelectorAll('.menu-config-row[data-href]').forEach(function(row) {
+      row.addEventListener('click', function() {
+        var href = row.getAttribute('data-href');
+        if (href) window.location.href = href;
+      });
+    });
+  })();
+
+  (function() {
+    var searchInput = document.getElementById('menu-config-global-search');
+    var brandFilterSelect = document.getElementById('menu-config-global-brand-filter');
+    var filterSelect = document.getElementById('menu-config-global-filter');
+    var allRows = document.querySelectorAll('#tab-configure-packaging .menu-config-row');
+    var tables = document.querySelectorAll('#tab-configure-packaging .menu-config-table');
+    var brandSections = document.querySelectorAll('#tab-configure-packaging .menu-config-brand-section');
+    var paginationState = {};
+    if (!searchInput || !filterSelect) return;
+
+    function applyPagination() {
+      brandSections.forEach(function(section) {
+        if (section.style.display === 'none') return;
+        var brand = section.getAttribute('data-brand') || '';
+        var table = section.querySelector('.menu-config-table');
+        var footer = section.querySelector('[data-menu-config-footer]');
+        var pageSizeSelect = section.querySelector('[data-menu-config-pagesize]');
+        var entriesEl = section.querySelector('[data-menu-config-entries]');
+        var tableFooterRight = section.querySelector('.table-footer-right');
+        var prevEl = section.querySelector('[data-menu-config-prev]');
+        var nextEl = section.querySelector('[data-menu-config-next]');
+        var pagenumsEl = section.querySelector('[data-menu-config-pagenums]');
+        if (!table || !footer || !pageSizeSelect) return;
+        var tbody = table.querySelector('tbody');
+        if (!tbody) return;
+        var dataRows = Array.prototype.slice.call(tbody.querySelectorAll('tr.menu-config-row'));
+        var visible = dataRows.filter(function(r) { return r.style.display !== 'none'; });
+        var total = visible.length;
+        var pageSize = Math.max(1, parseInt(pageSizeSelect.value, 10) || 10);
+        var totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (!paginationState[brand]) paginationState[brand] = { page: 1 };
+        var page = Math.max(1, Math.min(paginationState[brand].page, totalPages));
+        paginationState[brand].page = page;
+        var start = (page - 1) * pageSize;
+        var end = Math.min(start + pageSize, total);
+        visible.forEach(function(row, i) {
+          row.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+        var showStart = total === 0 ? 0 : start + 1;
+        var showEnd = total === 0 ? 0 : end;
+        if (entriesEl) entriesEl.textContent = 'Showing ' + showStart + ' to ' + showEnd + ' of ' + total + ' entries';
+        if (tableFooterRight) tableFooterRight.style.display = totalPages > 1 ? '' : 'none';
+        if (prevEl) {
+          prevEl.style.opacity = page > 1 ? '1' : '0.5';
+          prevEl.style.cursor = page > 1 ? 'pointer' : 'not-allowed';
+          prevEl.onclick = page > 1 ? function() { paginationState[brand].page = page - 1; applyPagination(); } : null;
+        }
+        if (nextEl) {
+          nextEl.style.opacity = page < totalPages ? '1' : '0.5';
+          nextEl.style.cursor = page < totalPages ? 'pointer' : 'not-allowed';
+          nextEl.onclick = page < totalPages ? function() { paginationState[brand].page = page + 1; applyPagination(); } : null;
+        }
+        if (pagenumsEl) {
+          var html = '';
+          for (var n = 1; n <= totalPages; n++) {
+            if (n === page) {
+              html += '<span class="page-num active" aria-current="page">' + n + '</span>';
+            } else {
+              html += '<a href="#" class="page-num" data-page="' + n + '">' + n + '</a>';
+            }
+          }
+          pagenumsEl.innerHTML = html;
+          pagenumsEl.querySelectorAll('a.page-num').forEach(function(a) {
+            a.addEventListener('click', function(e) {
+              e.preventDefault();
+              var p = parseInt(a.getAttribute('data-page'), 10);
+              if (p) { paginationState[brand].page = p; applyPagination(); }
+            });
+          });
+        }
+      });
+    }
+
+    function applyFilters() {
+      var query = (searchInput.value || '').trim().toLowerCase();
+      var filterVal = filterSelect.value || '';
+      var brandVal = brandFilterSelect ? (brandFilterSelect.value || '') : '';
+      if (filterVal) {
+        filterSelect.classList.add('filter-active');
+      } else {
+        filterSelect.classList.remove('filter-active');
+      }
+      if (brandFilterSelect) {
+        if (brandVal) {
+          brandFilterSelect.classList.add('filter-active');
+        } else {
+          brandFilterSelect.classList.remove('filter-active');
+        }
+      }
+      brandSections.forEach(function(section) {
+        var sectionBrand = section.getAttribute('data-brand') || '';
+        section.style.display = (!brandVal || sectionBrand === brandVal) ? '' : 'none';
+      });
+      allRows.forEach(function(row) {
+        var name = (row.getAttribute('data-branch-name') || '').toLowerCase();
+        var rulesCount = parseInt(row.getAttribute('data-rules-count') || '0', 10);
+        var matchSearch = !query || name.indexOf(query) !== -1;
+        var matchFilter = filterVal === '' ||
+          (filterVal === 'with-rules' && rulesCount > 0) ||
+          (filterVal === 'no-rules' && rulesCount === 0);
+        row.style.display = (matchSearch && matchFilter) ? '' : 'none';
+      });
+      tables.forEach(function(table) {
+        var tbody = table.querySelector('tbody');
+        if (!tbody) return;
+        var dataRows = tbody.querySelectorAll('tr.menu-config-row');
+        var visibleCount = 0;
+        dataRows.forEach(function(r) { if (r.style.display !== 'none') visibleCount++; });
+        var emptyRow = tbody.querySelector('tr.menu-config-empty-filter');
+        if (emptyRow) emptyRow.style.display = (visibleCount === 0) ? '' : 'none';
+      });
+      applyPagination();
+    }
+
+    brandSections.forEach(function(section) {
+      var brand = section.getAttribute('data-brand') || '';
+      var pageSizeSelect = section.querySelector('[data-menu-config-pagesize]');
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', function() {
+          paginationState[brand] = paginationState[brand] || {};
+          paginationState[brand].page = 1;
+          applyFilters();
+        });
+      }
+    });
+
+    searchInput.addEventListener('input', applyFilters);
+    searchInput.addEventListener('keyup', applyFilters);
+    filterSelect.addEventListener('change', function() {
+      applyFilters();
+      filterSelect.blur();
+    });
+    if (brandFilterSelect) {
+      brandFilterSelect.addEventListener('change', function() {
+        applyFilters();
+        brandFilterSelect.blur();
+      });
+    }
+    applyFilters();
+  })();
+
   (function() {
     var tabButtons = document.querySelectorAll('.settings-tabs .tab-btn');
     var tabPanels = document.querySelectorAll('.tab-panel');

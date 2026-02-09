@@ -9,9 +9,9 @@
   {# Procurement only: branch managers are redirected to /branches/ and use Sync Foodics Sales there #}
   <div class="page-header branch-packaging-header">
     {% if is_procurement_user %}
-    <a href="{% url 'procurement_settings' %}?tab=configure-packaging" class="back-link">← Back to Configure Packaging</a>
+    <a href="{% url 'procurement_settings' %}?tab=configure-packaging" class="back-link">← Back to Menu Items Configuration</a>
     {% else %}
-    <a href="{% url 'branches_configure' %}" class="back-link">← Back to Configure Packaging</a>
+    <a href="{% url 'branches_configure' %}" class="back-link">← Back to Menu Items Configuration</a>
     {% endif %}
     <h2>{{ branch.name }} — Packaging Configuration</h2>
     <p class="page-subtitle">

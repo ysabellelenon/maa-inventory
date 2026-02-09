@@ -3912,7 +3912,7 @@ def manage_branch_assignments(request):
 @login_required
 def procurement_settings(request):
     """
-    Settings page for procurement managers only. Two tabs: Configure Packaging, Branch Assignments.
+    Settings page for procurement managers only. Two tabs: Menu Items Configuration, Branch Assignments.
     """
     from django.http import HttpResponseForbidden
 
@@ -3923,7 +3923,7 @@ def procurement_settings(request):
     if not is_procurement or is_it:
         return HttpResponseForbidden('Only procurement managers can access settings.')
 
-    # Data for Configure Packaging tab (same as branches_configure)
+    # Data for Menu Items Configuration tab (same as branches_configure)
     all_branches_cfg = Branch.objects.filter(is_active=True).select_related('brand').order_by('brand__name', 'name')
     branch_groups_configure = {}
     for branch in all_branches_cfg:
